@@ -1,3 +1,9 @@
+plugins {
+    id("com.android.application") apply false
+    id("com.android.library") apply false
+    kotlin("android") version "2.2.20" apply false
+}
+
 allprojects {
     repositories {
         google()
