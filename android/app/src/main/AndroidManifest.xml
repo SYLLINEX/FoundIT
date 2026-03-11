@@ -2,7 +2,8 @@
     <application
         android:label="found_it"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:resizeableActivity="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

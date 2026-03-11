@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
-import 'features/auth/auth_screen.dart';
+import 'package:flutter/services.dart';
+import 'core/theme/app_theme.dart';
+import 'features/splash/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 1. Enable Edge-to-Edge mode first
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // 2. Set the style, explicitly disabling contrast enforcement
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarDividerColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      // This is the key line to remove the translucent bar/scrim
+      systemNavigationBarContrastEnforced: false, 
+    ),
+  );
+
   runApp(const FoundItApp());
 }
 
@@ -13,37 +33,8 @@ class FoundItApp extends StatelessWidget {
     return MaterialApp(
       title: 'FoundIT',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A), // Deep Campus Blue
-          primary: const Color(0xFF1E3A8A),
-          secondary: const Color(0xFF10B981), // Emerald Green (Found)
-          error: const Color(0xFFEF4444),     // Red (Lost)
-          surface: Colors.grey[50]!,
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          color: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            foregroundColor: Colors.white,
-            backgroundColor: const Color(0xFF1E3A8A),
-          ),
-        ),
-      ),
-      home: const AuthScreen(),
+      theme: AppTheme.lightTheme,
+      home: const SplashScreen(),
     );
   }
 }
