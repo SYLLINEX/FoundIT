@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'map_dashboard_screen.dart';
-import 'report_item_screen.dart';
-import 'profile_screen.dart';
+import '../map/map_dashboard_screen.dart';
+import '../report_item/report_item_screen.dart';
+import '../profile/profile_screen.dart';
 
 class MainWrapper extends StatefulWidget {
   const MainWrapper({super.key});
