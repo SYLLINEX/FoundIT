@@ -3,57 +3,55 @@ import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/main_wrapper.dart';
-import '../admin/admin_dashboard_screen.dart';
-import 'sign_up_screen.dart';
 
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<AuthScreen> createState() => _AuthScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleSignUp() {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate a network request
+      // Simulate network request
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-        
         setState(() {
           _isLoading = false;
         });
 
-        // Basic admin check logic based on the email address as you mentioned
-        final email = _emailController.text.trim();
-        if (email.endsWith('@src.university.edu')) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainWrapper()),
-          );
-        }
+        // Continue to main app after sign up
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainWrapper()),
+          (route) => false,
+        );
       });
     }
   }
@@ -71,8 +69,7 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       child: Scaffold(
         body: SafeArea(
-          // Ensure it stretches behind the system navigation via Scaffold's background
-          bottom: false, 
+          bottom: false,
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -82,38 +79,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo Image
-                    Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/images/foundit_logo.png', // Or foundit_logo_withtext.png based on preference
-                          height: 90,
-                          width: 90,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 90,
-                            width: 90,
-                            decoration: BoxDecoration(
-                              color: AppColors.deepLavender,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Icon(
-                              PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
-                              size: 48,
-                              color: AppColors.mist,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     
                     // Welcome Texts
                     const Text(
-                      'Welcome Back!',
+                      'Create Account',
                       textAlign: TextAlign.center,
                       style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 28, 
                         fontWeight: FontWeight.bold, 
                         color: AppColors.deepLavender,
@@ -121,60 +94,77 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Sign in to your account',
+                      'Join FoundIT to start locating your items',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16, 
                         color: AppColors.dusk,
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
+
+                    // Name Field
+                    _buildLabel('Full Name'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _nameController,
+                      keyboardType: TextInputType.name,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        hintText: 'John Doe',
+                        prefixIcon: Icon(PhosphorIcons.user(), color: AppColors.dusk),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Please enter your full name';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
                     // Email Field
-                    const Text(
-                      'Email Address',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.deepLavender,
-                      ),
-                    ),
+                    _buildLabel('Email Address'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        hintText: 'example@example.com',
+                        hintText: 'student@university.edu',
                         prefixIcon: Icon(PhosphorIcons.envelopeSimple(), color: AppColors.dusk),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email address';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email address';
-                        }
+                        if (value == null || value.isEmpty) return 'Please enter an email address';
+                        if (!value.contains('@')) return 'Please enter a valid email address';
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+
+                    // Phone Field
+                    _buildLabel('Phone Number'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        hintText: '+60 123 456 789',
+                        prefixIcon: Icon(PhosphorIcons.phone(), color: AppColors.dusk),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Please enter your phone number';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
 
                     // Password Field
-                    const Text(
-                      'Password',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.deepLavender,
-                      ),
-                    ),
+                    _buildLabel('Password'),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _handleLogin(),
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         prefixIcon: Icon(PhosphorIcons.lockKey(), color: AppColors.dusk),
@@ -183,71 +173,61 @@ class _AuthScreenState extends State<AuthScreen> {
                             _obscurePassword ? PhosphorIcons.eyeClosed() : PhosphorIcons.eye(),
                             color: AppColors.dusk,
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
+                        if (value == null || value.isEmpty) return 'Please enter a password';
+                        if (value.length < 6) return 'Password must be at least 6 characters';
                         return null;
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // Forgot Password Link
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Implement forgot password
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.deepLavender,
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    // Confirm Password Field
+                    _buildLabel('Confirm Password'),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _confirmPasswordController,
+                      obscureText: _obscureConfirmPassword,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _handleSignUp(),
+                      decoration: InputDecoration(
+                        hintText: '••••••••',
+                        prefixIcon: Icon(PhosphorIcons.lockKey(), color: AppColors.dusk),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureConfirmPassword ? PhosphorIcons.eyeClosed() : PhosphorIcons.eye(),
+                            color: AppColors.dusk,
+                          ),
+                          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                         ),
-                        child: const Text('Forgot Password?'),
                       ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Please confirm your password';
+                        if (value != _passwordController.text) return 'Passwords do not match';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 32),
 
-                    // Login Button
+                    // Sign Up Button
                     ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
+                      onPressed: _isLoading ? null : _handleSignUp,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.deepLavender,
                         foregroundColor: AppColors.mist,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.mist),
-                              ),
+                              child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.mist)),
                             )
-                          : const Text(
-                              'Login',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          : const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                     const SizedBox(height: 24),
 
@@ -264,10 +244,10 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Google Sign In Button
+                    // Google Sign Up Button
                     OutlinedButton.icon(
                       icon: Icon(PhosphorIcons.googleLogo(), size: 24),
-                      label: const Text('Sign in with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      label: const Text('Sign up with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.deepLavender,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -280,23 +260,20 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Sign Up Link
+                    // Login Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
-                          "Don't have an account? ",
+                          "Already have an account? ",
                           style: TextStyle(color: AppColors.dusk),
                         ),
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                            );
+                            Navigator.pop(context); // Go back to login screen
                           },
                           child: const Text(
-                            'Sign Up',
+                            'Login',
                             style: TextStyle(
                               color: AppColors.deepLavender,
                               fontWeight: FontWeight.bold,
@@ -312,6 +289,17 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.deepLavender,
       ),
     );
   }

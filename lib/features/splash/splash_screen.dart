@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/auth_screen.dart';
 
@@ -12,15 +12,28 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _showLoading = false;
+
   @override
   void initState() {
     super.initState();
-    // Navigate to AuthScreen/Login after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
+    
+    // Step 1: Wait for 2.5 seconds (let GIF animation play)
+    // Step 2: Show loading indicator
+    // Step 3: Wait another 1.5 seconds, then navigate
+    Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
-        );
+        setState(() {
+          _showLoading = true;
+        });
+
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const AuthScreen()),
+            );
+          }
+        });
       }
     });
   }
@@ -56,42 +69,36 @@ class _SplashScreenState extends State<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // --- Option 1: Using the provided icon as per Splash.tsx ---
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: AppColors.mist,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
-                  size: 48,
-                  color: AppColors.deepLavender,
-                ),
-              ),
+              // Container(
+              //   padding: const EdgeInsets.all(16),
+              //   decoration: const BoxDecoration(
+              //     color: AppColors.mist,
+              //     shape: BoxShape.circle,
+              //   ),
+              //   child: Icon(
+              //     PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
+              //     size: 48,
+              //     color: AppColors.deepLavender,
+              //   ),
+              // ),
               
               // --- Option 2: Using your GIF (Uncomment if you want to use the GIF instead of the icon) ---
-              // Image.asset(
-              //   'assets/images/loading.gif', // Make sure to add this path in pubspec.yaml
-              //   width: 80,
-              //   height: 80,
-              // ),
-
-              const SizedBox(height: 16),
-              const Text(
-                'FoundIT',
-                style: TextStyle(
-                  fontSize: 36, // ~4xl
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.mist,
-                ),
+              Image.asset(
+                'assets/images/foundit_animated_logo2.gif', // Make sure to add this path in pubspec.yaml
+                width: 400,
+                height: 400,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'LOST & FOUND SYSTEM',
-                style: TextStyle(
-                  fontSize: 14, // text-sm
-                  letterSpacing: 2.0, // tracking-widest
-                  color: AppColors.silverShadow,
+
+              const SizedBox(height: 40),
+
+              // Loading Spinner fading in (Windows 10 style)
+              AnimatedOpacity(
+                opacity: _showLoading ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 500),
+                child: const SpinKitWanderingCubes( 
+                  color: AppColors.mist,
+                  size: 40.0,
+                  // lineWidth: 3.0,
                 ),
               ),
             ],

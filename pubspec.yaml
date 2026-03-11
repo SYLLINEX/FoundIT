@@ -45,6 +45,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   phosphor_flutter: ^2.1.0
   google_fonts: ^8.0.2
+  flutter_spinkit: ^5.2.2
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +69,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/
+    - assets/images/foundit_animated_logo.gif
+    - assets/images/foundit_logo.png
+    - assets/images/foundit_logo_withtext.png
+    - assets/images/foundit_animated_logo2.gif
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
