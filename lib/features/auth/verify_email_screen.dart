@@ -1,0 +1,206 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../core/theme/app_colors.dart';
+import '../home/main_wrapper.dart';
+import 'auth_screen.dart';
+
+class VerifyEmailScreen extends StatefulWidget {
+  final String email;
+
+  const VerifyEmailScreen({super.key, required this.email});
+
+  @override
+  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+}
+
+class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+  Timer? timer;
+  bool isEmailVerified = false;
+  bool canResendEmail = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // The user should exist since they just signed up
+    isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+
+    if (!isEmailVerified) {
+      // Poll Firebase every 3 seconds to check if they clicked the link
+      timer = Timer.periodic(
+        const Duration(seconds: 3),
+        (_) => checkEmailVerified(),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> checkEmailVerified() async {
+    // Calling reload() to refresh user state
+    await FirebaseAuth.instance.currentUser?.reload();
+
+    setState(() {
+      isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+    });
+
+    if (isEmailVerified) {
+      timer?.cancel();
+      
+      // Navigate to home automatically when verified
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainWrapper()),
+          (Route<dynamic> route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> sendVerificationEmail() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      await user?.sendEmailVerification();
+
+      setState(() => canResendEmail = false);
+      await Future.delayed(const Duration(seconds: 15));
+      setState(() => canResendEmail = true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error resending email: \${e.toString()}')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Verify Email'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.dusk),
+        actions: [
+          IconButton(
+            icon: Icon(PhosphorIcons.signOut(), color: AppColors.dusk),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (!context.mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const AuthScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(
+                PhosphorIcons.envelopeOpen(PhosphorIconsStyle.light),
+                size: 80,
+                color: AppColors.deepLavender,
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'Check your Email',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepLavender,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'We have sent a verification link to:\n${widget.email}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.dusk,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Click the link to verify your account. This page will automatically update once verified.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.dusk,
+                ),
+              ),
+              const SizedBox(height: 48),
+              if (!isEmailVerified) ...[
+                const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.deepLavender,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              TextButton(
+                onPressed: canResendEmail ? sendVerificationEmail : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.deepLavender,
+                ),
+                child: Text(
+                  'Resend Verification Link',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: canResendEmail ? AppColors.deepLavender : Colors.grey,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!context.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AuthScreen()),
+                    (route) => false,
+                  );
+                },
+                icon: Icon(PhosphorIcons.signOut(), color: AppColors.error),
+                label: const Text(
+                  'Back to Login / Logout',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.error,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.error),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

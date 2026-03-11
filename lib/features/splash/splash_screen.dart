@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/auth_screen.dart';
+import '../home/main_wrapper.dart';
+import '../admin/admin_dashboard_screen.dart';
+import '../../services/auth_service.dart';
+import '../auth/verify_email_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,11 +17,12 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   bool _showLoading = false;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
-    
+
     // Step 1: Wait for 2.5 seconds (let GIF animation play)
     // Step 2: Show loading indicator
     // Step 3: Wait another 1.5 seconds, then navigate
@@ -29,13 +34,57 @@ class _SplashScreenState extends State<SplashScreen> {
 
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const AuthScreen()),
-            );
+            _checkAuthAndNavigate();
           }
         });
       }
     });
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    final user = _authService.currentUser;
+
+    if (user != null) {
+      try {
+        // This will force check with Firebase servers to see if the user has been deleted or disabled
+        await user.reload();
+      } catch (e) {
+        // If the user was deleted in the backend, sign them out locally
+        await _authService.signOut();
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+          );
+        }
+        return;
+      }
+
+      if (!user.emailVerified) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => VerifyEmailScreen(email: user.email ?? '')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      
+      // User is logged in, check if admin
+      if (user.email != null && user.email!.endsWith('@src.university.edu')) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainWrapper()),
+        );
+      }
+    } else {
+      // User is NOT logged in
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AuthScreen()),
+      );
+    }
   }
 
   @override
@@ -106,7 +155,9 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       ),
       )
+  
     );
   }
 }
+
 

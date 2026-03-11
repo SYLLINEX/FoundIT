@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../home/main_wrapper.dart';
 import '../admin/admin_dashboard_screen.dart';
 import 'sign_up_screen.dart';
+import 'verify_email_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -14,6 +16,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -27,22 +30,33 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate a network request
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        
-        setState(() {
-          _isLoading = false;
-        });
-
-        // Basic admin check logic based on the email address as you mentioned
+      try {
         final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+        
+        // Use Firebase Auth
+        final userCredential = await _authService.signInWithEmailAndPassword(email, password);
+
+        if (!mounted) return;
+
+        // Check if email is verified
+        if (userCredential?.user != null && !userCredential!.user!.emailVerified) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerifyEmailScreen(email: email),
+            ),
+          );
+          return;
+        }
+
+        // Basic admin check logic based on the email address
         if (email.endsWith('@src.university.edu')) {
           Navigator.pushReplacement(
             context,
@@ -54,7 +68,70 @@ class _AuthScreenState extends State<AuthScreen> {
             MaterialPageRoute(builder: (context) => const MainWrapper()),
           );
         }
-      });
+      } catch (e) {
+        if (!mounted) return;
+        
+        String errorMsg = e.toString();
+        if (errorMsg.startsWith('Exception: ')) {
+          errorMsg = errorMsg.substring('Exception: '.length);
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final credential = await _authService.signInWithGoogle();
+      
+      if (!mounted) return;
+
+      if (credential != null) {
+        final email = credential.user?.email ?? '';
+        
+        // Check for admin domain
+        if (email.endsWith('@src.university.edu')) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainWrapper()),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.substring('Exception: '.length);
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -274,9 +351,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         side: const BorderSide(color: AppColors.silverShadow),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () {
-                        // TODO: Implement Google Sign In
-                      },
+                      onPressed: _isLoading ? null : _handleGoogleSignIn,
                     ),
                     const SizedBox(height: 32),
 

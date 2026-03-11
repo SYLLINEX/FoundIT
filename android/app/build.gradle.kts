@@ -1,5 +1,18 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val envProperties = Properties()
+val envFile = project.rootProject.file("../.env")
+if (envFile.exists()) {
+    envProperties.load(FileInputStream(envFile))
+}
+val googleMapsApiKey = envProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: ""
+
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -30,6 +43,8 @@ android {
         targetSdk = 34 // Set the target SDK version to 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey
     }
 
     buildTypes {
@@ -44,3 +59,5 @@ android {
 flutter {
     source = "../.."
 }
+
+

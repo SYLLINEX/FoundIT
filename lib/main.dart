@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 
-void main() {
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Load .env variables
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // 1. Enable Edge-to-Edge mode first
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 

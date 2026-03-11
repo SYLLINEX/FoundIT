@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../home/main_wrapper.dart';
+
+import 'verify_email_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,13 +15,14 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -33,26 +37,83 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _handleSignUp() {
+  Future<void> _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate network request
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        setState(() {
-          _isLoading = false;
-        });
+      try {
+        final email = _emailController.text.trim();
+        final password = _passwordController.text.trim();
+        
+        await _authService.signUpWithEmailAndPassword(email, password);
 
-        // Continue to main app after sign up
+        if (!mounted) return;
+
+        // Navigate to email verification instead of main wrapper
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyEmailScreen(email: email),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        
+        // Clean error message
+        String errorMsg = e.toString();
+        if (errorMsg.startsWith('Exception: ')) {
+          errorMsg = errorMsg.substring('Exception: '.length);
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final credential = await _authService.signUpWithGoogle();
+      
+      if (!mounted) return;
+
+      if (credential != null) {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const MainWrapper()),
           (route) => false,
         );
-      });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // Strip "Exception: " from the message if present
+      String errorMsg = e.toString();
+      if (errorMsg.startsWith('Exception: ')) {
+        errorMsg = errorMsg.substring('Exception: '.length);
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -254,9 +315,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         side: const BorderSide(color: AppColors.silverShadow),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () {
-                        // TODO: Implement Google Sign In
-                      },
+                      onPressed: _isLoading ? null : _handleGoogleSignUp,
                     ),
                     const SizedBox(height: 32),
 
@@ -292,7 +351,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-
+  
   Widget _buildLabel(String text) {
     return Text(
       text,
