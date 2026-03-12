@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../services/auth_service.dart';
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key});
+
+  @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  final currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -18,24 +28,49 @@ class HomeHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Hi, Alex! 👋',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.mist,
-                // Replace with user\'s profile picture 
-                child: Icon(Icons.person, color: AppColors.nightfall),
-              ),
-            ],
+          StreamBuilder<DocumentSnapshot>(
+            stream: currentUser != null 
+                ? FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).snapshots()
+                : null,
+            builder: (context, snapshot) {
+              String firstName = 'User';
+              String profileImg = '';
+
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                final username = data['username'] as String? ?? '';
+                if (username.isNotEmpty) {
+                  firstName = username.split(' ')[0];
+                }
+                profileImg = data['profile_img'] as String? ?? '';
+              } else if (currentUser != null && currentUser!.displayName != null) {
+                final names = currentUser!.displayName!.split(' ');
+                firstName = names.isNotEmpty ? names[0] : 'User';
+                profileImg = currentUser!.photoURL ?? '';
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Hi, $firstName! 👋',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.mist,
+                    backgroundImage: profileImg.isNotEmpty ? NetworkImage(profileImg) : null,
+                    child: profileImg.isEmpty
+                        ? const Icon(Icons.person, color: AppColors.nightfall)
+                        : null,
+                  ),
+                ],
+              );
+            }
           ),
           const SizedBox(height: 8),
           const Text(

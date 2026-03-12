@@ -1,36 +1,77 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ItemModel {
-  final String id;
+  final String itemId;
+  final String userId;
+  final String postType;
+  final String category;
   final String title;
   final String description;
-  final String type; // 'lost' or 'found'
-  final GeoPoint location;
+  final String imageUrl;
+  final GeoPoint? location;
+  final String locationName;
+  final String status;
+  final List<String> aiLabels;
+  final DateTime timestamp;
+  final String? specificLocation;
+  final String? reporterName;
 
   ItemModel({
-    required this.id,
+    required this.itemId,
+    required this.userId,
+    required this.postType,
+    required this.category,
     required this.title,
     required this.description,
-    required this.type,
-    required this.location,
+    required this.imageUrl,
+    this.location,
+    required this.locationName,
+    required this.status,
+    required this.aiLabels,
+    required this.timestamp,
+    this.specificLocation,
+    this.reporterName,
   });
 
   factory ItemModel.fromMap(String id, Map<String, dynamic> data) {
+    GeoPoint? parsedLocation = data['location'] as GeoPoint?;
+    if (parsedLocation == null && data['geo'] != null && data['geo']['geopoint'] != null) {
+      parsedLocation = data['geo']['geopoint'] as GeoPoint?;
+    }
+
     return ItemModel(
-      id: id,
+      itemId: id,
+      userId: data['user_id'] ?? '',
+      postType: data['post_type'] ?? 'Lost',
+      category: data['category'] ?? '',
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      type: data['type'] ?? 'lost',
-      location: data['location'] as GeoPoint,
+      imageUrl: data['image_url'] ?? '',
+      location: parsedLocation,
+      locationName: data['location_name'] ?? '',
+      status: data['status'] ?? 'Active',
+      aiLabels: List<String>.from(data['ai_labels'] ?? []),
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      specificLocation: data['specific_location'],
+      reporterName: data['reporter_name'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'user_id': userId,
+      'post_type': postType,
+      'category': category,
       'title': title,
       'description': description,
-      'type': type,
+      'image_url': imageUrl,
       'location': location,
+      'location_name': locationName,
+      'status': status,
+      'ai_labels': aiLabels,
+      'timestamp': FieldValue.serverTimestamp(),
+      'specific_location': specificLocation,
+      'reporter_name': reporterName,
     };
   }
 }

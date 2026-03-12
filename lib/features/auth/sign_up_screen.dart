@@ -46,11 +46,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       try {
         final email = _emailController.text.trim();
         final password = _passwordController.text.trim();
-        
-        await _authService.signUpWithEmailAndPassword(email, password);
+        final name = _nameController.text.trim();
+        final phone = _phoneController.text.trim();
 
-        if (!mounted) return;
-
+        await _authService.signUpWithEmailAndPassword(
+          email,
+          password,
+          name: name,
+          phone: phone,
+        );
         // Navigate to email verification instead of main wrapper
         Navigator.pushReplacement(
           context,

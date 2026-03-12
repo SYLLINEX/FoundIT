@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../home/main_wrapper.dart';
@@ -56,8 +57,16 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
 
-        // Basic admin check logic based on the email address
-        if (email.endsWith('@src.university.edu')) {
+        // Check if user is admin
+        bool isAdmin = false;
+        if (userCredential?.user != null) {
+          final userDoc = await FirebaseFirestore.instance.collection('users').doc(userCredential!.user!.uid).get();
+          if (userDoc.exists) {
+            isAdmin = userDoc.data()?['isAdmin'] ?? false;
+          }
+        }
+
+        if (isAdmin) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
@@ -100,10 +109,13 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
 
       if (credential != null) {
-        final email = credential.user?.email ?? '';
-        
-        // Check for admin domain
-        if (email.endsWith('@src.university.edu')) {
+        bool isAdmin = false;
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).get();
+        if (userDoc.exists) {
+          isAdmin = userDoc.data()?['isAdmin'] ?? false;
+        }
+
+        if (isAdmin) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),

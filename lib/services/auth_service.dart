@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,16 +14,30 @@ class AuthService {
 
   // Sign up with Email and Password
   Future<UserCredential?> signUpWithEmailAndPassword(
-      String email, String password) async {
+      String email, String password, {String name = '', String phone = ''}) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      
+
       // Automatically send verification email upon sign up
       await userCredential.user?.sendEmailVerification();
-      
+
+      // Create standard user profile in Firestore
+      if (userCredential.user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'username': name,
+          'email': email,
+          'role': 'user',
+          'isAdmin': false,
+          'matric_no': '',
+          'phone_num': phone,
+          'profile_img': '',
+          'created_at': FieldValue.serverTimestamp(),
+        });
+      }
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       throw e.message ?? 'An unknown error occurred';
@@ -111,6 +126,19 @@ class AuthService {
       if (!(userCredential.additionalUserInfo?.isNewUser ?? true)) {
         await _googleSignIn.signOut();
         throw Exception('An account with this email already exists. Please login instead.');
+      }
+
+      if (userCredential.user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'username': userCredential.user!.displayName ?? '',
+          'email': userCredential.user!.email ?? '',
+          'role': 'user',
+          'isAdmin': false,
+          'matric_no': '',
+          'phone_num': '',
+          'profile_img': userCredential.user!.photoURL ?? '',
+          'created_at': FieldValue.serverTimestamp(),
+        });
       }
 
       return userCredential;

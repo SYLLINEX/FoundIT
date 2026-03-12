@@ -3,6 +3,7 @@ import '../../widgets/custom_bottom_nav_bar.dart';
 import '../map/map_dashboard_screen.dart';
 import '../report_item/report_item_screen.dart';
 import '../profile/profile_screen.dart';
+import '../reports/my_reports_screen.dart';
 import 'home_screen.dart';
 
 class MainWrapper extends StatefulWidget {
@@ -18,7 +19,7 @@ class _MainWrapperState extends State<MainWrapper> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const MapDashboardScreen(),
-    const Scaffold(body: Center(child: Text('My Items / Feed'))), // Placeholder for list view
+    const MyReportsScreen(),
     const ProfileScreen(),
   ];
 

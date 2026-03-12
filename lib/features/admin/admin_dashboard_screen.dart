@@ -1,113 +1,154 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../auth/auth_screen.dart';
+import 'tabs/admin_dashboard_tab.dart';
+import 'tabs/admin_verifications_tab.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  int _currentIndex = 0;
+
+  final List<Widget> _tabs = const [
+    AdminDashboardTab(),
+    AdminVerificationsTab(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SRC Verification Portal'),
-        backgroundColor: Colors.orange[800],
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService().signOut();
-              if (!context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-                (route) => false,
-              );
-            },
+      backgroundColor: const Color(0xFFF5F6FA), // Light greyish background
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80.0),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF333345), // Dark purple/blue header
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.orange[50],
-            child: const Row(
-              children: [
-                Icon(Icons.admin_panel_settings, color: Colors.orange),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Review reports to prevent spam and ensure campus security.',
-                    style: TextStyle(color: Colors.orange),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SRC Admin Portal',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Lost & Found Management',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      onPressed: () async {
+                        await AuthService().signOut();
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const AuthScreen()),
+                          (route) => false,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: _tabs[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.grid_view_rounded, 'Dashboard'),
+                _buildNavItem(1, Icons.fact_check_outlined, 'Verifications'),
               ],
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: 3, // Mock data count
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: index == 0 ? Colors.red[100] : Colors.green[100],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                index == 0 ? 'LOST REPORT' : 'FOUND REPORT',
-                                style: TextStyle(
-                                  color: index == 0 ? Colors.red[800] : Colors.green[800],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            const Text('2 hours ago', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Text('Student ID Card', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const Text('Found near FCSIT Lab 1. Blue lanyard.', style: TextStyle(color: Colors.grey)),
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.cancel, color: Colors.red),
-                              label: const Text('Reject', style: TextStyle(color: Colors.red)),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.check_circle),
-                              label: const Text('Approve & Publish'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _currentIndex = index;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 12.0),
+        decoration: isSelected
+            ? BoxDecoration(
+                border: Border.all(color: Colors.black87, width: 2),
+                borderRadius: BorderRadius.circular(16),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.black87 : Colors.grey,
             ),
-          )
-        ],
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.black87 : Colors.grey,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/auth_screen.dart';
 import '../home/main_wrapper.dart';
@@ -68,9 +69,21 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       if (!mounted) return;
-      
+
+      bool isAdmin = false;
+      try {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          isAdmin = userDoc.data()?['isAdmin'] ?? false;
+        }
+      } catch (e) {
+        // Handle gracefully, default to false
+      }
+
+      if (!mounted) return;
+
       // User is logged in, check if admin
-      if (user.email != null && user.email!.endsWith('@src.university.edu')) {
+      if (isAdmin) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
         );

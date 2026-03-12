@@ -15,8 +15,7 @@ class AppTheme {
         error: AppColors.error,
         surface: AppColors.mist,
       ).copyWith(
-        background: AppColors.background,
-        onBackground: AppColors.obsidian,
+        surface: AppColors.background,
         onSurface: AppColors.obsidian,
       ),
       textTheme: GoogleFonts.poppinsTextTheme(

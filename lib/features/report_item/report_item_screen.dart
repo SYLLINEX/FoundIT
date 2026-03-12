@@ -1,93 +1,153 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Assuming google_fonts is available, let's use default bold if not
+import 'report_item_form_screen.dart';
 
-class ReportItemScreen extends StatefulWidget {
+class ReportItemScreen extends StatelessWidget {
   const ReportItemScreen({super.key});
-
-  @override
-  State<ReportItemScreen> createState() => _ReportItemScreenState();
-}
-
-class _ReportItemScreenState extends State<ReportItemScreen> {
-  String reportType = 'Lost';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Report an Item')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Status Toggle
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'Lost', label: Text('I Lost Something')),
-                ButtonSegment(value: 'Found', label: Text('I Found Something')),
-              ],
-              selected: {reportType},
-              onSelectionChanged: (Set<String> newSelection) {
-                setState(() => reportType = newSelection.first);
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Image Upload & AI Placeholder
-            InkWell(
-              onTap: () {
-                // TODO: Implement ImagePicker & TensorFlow Lite matching
-              },
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[400]!, style: BorderStyle.solid),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text('Upload Image (AI Auto-Tagging)', style: TextStyle(color: Colors.grey)),
-                  ],
+      backgroundColor: const Color(0xFFF3F4F6), // Light grayish-blue background
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF374151)),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 32),
+              const Text(
+                'What happened?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E384D),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Help us understand the situation\nso we can process your report\ncorrectly.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF6B7280),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 48),
+              _buildOptionCard(
+                context,
+                title: 'I Lost Something',
+                subtitle: "Report an item you've misplaced and\nneed help finding.",
+                icon: Icons.question_mark,
+                iconColor: Colors.white,
+                circleBgColor: const Color(0xFFE11D48),
+                lightCircleBgolor: const Color(0xFFFEE2E2),
+                reportType: 'Lost',
+              ),
+              const SizedBox(height: 24),
+              _buildOptionCard(
+                context,
+                title: 'I Found Something',
+                subtitle: "Report an item you've discovered to\nhelp return it.",
+                icon: Icons.navigation_rounded,
+                iconColor: Colors.white,
+                circleBgColor: const Color(0xFF10B981),
+                lightCircleBgolor: const Color(0xFFD1FAE5),
+                reportType: 'Found',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Form Fields
-            TextFormField(decoration: const InputDecoration(labelText: 'Item Title')),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Category'),
-              items: ['Electronics', 'Wallet/ID', 'Keys', 'Clothing', 'Other']
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (val) {},
+  Widget _buildOptionCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color circleBgColor,
+    required Color lightCircleBgolor,
+    required String reportType,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReportItemFormScreen(reportType: reportType),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Description & Distinct Marks'),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: lightCircleBgolor,
+                shape: BoxShape.circle,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: circleBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 24, color: iconColor),
+              ),
             ),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.location_on, color: Color(0xFF1E3A8A)),
-              title: const Text('Pin Location on Map'),
-              subtitle: const Text('Tap to set exact coordinates'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {},
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1F2937),
+              ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report submitted for SRC verification!')),
-                );
-              },
-              child: const Text('Submit Report'),
-            )
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF4B5563),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
           ],
         ),
       ),

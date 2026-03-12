@@ -3,44 +3,24 @@ import '../../core/theme/app_colors.dart';
 import '../../widgets/item_card.dart';
 import 'widgets/home_header.dart';
 import 'widgets/category_tabs.dart';
+import '../../services/database_service.dart';
+import '../../models/item_model.dart';
+import '../reports/item_details_screen.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Dummy data to match mockup
-    final List<Map<String, dynamic>> dummyItems = [
-      {
-        'title': 'Blue Car Keys',
-        'status': 'LOST',
-        'location': 'Library Level 2',
-        'timeText': '2 hours ago',
-        'imageUrl': 'https://images.unsplash.com/photo-1584820927498-cafe2c1303ba?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      },
-      {
-        'title': 'Black Leather Wallet',
-        'status': 'LOST',
-        'location': 'Engineering Block B',
-        'timeText': '1 day ago',
-        'imageUrl': 'https://images.unsplash.com/photo-1627123424574-724758594e93?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      },
-      {
-        'title': 'Apple AirPods Pro',
-        'status': 'FOUND',
-        'location': 'Cafeteria',
-        'timeText': '3 hours ago',
-        'imageUrl': 'https://images.unsplash.com/photo-1606220588913-b3ae14ee713e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      },
-      {
-        'title': 'Hydro Flask Bottle',
-        'status': 'FOUND',
-        'location': 'Gym Gymnasium',
-        'timeText': '5 hours ago',
-        'imageUrl': 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
-      },
-    ];
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  final _databaseService = DatabaseService();
+  String _selectedCategory = 'All Items';
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.mist,
       body: Column(
@@ -50,28 +30,71 @@ class HomeScreen extends StatelessWidget {
           CategoryTabs(
             categories: const ['All Items', 'Lost Items', 'Found Items'],
             onTabSelected: (index) {
-              // Handle filtering
+              setState(() {
+                if (index == 0) {
+                  _selectedCategory = 'All Items';
+                } else if (index == 1) {
+                  _selectedCategory = 'Lost Items';
+                } else {
+                  _selectedCategory = 'Found Items';
+                }
+              });
             },
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100), // Bottom padding for custom nav bar
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75, // Adjust for card proportions
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: dummyItems.length,
-              itemBuilder: (context, index) {
-                final item = dummyItems[index];
-                return ItemCard(
-                  title: item['title'],
-                  status: item['status'],
-                  location: item['location'],
-                  timeText: item['timeText'],
-                  imageUrl: item['imageUrl'],
+            child: StreamBuilder<List<ItemModel>>(
+              stream: _databaseService.getItemsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading items.'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No items found.'));
+                }
+
+                var items = snapshot.data!;
+                
+                // Filter items based on selected category
+                if (_selectedCategory == 'Lost Items') {
+                  items = items.where((item) => item.postType.toLowerCase() == 'lost').toList();
+                } else if (_selectedCategory == 'Found Items') {
+                  items = items.where((item) => item.postType.toLowerCase() == 'found').toList();
+                }
+
+                return GridView.builder(
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100), // Bottom padding for custom nav bar
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75, // Adjust for card proportions
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return ItemCard(
+                      title: item.title,
+                      status: item.postType.toUpperCase(),
+                      location: (item.specificLocation != null && item.specificLocation!.isNotEmpty) ? item.specificLocation! : item.locationName,
+                      timeText: timeago.format(item.timestamp),
+                      imageUrl: item.imageUrl,
+                      reporterName: item.reporterName ?? 'Unknown',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ItemDetailsScreen(item: item),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
