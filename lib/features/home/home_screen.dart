@@ -7,6 +7,7 @@ import '../../services/database_service.dart';
 import '../../models/item_model.dart';
 import '../reports/item_details_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../../widgets/found_it_loading_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
               stream: _databaseService.getItemsStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: FoundItLoadingIndicator());
                 }
 
                 if (snapshot.hasError) {
@@ -59,16 +60,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 var items = snapshot.data!;
-                
+
                 // Filter items based on selected category
                 if (_selectedCategory == 'Lost Items') {
-                  items = items.where((item) => item.postType.toLowerCase() == 'lost').toList();
+                  items = items
+                      .where((item) => item.postType.toLowerCase() == 'lost')
+                      .toList();
                 } else if (_selectedCategory == 'Found Items') {
-                  items = items.where((item) => item.postType.toLowerCase() == 'found').toList();
+                  items = items
+                      .where((item) => item.postType.toLowerCase() == 'found')
+                      .toList();
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100), // Bottom padding for custom nav bar
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 8,
+                    bottom: 100,
+                  ), // Bottom padding for custom nav bar
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     childAspectRatio: 0.75, // Adjust for card proportions
@@ -81,7 +91,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     return ItemCard(
                       title: item.title,
                       status: item.postType.toUpperCase(),
-                      location: (item.specificLocation != null && item.specificLocation!.isNotEmpty) ? item.specificLocation! : item.locationName,
+                      location:
+                          (item.specificLocation != null &&
+                              item.specificLocation!.isNotEmpty)
+                          ? item.specificLocation!
+                          : item.locationName,
                       timeText: timeago.format(item.timestamp),
                       imageUrl: item.imageUrl,
                       reporterName: item.reporterName ?? 'Unknown',

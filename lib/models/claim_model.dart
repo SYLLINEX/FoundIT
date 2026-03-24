@@ -8,6 +8,7 @@ class ClaimModel {
   final String proofDesc;
   final String status;
   final DateTime timestamp;
+  List<String>? proofImageUrls;
 
   ClaimModel({
     required this.claimId,
@@ -17,6 +18,7 @@ class ClaimModel {
     required this.proofDesc,
     required this.status,
     required this.timestamp,
+    this.proofImageUrls,
   });
 
   factory ClaimModel.fromMap(String id, Map<String, dynamic> data) {
@@ -28,6 +30,7 @@ class ClaimModel {
       proofDesc: data['proof_desc'] ?? '',
       status: data['status'] ?? 'Pending',
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      proofImageUrls: List<String>.from(data['proof_image_urls'] ?? []),
     );
   }
 
@@ -39,6 +42,7 @@ class ClaimModel {
       'proof_desc': proofDesc,
       'status': status,
       'timestamp': FieldValue.serverTimestamp(),
+      'proof_image_urls': proofImageUrls ?? [],
     };
   }
 }

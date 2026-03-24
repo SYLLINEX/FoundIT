@@ -6,9 +6,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/notification_service.dart';
 import '../../models/item_model.dart';
 import '../home/main_wrapper.dart'; // To Pop back to home
 import 'match_results_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class TagLocationScreen extends StatefulWidget {
   final String reportType;
@@ -40,11 +42,13 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
   Position? _currentPosition;
   bool _isLoading = true;
   bool _isSubmitting = false;
-  final TextEditingController _specificLocationController = TextEditingController();
+  final TextEditingController _specificLocationController =
+      TextEditingController();
 
   final DatabaseService _databaseService = DatabaseService();
   final AuthService _authService = AuthService();
   final StorageService _storageService = StorageService();
+  final NotificationService _notificationService = NotificationService();
   final _primaryDark = const Color(0xFF3B394D);
 
   @override
@@ -73,8 +77,8 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-         setState(() => _isLoading = false);
-         return;
+        setState(() => _isLoading = false);
+        return;
       }
     }
 
@@ -91,29 +95,37 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
     });
   }
 
-  Future<List<Map<String, dynamic>>> _findSimilarItems(GeoPoint userLocation) async {
-    // Query ALL 'Found' and 'Pending' items to allow pure visual matching to override category mistakes
+  Future<List<Map<String, dynamic>>> _findSimilarItems(
+    GeoPoint userLocation,
+  ) async {
+    // Query all found items and filter for publicly visible statuses.
     final snapshot = await FirebaseFirestore.instance
         .collection('items')
         .where('post_type', isEqualTo: 'Found')
-        .where('status', isEqualTo: 'Pending')
         .get();
 
     List<Map<String, dynamic>> finalMatches = [];
 
     for (var doc in snapshot.docs) {
       final itemMap = ItemModel.fromMap(doc.id, doc.data());
+      final status = itemMap.status.toLowerCase();
+      if (status != 'open' && status != 'active' && status != 'reserved') {
+        continue;
+      }
 
       if (itemMap.location != null) {
         // Filter using Haversine formula
         final distanceInMeters = Geolocator.distanceBetween(
-          userLocation.latitude, userLocation.longitude,
-          itemMap.location!.latitude, itemMap.location!.longitude,
+          userLocation.latitude,
+          userLocation.longitude,
+          itemMap.location!.latitude,
+          itemMap.location!.longitude,
         );
 
-        if (distanceInMeters <= 1000) { // expanded to 1km given similarity scoring
+        if (distanceInMeters <= 1000) {
+          // expanded to 1km given similarity scoring
           double score = 0.0;
-          
+
           // 1. Visual/Label Similarity (max 65 points)
           int matchingLabels = 0;
           for (var label in widget.aiLabels) {
@@ -126,15 +138,19 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
           }
 
           if (widget.aiLabels.isNotEmpty && itemMap.aiLabels.isNotEmpty) {
-             double labelRatio = matchingLabels / (widget.aiLabels.length > itemMap.aiLabels.length ? widget.aiLabels.length : itemMap.aiLabels.length);
-             score += (labelRatio * 65); // 0 to 65 pts
+            double labelRatio =
+                matchingLabels /
+                (widget.aiLabels.length > itemMap.aiLabels.length
+                    ? widget.aiLabels.length
+                    : itemMap.aiLabels.length);
+            score += (labelRatio * 65); // 0 to 65 pts
           } else if (matchingLabels > 0) {
-             score += 30; // some raw fallback 
+            score += 30; // some raw fallback
           }
 
           // 2. Category Match (15 points)
           if (widget.category == itemMap.category) {
-             score += 15;
+            score += 15;
           }
 
           // 3. Distance Match (20 points max, drops off up to 5km)
@@ -144,19 +160,22 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
 
           // We consider it a match if score is reasonably high (e.g., > 30)
           // or if they exactly match category and are very close (pure fallback)
-          if (score >= 30 || (widget.category == itemMap.category && distanceInMeters < 500)) {
-             finalMatches.add({
-               'item': itemMap,
-               'distance': distanceInMeters,
-               'score': score,
-             });
+          if (score >= 30 ||
+              (widget.category == itemMap.category && distanceInMeters < 500)) {
+            finalMatches.add({
+              'item': itemMap,
+              'distance': distanceInMeters,
+              'score': score,
+            });
           }
         }
       }
     }
 
     // Sort by highest score first
-    finalMatches.sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
+    finalMatches.sort(
+      (a, b) => (b['score'] as double).compareTo(a['score'] as double),
+    );
     return finalMatches;
   }
 
@@ -178,7 +197,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
 
       String reporterName = user.displayName ?? 'Unknown User';
       try {
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         if (userDoc.exists) {
           reporterName = userDoc.data()?['username'] ?? reporterName;
         }
@@ -186,7 +208,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
 
       String imageUrl = '';
       if (widget.imageFile != null) {
-        imageUrl = await _storageService.uploadItemImage(widget.imageFile!, user.uid);
+        imageUrl = await _storageService.uploadItemImage(
+          widget.imageFile!,
+          user.uid,
+        );
       }
 
       final item = ItemModel(
@@ -200,29 +225,50 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         locationName: 'Tagged Location', // Ideally reverse geocoded
         specificLocation: _specificLocationController.text.trim(),
         reporterName: reporterName,
-        location: GeoPoint(_selectedLocation!.latitude, _selectedLocation!.longitude),
-        status: 'Pending',
+        location: GeoPoint(
+          _selectedLocation!.latitude,
+          _selectedLocation!.longitude,
+        ),
+        status: 'Pending for Approval',
         aiLabels: widget.aiLabels,
         timestamp: DateTime.now(),
       );
 
-      await _databaseService.addItem(item);
+      final createdItemId = await _databaseService.addItem(item);
+
+      await _notificationService.notifyAdmins(
+        title: 'New report pending approval',
+        body:
+            '${widget.reportType} report "${widget.title}" was submitted and is waiting for review.',
+        type: 'admin_alert',
+        relatedItemId: createdItemId,
+        data: {'post_type': widget.reportType, 'category': widget.category},
+      );
 
       if (mounted) {
         if (widget.reportType.toLowerCase() == 'lost') {
           // Trigger Matchmaking Logic
-          final userLocation = GeoPoint(_selectedLocation!.latitude, _selectedLocation!.longitude);
+          final userLocation = GeoPoint(
+            _selectedLocation!.latitude,
+            _selectedLocation!.longitude,
+          );
           final allMatchesInfo = await _findSimilarItems(userLocation);
-          
+
           // Filter to only matches > 80%
-          final matchesInfo = allMatchesInfo.where((m) => (m['score'] as double) > 75.0).toList();
+          final matchesInfo = allMatchesInfo
+              .where((m) => (m['score'] as double) > 75.0)
+              .toList();
 
           if (matchesInfo.isNotEmpty) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => MatchResultsScreen(
-                  matches: matchesInfo.map((m) => m['item'] as ItemModel).toList(),
-                  distances: matchesInfo.map((m) => m['distance'] as double).toList(),
+                  matches: matchesInfo
+                      .map((m) => m['item'] as ItemModel)
+                      .toList(),
+                  distances: matchesInfo
+                      .map((m) => m['distance'] as double)
+                      .toList(),
                   scores: matchesInfo.map((m) => m['score'] as double).toList(),
                 ),
               ),
@@ -233,7 +279,11 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report submitted successfully!')),
+          const SnackBar(
+            content: Text(
+              'Report submitted. It is now pending admin approval.',
+            ),
+          ),
         );
         // Pop all the way back to main wrapper
         Navigator.of(context).pushAndRemoveUntil(
@@ -243,9 +293,9 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit report: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to submit report: $e')));
       }
     } finally {
       if (mounted) {
@@ -258,7 +308,14 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tag Location', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
+        title: const Text(
+          'Tag Location',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: _primaryDark,
         elevation: 0,
         leading: Padding(
@@ -270,7 +327,11 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                 color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -283,17 +344,21 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                 child: Stack(
                   children: [
                     _isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: FoundItLoadingIndicator())
                         : GoogleMap(
                             initialCameraPosition: CameraPosition(
                               target: _currentPosition != null
-                                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                                  ? LatLng(
+                                      _currentPosition!.latitude,
+                                      _currentPosition!.longitude,
+                                    )
                                   : const LatLng(0, 0), // fallback location
                               zoom: 16,
                             ),
                             myLocationEnabled: true,
                             myLocationButtonEnabled: true,
-                            onMapCreated: (controller) => _mapController = controller,
+                            onMapCreated: (controller) =>
+                                _mapController = controller,
                             onTap: (LatLng location) {
                               setState(() {
                                 _selectedLocation = location;
@@ -304,12 +369,14 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                                     Marker(
                                       markerId: const MarkerId('selected_loc'),
                                       position: _selectedLocation!,
-                                      icon: BitmapDescriptor.defaultMarkerWithHue(
-                                        widget.reportType.toLowerCase() == 'lost' 
-                                          ? BitmapDescriptor.hueRed 
-                                          : BitmapDescriptor.hueBlue,
-                                      ),
-                                    )
+                                      icon:
+                                          BitmapDescriptor.defaultMarkerWithHue(
+                                            widget.reportType.toLowerCase() ==
+                                                    'lost'
+                                                ? BitmapDescriptor.hueRed
+                                                : BitmapDescriptor.hueBlue,
+                                          ),
+                                    ),
                                   }
                                 : {},
                           ),
@@ -324,7 +391,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                              ),
                             ],
                           ),
                           child: const Row(
@@ -332,8 +402,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                               Icon(Icons.info_outline, color: Colors.blue),
                               SizedBox(width: 10),
                               Expanded(
-                                child: Text('Tap on the map to place a pin where the item was lost/found.'),
-                              )
+                                child: Text(
+                                  'Tap on the map to place a pin where the item was lost/found.',
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -371,7 +443,13 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                           minimumSize: const Size(double.infinity, 50),
                         ),
                         onPressed: _isSubmitting ? null : _submitReport,
-                        child: const Text('Submit Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          'Submit Report',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -398,7 +476,7 @@ class _FunnyLoadingOverlayState extends State<FunnyLoadingOverlay> {
     "Making reports...",
     "Asking Santa Claus...",
     "Interrogating local squirrels...",
-    "Consulting the crystal ball..."
+    "Consulting the crystal ball...",
   ];
   int _currentIndex = 0;
   bool _timerActive = true;
@@ -434,9 +512,7 @@ class _FunnyLoadingOverlayState extends State<FunnyLoadingOverlay> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
+            const FoundItLoadingIndicator(size: 36, color: Colors.white),
             const SizedBox(height: 24),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 500),

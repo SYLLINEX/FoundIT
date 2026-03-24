@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'item_details_screen.dart';
 import 'edit_report_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -18,20 +19,25 @@ class MyReportsScreen extends StatefulWidget {
 class _MyReportsScreenState extends State<MyReportsScreen> {
   final DatabaseService _databaseService = DatabaseService();
   final AuthService _authService = AuthService();
-  
-  String _selectedFilter = 'All'; // 'All', 'Open', 'Resolved'
+
+  String _selectedFilter = 'All';
 
   @override
   Widget build(BuildContext context) {
     final userId = _authService.currentUser?.uid ?? '';
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       body: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 20),
+            padding: const EdgeInsets.only(
+              top: 50,
+              left: 16,
+              right: 16,
+              bottom: 20,
+            ),
             decoration: const BoxDecoration(
               color: AppColors.nightfall,
               borderRadius: BorderRadius.only(
@@ -49,7 +55,6 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                         color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                    
                     ),
                     const SizedBox(width: 16),
                     const Text(
@@ -73,6 +78,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   child: Row(
                     children: [
                       _buildTabButton('All'),
+                      _buildTabButton('Pending'),
                       _buildTabButton('Open'),
                       _buildTabButton('Resolved'),
                     ],
@@ -81,9 +87,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Expanded(
             child: userId.isEmpty
                 ? const Center(child: Text('Please log in to see your reports'))
@@ -91,34 +97,58 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     stream: _databaseService.getUserItemsStream(userId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return const Center(child: FoundItLoadingIndicator());
                       }
                       if (snapshot.hasError) {
-                        return Center(child: Text('Error loading reports: ${snapshot.error}'));
+                        return Center(
+                          child: Text(
+                            'Error loading reports: ${snapshot.error}',
+                          ),
+                        );
                       }
                       if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return const Center(child: Text('No reports found.'));
                       }
 
                       var items = snapshot.data!;
-                      
+
                       // Filter items
                       if (_selectedFilter == 'Open') {
-                        items = items.where((item) => 
-                          item.status.toLowerCase() == 'open' || 
-                          item.status.toLowerCase() == 'active' ||
-                          item.status.toLowerCase() == 'pending' ||
-                          item.status.toLowerCase() == 'matched'
-                        ).toList();
+                        items = items
+                            .where(
+                              (item) =>
+                                  item.status.toLowerCase() == 'open' ||
+                                  item.status.toLowerCase() == 'active' ||
+                                  item.status.toLowerCase() == 'matched' ||
+                                  item.status.toLowerCase() == 'reserved',
+                            )
+                            .toList();
+                      } else if (_selectedFilter == 'Pending for Approval') {
+                        items = items
+                            .where(
+                              (item) =>
+                                  item.status.toLowerCase() ==
+                                      'pending for approval' ||
+                                  item.status.toLowerCase() == 'pending',
+                            )
+                            .toList();
                       } else if (_selectedFilter == 'Resolved') {
-                        items = items.where((item) => 
-                          item.status.toLowerCase() == 'resolved' || 
-                          item.status.toLowerCase() == 'claimed'
-                        ).toList();
+                        items = items
+                            .where(
+                              (item) =>
+                                  item.status.toLowerCase() == 'resolved' ||
+                                  item.status.toLowerCase() == 'claimed',
+                            )
+                            .toList();
                       }
 
                       return ListView.builder(
-                        padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+                        padding: const EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          top: 8,
+                          bottom: 100,
+                        ),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           return _buildReportItem(items[index]);
@@ -167,7 +197,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     IconData leadingIcon;
     Color iconColor;
     Color iconBgColor;
-    
+
     // Default matching "Active" or "Open" as OPEN/PENDING depending on logic.
     // For specific match to the UI:
     if (status == 'RESOLVED' || status == 'CLAIMED') {
@@ -176,7 +206,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       leadingIcon = Icons.check_circle;
       iconColor = Colors.green;
       iconBgColor = Colors.green[50]!;
-    } else if (status == 'PENDING') {
+    } else if (status == 'PENDING' || status == 'PENDING FOR APPROVAL') {
       statusColor = Colors.orange[700]!;
       statusBgColor = Colors.orange[100]!;
       leadingIcon = Icons.motion_photos_on; // similar to dotted spinner
@@ -198,7 +228,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     }
 
     final formattedDate = DateFormat('MMM dd, yyyy').format(item.timestamp);
-    final subtitlePrefix = item.postType.toLowerCase() == 'lost' ? 'Reported Lost' : 'Reported Found';
+    final subtitlePrefix = item.postType.toLowerCase() == 'lost'
+        ? 'Reported Lost'
+        : 'Reported Found';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -212,7 +244,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               onPressed: (context) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => EditReportScreen(item: item)),
+                  MaterialPageRoute(
+                    builder: (_) => EditReportScreen(item: item),
+                  ),
                 );
               },
               backgroundColor: Colors.blue,
@@ -229,7 +263,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Delete Report'),
-                    content: const Text('Are you sure you want to delete this report?'),
+                    content: const Text(
+                      'Are you sure you want to delete this report?',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -237,7 +273,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
                         child: const Text('Delete'),
                       ),
                     ],
@@ -248,7 +286,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   await _databaseService.deleteItem(item.itemId);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Report deleted successfully')),
+                      const SnackBar(
+                        content: Text('Report deleted successfully'),
+                      ),
                     );
                   }
                 }
@@ -287,62 +327,62 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               children: [
                 // Icon
                 Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: iconBgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(leadingIcon, color: iconColor),
                 ),
-                child: Icon(leadingIcon, color: iconColor),
-              ),
-              const SizedBox(width: 16),
-              // Texts
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 16),
+                // Texts
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$subtitlePrefix • $formattedDate',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 4),
+                      Text(
+                        '$subtitlePrefix • $formattedDate',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status == 'ACTIVE' ? 'OPEN' : status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Arrow
-              Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
-            ],
+                const SizedBox(width: 8),
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusBgColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status == 'ACTIVE' ? 'OPEN' : status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Arrow
+                Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

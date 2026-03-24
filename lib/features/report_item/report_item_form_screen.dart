@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'tag_location_screen.dart';
 import '../../services/tflite_service.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class ReportItemFormScreen extends StatefulWidget {
   final String reportType; // 'Lost' or 'Found'
@@ -71,16 +72,30 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           setState(() {
             _detectedLabels = topLabels;
             final String primaryLabel = topLabels.first;
-            _titleController.text = primaryLabel; // Auto-fill title with AI label
+            _titleController.text =
+                primaryLabel; // Auto-fill title with AI label
             // Try to map to category, fallback to 'Other'
             final l = primaryLabel.toLowerCase();
-            if (l.contains('phone') || l.contains('laptop') || l.contains('watch') || l.contains('mouse') || l.contains('keyboard') || l.contains('computer')) {
+            if (l.contains('phone') ||
+                l.contains('laptop') ||
+                l.contains('watch') ||
+                l.contains('mouse') ||
+                l.contains('keyboard') ||
+                l.contains('computer')) {
               selectedCategory = 'Electronics';
-            } else if (l.contains('wallet') || l.contains('card') || l.contains('id') || l.contains('purse')) {
+            } else if (l.contains('wallet') ||
+                l.contains('card') ||
+                l.contains('id') ||
+                l.contains('purse')) {
               selectedCategory = 'Wallet/ID';
             } else if (l.contains('key')) {
               selectedCategory = 'Keys';
-            } else if (l.contains('shirt') || l.contains('shoe') || l.contains('bag') || l.contains('jacket') || l.contains('glasses') || l.contains('backpack')) {
+            } else if (l.contains('shirt') ||
+                l.contains('shoe') ||
+                l.contains('bag') ||
+                l.contains('jacket') ||
+                l.contains('glasses') ||
+                l.contains('backpack')) {
               selectedCategory = 'Clothing';
             } else {
               selectedCategory = 'Other';
@@ -116,7 +131,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                 color: Colors.white.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.arrow_back_ios_new, size: 16, color: Colors.white),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -130,14 +149,23 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 24.0, bottom: 100.0),
+        padding: const EdgeInsets.only(
+          left: 16.0,
+          right: 16.0,
+          top: 24.0,
+          bottom: 100.0,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Upload Section
             const Text(
               'Item Image (Optional but recommended)',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4B5563)),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4B5563),
+              ),
             ),
             const SizedBox(height: 12),
             InkWell(
@@ -149,7 +177,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey[300]!, width: 2),
                   image: _image != null
-                      ? DecorationImage(image: FileImage(_image!), fit: BoxFit.cover)
+                      ? DecorationImage(
+                          image: FileImage(_image!),
+                          fit: BoxFit.cover,
+                        )
                       : null,
                 ),
                 child: _image == null
@@ -162,7 +193,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                               color: _bgColor,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.upload_file, size: 24, color: Color(0xFF4B5563)),
+                            child: const Icon(
+                              Icons.upload_file,
+                              size: 24,
+                              color: Color(0xFF4B5563),
+                            ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
@@ -176,13 +211,16 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'JPG, PNG up to 5MB',
-                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       )
                     : _isAnalyzing
-                        ? const Center(child: CircularProgressIndicator())
-                        : const SizedBox(),
+                    ? const Center(child: FoundItLoadingIndicator())
+                    : const SizedBox(),
               ),
             ),
             const SizedBox(height: 24),
@@ -190,7 +228,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             // Item Title
             _buildLabel('Item Title'),
             const SizedBox(height: 8),
-            _buildTextField(hint: 'e.g. Blue Car Keys', controller: _titleController),
+            _buildTextField(
+              hint: 'e.g. Blue Car Keys',
+              controller: _titleController,
+            ),
             const SizedBox(height: 20),
 
             // Category
@@ -247,7 +288,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             onPressed: () {
               if (_titleController.text.isEmpty || selectedCategory == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please fill all required fields')),
+                  const SnackBar(
+                    content: Text('Please fill all required fields'),
+                  ),
                 );
                 return;
               }
@@ -260,11 +303,16 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                     description: _descriptionController.text,
                     category: selectedCategory!,
                     date: selectedDate ?? DateTime.now(),
-                    imageFile: _image,                  aiLabels: _detectedLabels,                  ),
+                    imageFile: _image,
+                    aiLabels: _detectedLabels,
+                  ),
                 ),
               );
             },
-            child: const Text('Next: Tag Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Next: Tag Location',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ),
@@ -282,7 +330,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
-  Widget _buildTextField({required String hint, int maxLines = 1, TextEditingController? controller}) {
+  Widget _buildTextField({
+    required String hint,
+    int maxLines = 1,
+    TextEditingController? controller,
+  }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -295,14 +347,27 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
 
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: selectedCategory != null && ['Electronics', 'Wallet/ID', 'Keys', 'Clothing', 'Other'].contains(selectedCategory) ? selectedCategory : null,
+      initialValue:
+          selectedCategory != null &&
+              [
+                'Electronics',
+                'Wallet/ID',
+                'Keys',
+                'Clothing',
+                'Other',
+              ].contains(selectedCategory)
+          ? selectedCategory
+          : null,
       icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
       decoration: InputDecoration(
         hintText: 'Select a category',
@@ -313,11 +378,18 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
-      items: ['Electronics', 'Wallet/ID', 'Keys', 'Clothing', 'Other']
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-          .toList(),
+      items: [
+        'Electronics',
+        'Wallet/ID',
+        'Keys',
+        'Clothing',
+        'Other',
+      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: (val) {
         setState(() {
           selectedCategory = val;
@@ -349,8 +421,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate == null 
-                  ? 'Select date' 
+              selectedDate == null
+                  ? 'Select date'
                   : '${selectedDate!.toLocal()}'.split(' ')[0],
               style: TextStyle(
                 color: selectedDate == null ? Colors.grey[400] : Colors.black87,

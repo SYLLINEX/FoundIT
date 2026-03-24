@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/auth_service.dart';
+import '../../notifications/notifications_screen.dart';
+import '../../../services/notification_service.dart';
 
 class HomeHeader extends StatefulWidget {
   const HomeHeader({super.key});
@@ -13,6 +15,7 @@ class HomeHeader extends StatefulWidget {
 
 class _HomeHeaderState extends State<HomeHeader> {
   final currentUser = FirebaseAuth.instance.currentUser;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +32,11 @@ class _HomeHeaderState extends State<HomeHeader> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StreamBuilder<DocumentSnapshot>(
-            stream: currentUser != null 
-                ? FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).snapshots()
+            stream: currentUser != null
+                ? FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUser!.uid)
+                      .snapshots()
                 : null,
             builder: (context, snapshot) {
               String firstName = 'User';
@@ -43,7 +49,8 @@ class _HomeHeaderState extends State<HomeHeader> {
                   firstName = username.split(' ')[0];
                 }
                 profileImg = data['profile_img'] as String? ?? '';
-              } else if (currentUser != null && currentUser!.displayName != null) {
+              } else if (currentUser != null &&
+                  currentUser!.displayName != null) {
                 final names = currentUser!.displayName!.split(' ');
                 firstName = names.isNotEmpty ? names[0] : 'User';
                 profileImg = currentUser!.photoURL ?? '';
@@ -60,25 +67,92 @@ class _HomeHeaderState extends State<HomeHeader> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppColors.mist,
-                    backgroundImage: profileImg.isNotEmpty ? NetworkImage(profileImg) : null,
-                    child: profileImg.isEmpty
-                        ? const Icon(Icons.person, color: AppColors.nightfall)
-                        : null,
+                  Row(
+                    children: [
+                      if (currentUser != null)
+                        StreamBuilder<int>(
+                          stream: _notificationService.getUnreadCountStream(
+                            currentUser!.uid,
+                          ),
+                          builder: (context, unreadSnapshot) {
+                            final unread = unreadSnapshot.data ?? 0;
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: IconButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const NotificationsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(
+                                      Icons.notifications_none,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                if (unread > 0)
+                                  Positioned(
+                                    top: 2,
+                                    right: 2,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        unread > 99 ? '99+' : unread.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: AppColors.mist,
+                        backgroundImage: profileImg.isNotEmpty
+                            ? NetworkImage(profileImg)
+                            : null,
+                        child: profileImg.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                color: AppColors.nightfall,
+                              )
+                            : null,
+                      ),
+                    ],
                   ),
                 ],
               );
-            }
+            },
           ),
           const SizedBox(height: 8),
           const Text(
             'What are you looking for today?',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(height: 24),
           Row(
@@ -110,7 +184,10 @@ class _HomeHeaderState extends State<HomeHeader> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.filter_alt_outlined, color: Colors.white),
+                  icon: const Icon(
+                    Icons.filter_alt_outlined,
+                    color: Colors.white,
+                  ),
                   onPressed: () {},
                 ),
               ),

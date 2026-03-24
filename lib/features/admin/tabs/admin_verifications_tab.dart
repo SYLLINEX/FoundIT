@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../models/claim_model.dart';
 import '../../../models/item_model.dart';
+import '../../../services/notification_service.dart';
+import '../../../widgets/found_it_loading_indicator.dart';
 
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
@@ -13,6 +16,7 @@ class AdminVerificationsTab extends StatefulWidget {
 class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
   String _selectedFilter = 'Reports'; // 'Reports' or 'Claims'
   String _searchQuery = '';
+  final NotificationService _notificationService = NotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -24,42 +28,53 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.fact_check_outlined, color: Color(0xFF333345)),
-                  ),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Verifications',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF333345)),
-                      ),
-                      Text(
-                        'Review pending item reports & claims',
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Container(
+              //       padding: const EdgeInsets.all(8),
+              //       decoration: BoxDecoration(
+              //         color: Colors.grey[200],
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //       child: const Icon(
+              //         Icons.fact_check_outlined,
+              //         color: Color(0xFF333345),
+              //       ),
+              //     ),
+              //     const SizedBox(width: 12),
+              //     const Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         Text(
+              //           'Verifications',
+              //           style: TextStyle(
+              //             fontSize: 22,
+              //             fontWeight: FontWeight.bold,
+              //             color: Color(0xFF333345),
+              //           ),
+              //         ),
+              //         Text(
+              //           'Review pending item reports & claims',
+              //           style: TextStyle(color: Colors.grey, fontSize: 13),
+              //         ),
+              //       ],
+              //     ),
+              //   ],
+              // ),
               const SizedBox(height: 20),
               // Search Bar
               Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      onChanged: (value) => setState(() => _searchQuery = value),
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search...',
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                        ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -78,7 +93,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       border: Border.all(color: Colors.grey[300]!),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.filter_list, color: Color(0xFF333345)),
+                    child: const Icon(
+                      Icons.filter_list,
+                      color: Color(0xFF333345),
+                    ),
                   ),
                 ],
               ),
@@ -96,7 +114,9 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         ),
         // List Area
         Expanded(
-          child: _selectedFilter == 'Reports' ? _buildReportsList() : _buildClaimsList(),
+          child: _selectedFilter == 'Reports'
+              ? _buildReportsList()
+              : _buildClaimsList(),
         ),
       ],
     );
@@ -127,17 +147,30 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
 
   Widget _buildReportsList() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('items').where('status', isEqualTo: 'Pending').snapshots(),
+      stream: FirebaseFirestore.instance.collection('items').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: FoundItLoadingIndicator());
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+
+        final pendingDocs = (snapshot.data?.docs ?? []).where((doc) {
+          final status =
+              (doc.data() as Map<String, dynamic>)['status']
+                  ?.toString()
+                  .toLowerCase() ??
+              '';
+          return status == 'pending for approval' || status == 'pending';
+        }).toList();
+
+        if (pendingDocs.isEmpty) {
           return const Center(child: Text('No pending reports.'));
         }
 
-        final docs = snapshot.data!.docs.where((doc) {
-          final item = ItemModel.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+        final docs = pendingDocs.where((doc) {
+          final item = ItemModel.fromMap(
+            doc.id,
+            doc.data() as Map<String, dynamic>,
+          );
           return item.title.toLowerCase().contains(_searchQuery.toLowerCase());
         }).toList();
 
@@ -145,7 +178,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final item = ItemModel.fromMap(docs[index].id, docs[index].data() as Map<String, dynamic>);
+            final item = ItemModel.fromMap(
+              docs[index].id,
+              docs[index].data() as Map<String, dynamic>,
+            );
             return _buildReportCard(item);
           },
         );
@@ -155,10 +191,13 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
 
   Widget _buildClaimsList() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('claims').where('status', isEqualTo: 'Pending').snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('claims')
+          .where('status', isEqualTo: 'Pending')
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: FoundItLoadingIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(child: Text('No pending claims.'));
@@ -168,31 +207,48 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
-            final claim = ClaimModel.fromMap(snapshot.data!.docs[index].id, snapshot.data!.docs[index].data() as Map<String, dynamic>);
+            final claim = ClaimModel.fromMap(
+              snapshot.data!.docs[index].id,
+              snapshot.data!.docs[index].data() as Map<String, dynamic>,
+            );
             return FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('items').doc(claim.itemId).get(),
+              future: FirebaseFirestore.instance
+                  .collection('items')
+                  .doc(claim.itemId)
+                  .get(),
               builder: (context, itemSnap) {
                 if (!itemSnap.hasData) return const SizedBox();
                 final itemData = itemSnap.data!.data();
                 if (itemData == null) return const SizedBox();
-                
-                final item = ItemModel.fromMap(itemSnap.data!.id, itemData as Map<String, dynamic>);
-                
-                if (_searchQuery.isNotEmpty && !item.title.toLowerCase().contains(_searchQuery.toLowerCase())) {
+
+                final item = ItemModel.fromMap(
+                  itemSnap.data!.id,
+                  itemData as Map<String, dynamic>,
+                );
+
+                if (_searchQuery.isNotEmpty &&
+                    !item.title.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    )) {
                   return const SizedBox();
                 }
 
                 return FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance.collection('users').doc(claim.claimantId).get(),
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(claim.claimantId)
+                      .get(),
                   builder: (context, userSnap) {
                     if (!userSnap.hasData) return const SizedBox();
                     final userData = userSnap.data!.data();
-                    final userName = (userData as Map<String, dynamic>?)?['username'] ?? 'User';
+                    final userName =
+                        (userData as Map<String, dynamic>?)?['username'] ??
+                        'User';
 
                     return _buildClaimCard(item, claim, userName);
-                  }
+                  },
                 );
-              }
+              },
             );
           },
         );
@@ -214,7 +270,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange[50],
                     borderRadius: BorderRadius.circular(8),
@@ -228,20 +287,67 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                     ),
                   ),
                 ),
-                Text(_formatTime(item.timestamp), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  _formatTime(item.timestamp),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            Text(item.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              item.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.location_on, size: 14, color: Colors.pinkAccent),
+                const Icon(
+                  Icons.location_on,
+                  size: 14,
+                  color: Colors.pinkAccent,
+                ),
                 const SizedBox(width: 4),
-                Text(item.locationName, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                Text(
+                  item.locationName,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Reported by: ${item.reporterName ?? "Unknown"}',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
             const SizedBox(height: 12),
+            Text(
+              item.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.black87, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showReportDetails(item),
+                    icon: const Icon(Icons.article_outlined),
+                    label: const Text('Details'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: item.location == null
+                        ? null
+                        : () => _openReportMap(item),
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Show on map'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             const Divider(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -249,7 +355,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                 TextButton.icon(
                   onPressed: () => _rejectReport(item),
                   icon: const Icon(Icons.close, color: Colors.red),
-                  label: const Text('Reject', style: TextStyle(color: Colors.red)),
+                  label: const Text(
+                    'Reject',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => _approveReport(item),
@@ -258,7 +367,9 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
@@ -283,7 +394,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(8),
@@ -297,16 +411,31 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                     ),
                   ),
                 ),
-                Text(_formatTime(claim.timestamp), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  _formatTime(claim.timestamp),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
             const SizedBox(height: 12),
-            Text(item.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              item.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
-            Text('Claimed by \$claimerName', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            Text(
+              'Claimed by $claimerName',
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
             const SizedBox(height: 12),
-            const Text('Proof:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            Text(claim.proofDesc, style: const TextStyle(color: Colors.black87, fontSize: 14)),
+            const Text(
+              'Proof:',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            Text(
+              claim.proofDesc,
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+            ),
             const SizedBox(height: 12),
             const Divider(),
             Row(
@@ -315,7 +444,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                 TextButton.icon(
                   onPressed: () => _rejectClaim(claim),
                   icon: const Icon(Icons.close, color: Colors.red),
-                  label: const Text('Reject', style: TextStyle(color: Colors.red)),
+                  label: const Text(
+                    'Reject',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
                 ElevatedButton.icon(
                   onPressed: () => _approveClaim(claim),
@@ -324,7 +456,9 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ],
@@ -335,43 +469,152 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     );
   }
 
+  void _showApprovalConfirmation(ItemModel item) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Approval'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'You are about to approve this report: "${item.title}"',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'This report will be published publicly and visible to all users. Users nearby will also be notified.',
+              style: TextStyle(color: Colors.grey, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _approveReport(item);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            child: const Text('Confirm & Publish', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _approveReport(ItemModel item) async {
-    await FirebaseFirestore.instance.collection('items').doc(item.itemId).update({
-      'status': 'Open',
-    });
+    await FirebaseFirestore.instance
+        .collection('items')
+        .doc(item.itemId)
+        .update({'status': 'Open'});
+
+    await _notificationService.createNotification(
+      userId: item.userId,
+      title: 'Report approved',
+      body:
+          'Your report "${item.title}" is approved and now visible to everyone.',
+      type: 'report_approved',
+      relatedItemId: item.itemId,
+    );
+
+    await _notificationService.notifyNearbyUsersForReport(
+      report: item,
+      radiusMeters: 500,
+    );
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report approved and published.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report approved and published.')),
+      );
     }
   }
 
   void _rejectReport(ItemModel item) async {
-    await FirebaseFirestore.instance.collection('items').doc(item.itemId).update({
-      'status': 'Rejected',
-    });
+    await FirebaseFirestore.instance
+        .collection('items')
+        .doc(item.itemId)
+        .update({'status': 'Rejected'});
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report rejected and removed.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report rejected and removed.')),
+      );
     }
   }
 
   void _approveClaim(ClaimModel claim) async {
-    await FirebaseFirestore.instance.collection('claims').doc(claim.claimId).update({
-      'status': 'Approved',
-    });
-    // Also, usually claim approval means item is returned
-    await FirebaseFirestore.instance.collection('items').doc(claim.itemId).update({
-      'status': 'Resolved',
-    });
+    await FirebaseFirestore.instance
+        .collection('claims')
+        .doc(claim.claimId)
+        .update({'status': 'Approved'});
+
+    final itemDoc = await FirebaseFirestore.instance
+        .collection('items')
+        .doc(claim.itemId)
+        .get();
+    final itemData = itemDoc.data();
+    if (itemData == null) return;
+    final item = ItemModel.fromMap(itemDoc.id, itemData);
+
+    await FirebaseFirestore.instance
+        .collection('items')
+        .doc(claim.itemId)
+        .update({
+          'status': 'Reserved',
+          'reserved_by': claim.claimantId,
+          'reserved_at': FieldValue.serverTimestamp(),
+        });
+
+    await _notificationService.createNotification(
+      userId: item.userId,
+      title: 'Someone found your report',
+      body: 'A claim for "${item.title}" was approved by admin.',
+      type: 'report_found',
+      relatedItemId: item.itemId,
+      data: {'claim_id': claim.claimId},
+    );
+
+    await _notificationService.createNotification(
+      userId: item.userId,
+      title: 'Report reserved',
+      body:
+          'Your report "${item.title}" is now reserved for claimant verification.',
+      type: 'report_reserved',
+      relatedItemId: item.itemId,
+    );
+
+    await _notificationService.createNotification(
+      userId: claim.claimantId,
+      title: 'Claim approved',
+      body:
+          'Your claim for "${item.title}" is approved. The item is reserved for you.',
+      type: 'report_reserved',
+      relatedItemId: item.itemId,
+      data: {'claim_id': claim.claimId},
+    );
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Claim approved.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Claim approved.')));
     }
   }
 
   void _rejectClaim(ClaimModel claim) async {
-    await FirebaseFirestore.instance.collection('claims').doc(claim.claimId).update({
-      'status': 'Rejected',
-    });
+    await FirebaseFirestore.instance
+        .collection('claims')
+        .doc(claim.claimId)
+        .update({'status': 'Rejected'});
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Claim rejected.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Claim rejected.')));
     }
   }
 
@@ -381,5 +624,177 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     if (diff.inHours > 0) return '${diff.inHours} hours ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes} mins ago';
     return 'Just now';
+  }
+
+  void _showReportDetails(ItemModel item) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      if (item.imageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            item.imageUrl,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 180,
+                              color: Colors.grey[200],
+                              alignment: Alignment.center,
+                              child: const Text('Failed to load image'),
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('No image uploaded'),
+                        ),
+                      const SizedBox(height: 16),
+                      _detailRow('Type', item.postType),
+                      _detailRow('Category', item.category),
+                      _detailRow('Status', item.status),
+                      _detailRow(
+                        'Location',
+                        item.specificLocation?.isNotEmpty == true
+                            ? '${item.specificLocation} (${item.locationName})'
+                            : item.locationName,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Description',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        item.description,
+                        maxLines: 6,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Close'),
+                          ),
+                          if (item.location != null)
+                            const SizedBox(width: 8),
+                          if (item.location != null)
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _openReportMap(item);
+                              },
+                              icon: const Icon(Icons.map_outlined, size: 18),
+                              label: const Text('Map'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.black87, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openReportMap(ItemModel item) {
+    if (item.location == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _AdminReportMapScreen(item: item)),
+    );
+  }
+}
+
+class _AdminReportMapScreen extends StatelessWidget {
+  final ItemModel item;
+
+  const _AdminReportMapScreen({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final location = item.location!;
+    final latLng = LatLng(location.latitude, location.longitude);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Reported Location'),
+        backgroundColor: const Color(0xFF333345),
+        foregroundColor: Colors.white,
+      ),
+      body: GoogleMap(
+        initialCameraPosition: CameraPosition(target: latLng, zoom: 16),
+        markers: {
+          Marker(
+            markerId: MarkerId(item.itemId),
+            position: latLng,
+            infoWindow: InfoWindow(
+              title: item.title,
+              snippet: item.specificLocation ?? item.locationName,
+            ),
+          ),
+        },
+      ),
+    );
   }
 }

@@ -18,7 +18,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _specificLocationController;
-  
+
   late String _selectedCategory;
   late String _selectedStatus;
 
@@ -27,28 +27,32 @@ class _EditReportScreenState extends State<EditReportScreen> {
     'Personal',
     'Accessories',
     'Documents',
-    'Others'
+    'Others',
   ];
 
-  final List<String> _statuses = [
-    'Active',
-    'Pending',
-    'Resolved',
-  ];
+  final List<String> _statuses = ['Pending for Approval', 'Open', 'Resolved'];
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item.title);
-    _descriptionController = TextEditingController(text: widget.item.description);
-    _specificLocationController = TextEditingController(text: widget.item.specificLocation ?? '');
-    
-    _selectedCategory = widget.item.category.isNotEmpty ? widget.item.category : 'Others';
+    _descriptionController = TextEditingController(
+      text: widget.item.description,
+    );
+    _specificLocationController = TextEditingController(
+      text: widget.item.specificLocation ?? '',
+    );
+
+    _selectedCategory = widget.item.category.isNotEmpty
+        ? widget.item.category
+        : 'Others';
     if (!_categories.contains(_selectedCategory)) {
       _categories.add(_selectedCategory);
     }
-    
-    _selectedStatus = widget.item.status.isNotEmpty ? widget.item.status : 'Active';
+
+    _selectedStatus = widget.item.status.isNotEmpty
+        ? widget.item.status
+        : 'Open';
     // Match letter casing or normalize if needed, but adding directly works for existing exact string.
     if (!_statuses.contains(_selectedStatus)) {
       _statuses.add(_selectedStatus);
@@ -66,13 +70,16 @@ class _EditReportScreenState extends State<EditReportScreen> {
   Future<void> _submitEdit() async {
     if (_formKey.currentState!.validate()) {
       try {
-        await FirebaseFirestore.instance.collection('items').doc(widget.item.itemId).update({
-          'title': _titleController.text.trim(),
-          'description': _descriptionController.text.trim(),
-          'specific_location': _specificLocationController.text.trim(),
-          'category': _selectedCategory,
-          'status': _selectedStatus,
-        });
+        await FirebaseFirestore.instance
+            .collection('items')
+            .doc(widget.item.itemId)
+            .update({
+              'title': _titleController.text.trim(),
+              'description': _descriptionController.text.trim(),
+              'specific_location': _specificLocationController.text.trim(),
+              'category': _selectedCategory,
+              'status': _selectedStatus,
+            });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -82,9 +89,9 @@ class _EditReportScreenState extends State<EditReportScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating report: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error updating report: $e')));
         }
       }
     }
@@ -111,8 +118,9 @@ class _EditReportScreenState extends State<EditReportScreen> {
                   labelText: 'Title',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a title'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -122,8 +130,9 @@ class _EditReportScreenState extends State<EditReportScreen> {
                   labelText: 'Description',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Please enter a description' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a description'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -160,10 +169,7 @@ class _EditReportScreenState extends State<EditReportScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: _statuses.map((status) {
-                  return DropdownMenuItem(
-                    value: status,
-                    child: Text(status),
-                  );
+                  return DropdownMenuItem(value: status, child: Text(status));
                 }).toList(),
                 onChanged: (value) {
                   setState(() {

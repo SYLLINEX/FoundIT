@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/main_wrapper.dart';
+import '../admin/admin_dashboard_screen.dart';
+import '../../services/auth_service.dart';
 import 'auth_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -19,6 +22,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Timer? timer;
   bool isEmailVerified = false;
   bool canResendEmail = false;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -47,17 +51,21 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     await FirebaseAuth.instance.currentUser?.reload();
 
     setState(() {
-      isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+      isEmailVerified =
+          FirebaseAuth.instance.currentUser?.emailVerified ?? false;
     });
 
     if (isEmailVerified) {
       timer?.cancel();
-      
-      // Navigate to home automatically when verified
+
       if (mounted) {
+        final isAdmin = await _authService.isAdminUser();
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const MainWrapper()),
+          MaterialPageRoute(
+            builder: (context) =>
+                isAdmin ? const AdminDashboardScreen() : const MainWrapper(),
+          ),
           (Route<dynamic> route) => false,
         );
       }
@@ -131,10 +139,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               Text(
                 'We have sent a verification link to:\n${widget.email}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppColors.dusk,
-                ),
+                style: const TextStyle(fontSize: 16, color: AppColors.dusk),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -149,9 +154,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               const SizedBox(height: 48),
               if (!isEmailVerified) ...[
                 const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.deepLavender,
-                  ),
+                  child: FoundItLoadingIndicator(color: AppColors.deepLavender),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -165,7 +168,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: canResendEmail ? AppColors.deepLavender : Colors.grey,
+                    color: canResendEmail
+                        ? AppColors.deepLavender
+                        : Colors.grey,
                   ),
                 ),
               ),

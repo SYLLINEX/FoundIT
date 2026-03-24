@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
 import 'package:path/path.dart' as p;
+import '../../widgets/found_it_loading_indicator.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel userModel;
@@ -27,9 +28,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.userModel.username);
-    _phoneNumController = TextEditingController(text: widget.userModel.phoneNum);
-    _matricNoController = TextEditingController(text: widget.userModel.matricNo);
+    _usernameController = TextEditingController(
+      text: widget.userModel.username,
+    );
+    _phoneNumController = TextEditingController(
+      text: widget.userModel.phoneNum,
+    );
+    _matricNoController = TextEditingController(
+      text: widget.userModel.matricNo,
+    );
   }
 
   @override
@@ -76,12 +83,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .collection('users')
           .doc(widget.userModel.uid)
           .set({
-        'username': _usernameController.text.trim(),
-        'phone_num': _phoneNumController.text.trim(),
-        'matric_no': _matricNoController.text.trim(),
-        'profile_img': imageUrl,
-        'email': widget.userModel.email, // Preserve email just in case
-      }, SetOptions(merge: true));
+            'username': _usernameController.text.trim(),
+            'phone_num': _phoneNumController.text.trim(),
+            'matric_no': _matricNoController.text.trim(),
+            'profile_img': imageUrl,
+            'email': widget.userModel.email, // Preserve email just in case
+          }, SetOptions(merge: true));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,9 +98,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
       }
     } finally {
       if (mounted) {
@@ -107,11 +114,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-      ),
+      appBar: AppBar(title: const Text('Edit Profile')),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: FoundItLoadingIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -125,18 +130,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         backgroundImage: _imageFile != null
                             ? FileImage(_imageFile!)
                             : (widget.userModel.profileImg.isNotEmpty
-                                ? NetworkImage(widget.userModel.profileImg)
-                                    as ImageProvider
-                                : null),
-                        child: _imageFile == null &&
+                                  ? NetworkImage(widget.userModel.profileImg)
+                                        as ImageProvider
+                                  : null),
+                        child:
+                            _imageFile == null &&
                                 widget.userModel.profileImg.isEmpty
                             ? const Icon(Icons.camera_alt, size: 40)
                             : null,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('Tap to change profile picture',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'Tap to change profile picture',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 24),
                     TextFormField(
                       initialValue: widget.userModel.email,
@@ -159,7 +167,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneNumController,
-                      decoration: const InputDecoration(labelText: 'Phone Number'),
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                      ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a phone number' : null,
                     ),

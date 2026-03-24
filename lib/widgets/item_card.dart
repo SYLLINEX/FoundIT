@@ -62,7 +62,7 @@ class ItemCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.nightfall.withOpacity(0.85),
+                        color: status.toUpperCase() == 'LOST' ? Colors.red : Colors.green,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

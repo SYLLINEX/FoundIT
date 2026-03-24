@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
+import 'services/push_notification_service.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await PushNotificationService.handleBackgroundMessage(message);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,9 +20,10 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await PushNotificationService.instance.init();
 
   // 1. Enable Edge-to-Edge mode first
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -30,7 +37,7 @@ void main() async {
       statusBarIconBrightness: Brightness.dark,
       systemNavigationBarIconBrightness: Brightness.dark,
       // This is the key line to remove the translucent bar/scrim
-      systemNavigationBarContrastEnforced: false, 
+      systemNavigationBarContrastEnforced: false,
     ),
   );
 

@@ -1,18 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
 import '../claims/claim_item_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class ItemDetailsScreen extends StatelessWidget {
   final ItemModel item;
+  final bool isAdminView;
 
-  const ItemDetailsScreen({super.key, required this.item});
+  const ItemDetailsScreen({
+    super.key,
+    required this.item,
+    this.isAdminView = false,
+  });
+
+  bool _canClaim(String status) {
+    final normalized = status.toLowerCase();
+    return normalized == 'open' || normalized == 'active';
+  }
+
+  Color _statusColor(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized == 'open' || normalized == 'active')
+      return AppColors.statusFound;
+    if (normalized == 'pending' || normalized == 'pending for approval')
+      return Colors.orange;
+    if (normalized == 'reserved') return Colors.purple;
+    if (normalized == 'resolved') return Colors.green;
+    return Colors.grey;
+  }
+
+  String _statusLabel(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized == 'active') return 'OPEN';
+    return status.toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +56,13 @@ class ItemDetailsScreen extends StatelessWidget {
             child: Image.network(
               item.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  Container(color: AppColors.mist, child: const Icon(Icons.broken_image, size: 50)),
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppColors.mist,
+                child: const Icon(Icons.broken_image, size: 50),
+              ),
             ),
           ),
-          
+
           // Back Button
           Positioned(
             top: 50,
@@ -46,7 +75,11 @@ class ItemDetailsScreen extends StatelessWidget {
                   color: Colors.black.withOpacity(0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -83,7 +116,9 @@ class ItemDetailsScreen extends StatelessWidget {
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: item.postType.toLowerCase() == 'found' ? AppColors.statusFound : AppColors.statusLost,
+                            color: item.postType.toLowerCase() == 'found'
+                                ? AppColors.statusFound
+                                : AppColors.statusLost,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -97,18 +132,26 @@ class ItemDetailsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Info Cards
                     _buildInfoCard(
                       icon: PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
                       title: 'Location',
-                      value: (item.specificLocation != null && item.specificLocation!.isNotEmpty) ? '${item.specificLocation} (${item.locationName})' : item.locationName,
+                      value:
+                          (item.specificLocation != null &&
+                              item.specificLocation!.isNotEmpty)
+                          ? '${item.specificLocation} (${item.locationName})'
+                          : item.locationName,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
-                      icon: PhosphorIcons.calendarBlank(PhosphorIconsStyle.fill),
+                      icon: PhosphorIcons.calendarBlank(
+                        PhosphorIconsStyle.fill,
+                      ),
                       title: 'Date',
-                      value: DateFormat('MMM d, yyyy - hh:mm a').format(item.timestamp),
+                      value: DateFormat(
+                        'MMM d, yyyy - hh:mm a',
+                      ).format(item.timestamp),
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
@@ -116,13 +159,17 @@ class ItemDetailsScreen extends StatelessWidget {
                       title: 'Category',
                       value: item.category,
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Description
                     Row(
                       children: const [
-                        Icon(Icons.info_outline, size: 20, color: AppColors.nightfall),
+                        Icon(
+                          Icons.info_outline,
+                          size: 20,
+                          color: AppColors.nightfall,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'Description',
@@ -150,32 +197,39 @@ class ItemDetailsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
 
                     // User Profile Section
                     FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance.collection('users').doc(item.userId).get(),
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(item.userId)
+                          .get(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(child: FoundItLoadingIndicator());
                         }
-                        
+
                         String username = 'Unknown User';
                         String profileImg = '';
-                        
+
                         if (snapshot.hasData && snapshot.data!.exists) {
-                          final data = snapshot.data!.data() as Map<String, dynamic>;
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>;
                           username = data['username'] ?? 'Unknown User';
                           profileImg = data['profile_img'] ?? '';
                         }
-                        
+
                         return Row(
                           children: [
                             CircleAvatar(
                               radius: 20,
                               backgroundColor: Colors.grey.shade300,
-                              backgroundImage: profileImg.isNotEmpty ? NetworkImage(profileImg) : null,
+                              backgroundImage: profileImg.isNotEmpty
+                                  ? NetworkImage(profileImg)
+                                  : null,
                               child: profileImg.isEmpty
                                   ? const Icon(Icons.person, color: Colors.grey)
                                   : null,
@@ -184,12 +238,18 @@ class ItemDetailsScreen extends StatelessWidget {
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(color: AppColors.dusk, fontSize: 14),
+                                  style: const TextStyle(
+                                    color: AppColors.dusk,
+                                    fontSize: 14,
+                                  ),
                                   children: [
                                     const TextSpan(text: 'Reported By: '),
                                     TextSpan(
                                       text: username,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.nightfall),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.nightfall,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -197,11 +257,11 @@ class ItemDetailsScreen extends StatelessWidget {
                             ),
                           ],
                         );
-                      }
+                      },
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     if (item.location != null)
                       SizedBox(
                         width: double.infinity,
@@ -214,28 +274,36 @@ class ItemDetailsScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          icon: const Icon(PhosphorIconsRegular.mapTrifold, color: AppColors.deepLavender),
+                          icon: const Icon(
+                            PhosphorIconsRegular.mapTrifold,
+                            color: AppColors.deepLavender,
+                          ),
                           label: const Text(
                             'Show on the map',
-                            style: TextStyle(color: AppColors.deepLavender, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: AppColors.deepLavender,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(color: AppColors.deepLavender),
+                            side: const BorderSide(
+                              color: AppColors.deepLavender,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                         ),
                       ),
-                      
+
                     const SizedBox(height: 120), // Bottom padding for button
                   ],
                 ),
               ),
             ),
           ),
-          
+
           // Badge
           Positioned(
             top: MediaQuery.of(context).size.height * 0.4 - 15,
@@ -243,11 +311,11 @@ class ItemDetailsScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: item.status.toLowerCase() == 'active' ? AppColors.statusFound : Colors.grey,
+                color: _statusColor(item.status),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                item.status.toUpperCase() == 'ACTIVE' ? 'AVAILABLE' : item.status.toUpperCase(),
+                _statusLabel(item.status),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -259,44 +327,96 @@ class ItemDetailsScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomSheet: FirebaseAuth.instance.currentUser?.uid == item.userId 
-        ? const SizedBox() // Hide claim if it's the user's own item
-        : Container(
-            color: const Color(0xFFF2F2F6),
-            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 16),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ClaimItemScreen(item: item),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.deepLavender,
-                minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(PhosphorIconsRegular.handWaving, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Claim This Item',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      bottomSheet: _buildBottomSheet(context, item),
     );
   }
 
-  Widget _buildInfoCard({required IconData icon, required String title, required String value}) {
+  Widget _buildBottomSheet(BuildContext context, ItemModel item) {
+    if (isAdminView) {
+      return const SizedBox();
+    }
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    // Don't show claim button if it's user's own item
+    if (currentUser?.uid == item.userId) {
+      return const SizedBox();
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: currentUser != null
+          ? FirebaseFirestore.instance
+              .collection('admins')
+              .doc(currentUser.uid)
+              .snapshots()
+          : const Stream.empty(),
+      builder: (context, adminSnapshot) {
+        final isAdmin = adminSnapshot.hasData && adminSnapshot.data!.exists;
+        
+        // Don't show claim button for admin users
+        if (isAdmin) {
+          return const SizedBox();
+        }
+
+        return Container(
+          color: const Color(0xFFF2F2F6),
+          padding: const EdgeInsets.only(
+            left: 24,
+            right: 24,
+            bottom: 32,
+            top: 16,
+          ),
+          child: ElevatedButton(
+            onPressed: _canClaim(item.status)
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ClaimItemScreen(item: item),
+                      ),
+                    );
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.deepLavender,
+              disabledBackgroundColor: Colors.grey,
+              minimumSize: const Size(double.infinity, 56),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  PhosphorIconsRegular.handWaving,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _canClaim(item.status)
+                      ? 'Claim This Item'
+                      : 'Item Not Claimable',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -320,10 +440,7 @@ class ItemDetailsScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -345,29 +462,30 @@ class ItemDetailsScreen extends StatelessWidget {
 
 class ItemMapScreen extends StatelessWidget {
   final ItemModel item;
-  
+
   const ItemMapScreen({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
     if (item.location == null) return const Scaffold();
-    
+
     final latLng = LatLng(item.location!.latitude, item.location!.longitude);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Location', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.nightfall,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: GoogleMap(
-        initialCameraPosition: CameraPosition(
-          target: latLng,
-          zoom: 16,
-        ),
+        initialCameraPosition: CameraPosition(target: latLng, zoom: 16),
         markers: {
           Marker(
             markerId: MarkerId(item.itemId),
@@ -377,11 +495,11 @@ class ItemMapScreen extends StatelessWidget {
               snippet: item.specificLocation ?? item.locationName,
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
-              item.postType.toLowerCase() == 'lost' 
-                ? BitmapDescriptor.hueRed 
-                : BitmapDescriptor.hueBlue,
+              item.postType.toLowerCase() == 'lost'
+                  ? BitmapDescriptor.hueRed
+                  : BitmapDescriptor.hueBlue,
             ),
-          )
+          ),
         },
       ),
     );

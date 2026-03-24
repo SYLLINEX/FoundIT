@@ -11,6 +11,7 @@ import '../../services/database_service.dart';
 import '../../services/location_service.dart';
 import '../../core/constants/map_style.dart';
 import '../reports/item_details_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class MapDashboardScreen extends StatefulWidget {
   const MapDashboardScreen({super.key});
@@ -23,7 +24,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   final DatabaseService _databaseService = DatabaseService();
   final LocationService _locationService = LocationService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   GoogleMapController? _mapController;
   Position? _currentPosition;
   Set<Marker> _markers = {};
@@ -42,7 +43,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   void initState() {
     super.initState();
     _getUserLocation();
-    
+
     // Add listener to rebuild when search text changes
     _searchController.addListener(() {
       _applyFiltersAndBuildMarkers();
@@ -51,14 +52,16 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
 
   void _subscribeToNearbyItems(Position position) {
     _itemsSubscription?.cancel();
-    
-    _itemsSubscription = _databaseService.getItemsWithinRadiusStream(
-      GeoPoint(position.latitude, position.longitude),
-      radiusInKm: 1.0, // 1km Radius Proximity Search Feature
-    ).listen((items) {
-      _allItems = items;
-      _applyFiltersAndBuildMarkers();
-    });
+
+    _itemsSubscription = _databaseService
+        .getItemsWithinRadiusStream(
+          GeoPoint(position.latitude, position.longitude),
+          radiusInKm: 1.0, // 1km Radius Proximity Search Feature
+        )
+        .listen((items) {
+          _allItems = items;
+          _applyFiltersAndBuildMarkers();
+        });
   }
 
   @override
@@ -96,9 +99,8 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         );
       }
 
-      // Automatically fetch items within 1km radius 
+      // Automatically fetch items within 1km radius
       _subscribeToNearbyItems(position);
-
     } catch (e) {
       debugPrint("Error fetching location: $e");
     }
@@ -107,12 +109,15 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
     _mapController!.setMapStyle(mapStyleJson); // Apply the silver theme
-    
+
     if (_currentPosition != null) {
       _mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
-            target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+            target: LatLng(
+              _currentPosition!.latitude,
+              _currentPosition!.longitude,
+            ),
             zoom: 16.0,
           ),
         ),
@@ -126,14 +131,15 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         isLost ? BitmapDescriptor.hueRed : BitmapDescriptor.hueGreen,
       );
     }
-    
+
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
     const double size = 120.0;
-    
+
     // Draw Pin
-    final Paint paint = Paint()..color = isLost ? const Color(0xFFD32F2F) : const Color(0xFF388E3C);
-    final Offset center = const Offset(size/2, size/2 - 15);
+    final Paint paint = Paint()
+      ..color = isLost ? const Color(0xFFD32F2F) : const Color(0xFF388E3C);
+    final Offset center = const Offset(size / 2, size / 2 - 15);
     canvas.drawCircle(center, 12.0, paint);
     canvas.drawCircle(center, 8.0, Paint()..color = Colors.white);
     canvas.drawCircle(center, 5.0, paint);
@@ -149,31 +155,42 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
       ),
     );
     textPainter.layout();
-    
+
     final double textWidth = textPainter.width;
     final double textHeight = textPainter.height;
     final Rect bgRect = Rect.fromLTWH(
-      size/2 - textWidth/2 - 6,
-      size/2 + 2,
+      size / 2 - textWidth / 2 - 6,
+      size / 2 + 2,
       textWidth + 12,
       textHeight + 6,
     );
-    
-    final RRect rRect = RRect.fromRectAndRadius(bgRect, const Radius.circular(6));
-    canvas.drawRRect(rRect, Paint()..color = Colors.white);
-    
-    // Border
-    canvas.drawRRect(rRect, Paint()
-      ..color = Colors.grey.shade400
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5);
 
-    textPainter.paint(canvas, Offset(size/2 - textWidth/2, size/2 + 5));
-    
-    final ui.Image image = await pictureRecorder.endRecording().toImage(size.toInt(), size.toInt());
-    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final RRect rRect = RRect.fromRectAndRadius(
+      bgRect,
+      const Radius.circular(6),
+    );
+    canvas.drawRRect(rRect, Paint()..color = Colors.white);
+
+    // Border
+    canvas.drawRRect(
+      rRect,
+      Paint()
+        ..color = Colors.grey.shade400
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    textPainter.paint(canvas, Offset(size / 2 - textWidth / 2, size / 2 + 5));
+
+    final ui.Image image = await pictureRecorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
+    final ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     final Uint8List uint8List = byteData!.buffer.asUint8List();
-    
+
     return BitmapDescriptor.bytes(uint8List);
   }
 
@@ -183,13 +200,15 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
       if (item.location == null) continue;
       final isLost = item.postType.toLowerCase() == 'lost';
       final icon = await _getCustomMarker(item.title, isLost);
-      
-      newMarkers.add(Marker(
-        markerId: MarkerId(item.itemId),
-        position: LatLng(item.location!.latitude, item.location!.longitude),
-        icon: icon,
-        onTap: () => _showItemDetailsSheet(item),
-      ));
+
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId(item.itemId),
+          position: LatLng(item.location!.latitude, item.location!.longitude),
+          icon: icon,
+          onTap: () => _showItemDetailsSheet(item),
+        ),
+      );
     }
 
     if (mounted) {
@@ -203,14 +222,17 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   List<ItemModel> _getFilteredItems(List<ItemModel> rawItems) {
     return rawItems.where((item) {
       // 1. Text Search Filter
-      final matchesSearch = _searchQuery.isEmpty || 
-                            item.title.toLowerCase().contains(_searchQuery) ||
-                            item.description.toLowerCase().contains(_searchQuery);
-                            
+      final matchesSearch =
+          _searchQuery.isEmpty ||
+          item.title.toLowerCase().contains(_searchQuery) ||
+          item.description.toLowerCase().contains(_searchQuery);
+
       // 2. Type Filter (Lost/Found)
       bool matchesType = false;
-      if (item.postType.toLowerCase() == 'lost' && _showLost) matchesType = true;
-      if (item.postType.toLowerCase() == 'found' && _showFound) matchesType = true;
+      if (item.postType.toLowerCase() == 'lost' && _showLost)
+        matchesType = true;
+      if (item.postType.toLowerCase() == 'found' && _showFound)
+        matchesType = true;
 
       return matchesSearch && matchesType;
     }).toList();
@@ -224,12 +246,15 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         children: [
           // 1. Google Map Layer
           _currentPosition == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: FoundItLoadingIndicator())
               : GoogleMap(
                   onMapCreated: _onMapCreated,
                   mapType: _currentMapType,
                   initialCameraPosition: CameraPosition(
-                    target: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+                    target: LatLng(
+                      _currentPosition!.latitude,
+                      _currentPosition!.longitude,
+                    ),
                     zoom: 16.0,
                   ),
                   markers: _markers,
@@ -253,24 +278,38 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                          ),
                         ],
                       ),
                       child: TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
                           hintText: "Search items...",
-                          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 16),
-                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 16,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.grey,
+                          ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 17), // centers the text aligning with icon
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 17,
+                          ), // centers the text aligning with icon
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   // Filter Button
-                  _buildIconButton(Icons.filter_alt_outlined, _showFilterSettingsDialog),
+                  _buildIconButton(
+                    Icons.filter_alt_outlined,
+                    _showFilterSettingsDialog,
+                  ),
                 ],
               ),
             ),
@@ -285,20 +324,22 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                 children: [
                   // Map Layer Toggle
                   _buildIconButton(
-                    _currentMapType == MapType.normal ? Icons.layers_outlined : Icons.layers, 
+                    _currentMapType == MapType.normal
+                        ? Icons.layers_outlined
+                        : Icons.layers,
                     () {
                       setState(() {
-                        _currentMapType = _currentMapType == MapType.normal 
-                            ? MapType.satellite 
+                        _currentMapType = _currentMapType == MapType.normal
+                            ? MapType.satellite
                             : MapType.normal;
-                        
+
                         if (_currentMapType == MapType.normal) {
                           _mapController?.setMapStyle(mapStyleJson);
                         } else {
                           _mapController?.setMapStyle(null);
                         }
                       });
-                    }
+                    },
                   ),
                 ],
               ),
@@ -315,13 +356,19 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 20.0,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,34 +378,66 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                     child: Container(
                       width: 40,
                       height: 5,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text("Filter Items", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text(
+                    "Filter Items",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 15),
                   Row(
                     children: [
-                      _buildFilterChip("Lost Items", _showLost, const Color(0xFFD32F2F), (val) {
-                        setSheetState(() => _showLost = val);
-                        setState(() => _showLost = val);
-                        _applyFiltersAndBuildMarkers();
-                      }),
+                      _buildFilterChip(
+                        "Lost Items",
+                        _showLost,
+                        const Color(0xFFD32F2F),
+                        (val) {
+                          setSheetState(() => _showLost = val);
+                          setState(() => _showLost = val);
+                          _applyFiltersAndBuildMarkers();
+                        },
+                      ),
                       const SizedBox(width: 10),
-                      _buildFilterChip("Found Items", _showFound, const Color(0xFF388E3C), (val) {
-                        setSheetState(() => _showFound = val);
-                        setState(() => _showFound = val);
-                        _applyFiltersAndBuildMarkers();
-                      }),
+                      _buildFilterChip(
+                        "Found Items",
+                        _showFound,
+                        const Color(0xFF388E3C),
+                        (val) {
+                          setSheetState(() => _showFound = val);
+                          setState(() => _showFound = val);
+                          _applyFiltersAndBuildMarkers();
+                        },
+                      ),
                     ],
                   ),
-                  const Divider(height: 40, thickness: 1, color: Colors.black12),
-                  const Text("Map Options", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Divider(
+                    height: 40,
+                    thickness: 1,
+                    color: Colors.black12,
+                  ),
+                  const Text(
+                    "Map Options",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 10),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text("Show Item Labels", style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text("Display title below markers directly on map", style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    title: const Text(
+                      "Show Item Labels",
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text(
+                      "Display title below markers directly on map",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
                     activeColor: Theme.of(context).primaryColor,
                     value: _showLabels,
                     onChanged: (val) {
@@ -371,13 +450,18 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                 ],
               ),
             );
-          }
+          },
         );
       },
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected, Color color, Function(bool) onSelected) {
+  Widget _buildFilterChip(
+    String label,
+    bool isSelected,
+    Color color,
+    Function(bool) onSelected,
+  ) {
     return FilterChip(
       label: Text(label),
       selected: isSelected,
@@ -388,31 +472,43 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: isSelected ? color : Colors.transparent),
       ),
-      labelStyle: TextStyle(color: isSelected ? color : Colors.grey.shade700, fontWeight: FontWeight.bold),
+      labelStyle: TextStyle(
+        color: isSelected ? color : Colors.grey.shade700,
+        fontWeight: FontWeight.bold,
+      ),
       onSelected: onSelected,
     );
   }
 
   // --- Bottom Sheet UI ---
   void _showItemDetailsSheet(ItemModel item) {
-    if (_mapController != null && _currentPosition != null && item.location != null) {
+    if (_mapController != null &&
+        _currentPosition != null &&
+        item.location != null) {
       // Slightly pan the map to center the marker so the sheet doesn't cover it
       _mapController!.animateCamera(
         CameraUpdate.newLatLng(
-          LatLng(item.location!.latitude - 0.003, item.location!.longitude), // offset shift
+          LatLng(
+            item.location!.latitude - 0.003,
+            item.location!.longitude,
+          ), // offset shift
         ),
       );
     }
 
     final isLost = item.postType.toLowerCase() == 'lost';
-    final typeColor = isLost ? const Color(0xFFD32F2F) : const Color(0xFF388E3C);
-    
+    final typeColor = isLost
+        ? const Color(0xFFD32F2F)
+        : const Color(0xFF388E3C);
+
     // Calculate distance
     String distanceText = "Unknown distance";
     if (_currentPosition != null && item.location != null) {
       final double distanceInMeters = Geolocator.distanceBetween(
-        _currentPosition!.latitude, _currentPosition!.longitude,
-        item.location!.latitude, item.location!.longitude,
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        item.location!.latitude,
+        item.location!.longitude,
       );
       if (distanceInMeters < 1000) {
         distanceText = "${distanceInMeters.toStringAsFixed(0)}m away";
@@ -434,7 +530,12 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
               topRight: Radius.circular(30),
             ),
           ),
-          padding: const EdgeInsets.only(top: 12, left: 24, right: 24, bottom: 30),
+          padding: const EdgeInsets.only(
+            top: 12,
+            left: 24,
+            right: 24,
+            bottom: 30,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +552,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Header Row (Type Badge + Title)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,7 +577,10 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: typeColor,
                                 borderRadius: BorderRadius.circular(8),
@@ -484,33 +588,41 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                               child: Text(
                                 isLost ? 'LOST ITEM' : 'FOUND ITEM',
                                 style: const TextStyle(
-                                  color: Colors.white, 
-                                  fontSize: 10, 
+                                  color: Colors.white,
+                                  fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ),
                             const Spacer(),
                             Text(
                               distanceText,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         Text(
                           item.title,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Description Box
               Container(
                 width: double.infinity,
@@ -523,18 +635,29 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Description", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    const Text(
+                      "Description",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       item.description,
-                      style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.4),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 24),
-              
+
               // Action Button
               SizedBox(
                 width: double.infinity,
@@ -558,7 +681,11 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                   ),
                   child: const Text(
                     "View Full Details",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -578,7 +705,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
         ],
       ),
       child: IconButton(

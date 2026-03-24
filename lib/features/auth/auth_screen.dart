@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../home/main_wrapper.dart';
 import '../admin/admin_dashboard_screen.dart';
 import 'sign_up_screen.dart';
 import 'verify_email_screen.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -40,14 +40,18 @@ class _AuthScreenState extends State<AuthScreen> {
       try {
         final email = _emailController.text.trim();
         final password = _passwordController.text.trim();
-        
+
         // Use Firebase Auth
-        final userCredential = await _authService.signInWithEmailAndPassword(email, password);
+        final userCredential = await _authService.signInWithEmailAndPassword(
+          email,
+          password,
+        );
 
         if (!mounted) return;
 
         // Check if email is verified
-        if (userCredential?.user != null && !userCredential!.user!.emailVerified) {
+        if (userCredential?.user != null &&
+            !userCredential!.user!.emailVerified) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -58,18 +62,16 @@ class _AuthScreenState extends State<AuthScreen> {
         }
 
         // Check if user is admin
-        bool isAdmin = false;
-        if (userCredential?.user != null) {
-          final userDoc = await FirebaseFirestore.instance.collection('users').doc(userCredential!.user!.uid).get();
-          if (userDoc.exists) {
-            isAdmin = userDoc.data()?['isAdmin'] ?? false;
-          }
-        }
+        final isAdmin = await _authService.isAdminUser(
+          userCredential?.user?.uid,
+        );
 
         if (isAdmin) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => const AdminDashboardScreen(),
+            ),
           );
         } else {
           Navigator.pushReplacement(
@@ -79,7 +81,7 @@ class _AuthScreenState extends State<AuthScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        
+
         String errorMsg = e.toString();
         if (errorMsg.startsWith('Exception: ')) {
           errorMsg = errorMsg.substring('Exception: '.length);
@@ -105,20 +107,18 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       final credential = await _authService.signInWithGoogle();
-      
+
       if (!mounted) return;
 
       if (credential != null) {
-        bool isAdmin = false;
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).get();
-        if (userDoc.exists) {
-          isAdmin = userDoc.data()?['isAdmin'] ?? false;
-        }
+        final isAdmin = await _authService.isAdminUser(credential.user?.uid);
 
         if (isAdmin) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => const AdminDashboardScreen(),
+            ),
           );
         } else {
           Navigator.pushReplacement(
@@ -129,12 +129,12 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      
+
       String errorMsg = e.toString();
       if (errorMsg.startsWith('Exception: ')) {
         errorMsg = errorMsg.substring('Exception: '.length);
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
@@ -161,10 +161,13 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Scaffold(
         body: SafeArea(
           // Ensure it stretches behind the system navigation via Scaffold's background
-          bottom: false, 
+          bottom: false,
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 32.0,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -180,31 +183,34 @@ class _AuthScreenState extends State<AuthScreen> {
                           height: 90,
                           width: 90,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 90,
-                            width: 90,
-                            decoration: BoxDecoration(
-                              color: AppColors.deepLavender,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Icon(
-                              PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
-                              size: 48,
-                              color: AppColors.mist,
-                            ),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                height: 90,
+                                width: 90,
+                                decoration: BoxDecoration(
+                                  color: AppColors.deepLavender,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  PhosphorIcons.magnifyingGlass(
+                                    PhosphorIconsStyle.bold,
+                                  ),
+                                  size: 48,
+                                  color: AppColors.mist,
+                                ),
+                              ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Welcome Texts
                     const Text(
                       'Welcome Back!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 28, 
-                        fontWeight: FontWeight.bold, 
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.deepLavender,
                       ),
                     ),
@@ -212,10 +218,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     const Text(
                       'Sign in to your account',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16, 
-                        color: AppColors.dusk,
-                      ),
+                      style: TextStyle(fontSize: 16, color: AppColors.dusk),
                     ),
                     const SizedBox(height: 48),
 
@@ -235,7 +238,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: 'example@example.com',
-                        prefixIcon: Icon(PhosphorIcons.envelopeSimple(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.envelopeSimple(),
+                          color: AppColors.dusk,
+                        ),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -266,10 +272,15 @@ class _AuthScreenState extends State<AuthScreen> {
                       onFieldSubmitted: (_) => _handleLogin(),
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon: Icon(PhosphorIcons.lockKey(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.lockKey(),
+                          color: AppColors.dusk,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? PhosphorIcons.eyeClosed() : PhosphorIcons.eye(),
+                            _obscurePassword
+                                ? PhosphorIcons.eyeClosed()
+                                : PhosphorIcons.eye(),
                             color: AppColors.dusk,
                           ),
                           onPressed: () {
@@ -325,9 +336,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.mist),
+                              child: FoundItLoadingIndicator(
+                                size: 20,
+                                color: AppColors.mist,
                               ),
                             )
                           : const Text(
@@ -343,12 +354,22 @@ class _AuthScreenState extends State<AuthScreen> {
                     // OR Divider
                     Row(
                       children: [
-                        const Expanded(child: Divider(color: AppColors.silverShadow)),
+                        const Expanded(
+                          child: Divider(color: AppColors.silverShadow),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text("OR", style: TextStyle(color: AppColors.dusk.withOpacity(0.8), fontWeight: FontWeight.w500)),
+                          child: Text(
+                            "OR",
+                            style: TextStyle(
+                              color: AppColors.dusk.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                        const Expanded(child: Divider(color: AppColors.silverShadow)),
+                        const Expanded(
+                          child: Divider(color: AppColors.silverShadow),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -356,12 +377,20 @@ class _AuthScreenState extends State<AuthScreen> {
                     // Google Sign In Button
                     OutlinedButton.icon(
                       icon: Icon(PhosphorIcons.googleLogo(), size: 24),
-                      label: const Text('Sign in with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        'Sign in with Google',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.deepLavender,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: const BorderSide(color: AppColors.silverShadow),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _isLoading ? null : _handleGoogleSignIn,
                     ),
@@ -379,7 +408,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const SignUpScreen(),
+                              ),
                             );
                           },
                           child: const Text(

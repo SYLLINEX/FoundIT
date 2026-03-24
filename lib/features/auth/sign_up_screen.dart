@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../home/main_wrapper.dart';
+import '../../widgets/found_it_loading_indicator.dart';
 
 import 'verify_email_screen.dart';
 
@@ -64,13 +65,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        
+
         // Clean error message
         String errorMsg = e.toString();
         if (errorMsg.startsWith('Exception: ')) {
           errorMsg = errorMsg.substring('Exception: '.length);
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
@@ -91,7 +92,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final credential = await _authService.signUpWithGoogle();
-      
+
       if (!mounted) return;
 
       if (credential != null) {
@@ -108,7 +109,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (errorMsg.startsWith('Exception: ')) {
         errorMsg = errorMsg.substring('Exception: '.length);
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
@@ -137,7 +138,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           bottom: false,
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 32.0,
+              ),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -145,15 +149,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 20),
-                    
+
                     // Welcome Texts
                     const Text(
                       'Create Account',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Poppins',
-                        fontSize: 28, 
-                        fontWeight: FontWeight.bold, 
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.deepLavender,
                       ),
                     ),
@@ -161,10 +165,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const Text(
                       'Join FoundIT to start locating your items',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16, 
-                        color: AppColors.dusk,
-                      ),
+                      style: TextStyle(fontSize: 16, color: AppColors.dusk),
                     ),
                     const SizedBox(height: 32),
 
@@ -177,10 +178,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: 'John Doe',
-                        prefixIcon: Icon(PhosphorIcons.user(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.user(),
+                          color: AppColors.dusk,
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please enter your full name';
+                        if (value == null || value.isEmpty)
+                          return 'Please enter your full name';
                         return null;
                       },
                     ),
@@ -195,11 +200,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: 'student@university.edu',
-                        prefixIcon: Icon(PhosphorIcons.envelopeSimple(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.envelopeSimple(),
+                          color: AppColors.dusk,
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please enter an email address';
-                        if (!value.contains('@')) return 'Please enter a valid email address';
+                        if (value == null || value.isEmpty)
+                          return 'Please enter an email address';
+                        if (!value.contains('@'))
+                          return 'Please enter a valid email address';
                         return null;
                       },
                     ),
@@ -214,10 +224,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: '+60 123 456 789',
-                        prefixIcon: Icon(PhosphorIcons.phone(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.phone(),
+                          color: AppColors.dusk,
+                        ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please enter your phone number';
+                        if (value == null || value.isEmpty)
+                          return 'Please enter your phone number';
                         return null;
                       },
                     ),
@@ -232,18 +246,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon: Icon(PhosphorIcons.lockKey(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.lockKey(),
+                          color: AppColors.dusk,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? PhosphorIcons.eyeClosed() : PhosphorIcons.eye(),
+                            _obscurePassword
+                                ? PhosphorIcons.eyeClosed()
+                                : PhosphorIcons.eye(),
                             color: AppColors.dusk,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please enter a password';
-                        if (value.length < 6) return 'Password must be at least 6 characters';
+                        if (value == null || value.isEmpty)
+                          return 'Please enter a password';
+                        if (value.length < 6)
+                          return 'Password must be at least 6 characters';
                         return null;
                       },
                     ),
@@ -259,18 +282,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       onFieldSubmitted: (_) => _handleSignUp(),
                       decoration: InputDecoration(
                         hintText: '••••••••',
-                        prefixIcon: Icon(PhosphorIcons.lockKey(), color: AppColors.dusk),
+                        prefixIcon: Icon(
+                          PhosphorIcons.lockKey(),
+                          color: AppColors.dusk,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscureConfirmPassword ? PhosphorIcons.eyeClosed() : PhosphorIcons.eye(),
+                            _obscureConfirmPassword
+                                ? PhosphorIcons.eyeClosed()
+                                : PhosphorIcons.eye(),
                             color: AppColors.dusk,
                           ),
-                          onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                          onPressed: () => setState(
+                            () => _obscureConfirmPassword =
+                                !_obscureConfirmPassword,
+                          ),
                         ),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Please confirm your password';
-                        if (value != _passwordController.text) return 'Passwords do not match';
+                        if (value == null || value.isEmpty)
+                          return 'Please confirm your password';
+                        if (value != _passwordController.text)
+                          return 'Passwords do not match';
                         return null;
                       },
                     ),
@@ -283,28 +316,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         backgroundColor: AppColors.deepLavender,
                         foregroundColor: AppColors.mist,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                       ),
                       child: _isLoading
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(AppColors.mist)),
+                              child: FoundItLoadingIndicator(
+                                size: 20,
+                                color: AppColors.mist,
+                              ),
                             )
-                          : const Text('Sign Up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          : const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 24),
 
                     // OR Divider
                     Row(
                       children: [
-                        const Expanded(child: Divider(color: AppColors.silverShadow)),
+                        const Expanded(
+                          child: Divider(color: AppColors.silverShadow),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text("OR", style: TextStyle(color: AppColors.dusk.withOpacity(0.8), fontWeight: FontWeight.w500)),
+                          child: Text(
+                            "OR",
+                            style: TextStyle(
+                              color: AppColors.dusk.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                        const Expanded(child: Divider(color: AppColors.silverShadow)),
+                        const Expanded(
+                          child: Divider(color: AppColors.silverShadow),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -312,12 +366,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     // Google Sign Up Button
                     OutlinedButton.icon(
                       icon: Icon(PhosphorIcons.googleLogo(), size: 24),
-                      label: const Text('Sign up with Google', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        'Sign up with Google',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.deepLavender,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: const BorderSide(color: AppColors.silverShadow),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _isLoading ? null : _handleGoogleSignUp,
                     ),
@@ -355,7 +417,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
-  
+
   Widget _buildLabel(String text) {
     return Text(
       text,
