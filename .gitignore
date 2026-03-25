@@ -44,6 +44,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables
+# Environment Variables
 .env
-*.env
+
+# Firebase files
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+firebase_options.dart
+
+# Android Keystore/Credentials
+*.jks
+*.keystore
+android/key.properties

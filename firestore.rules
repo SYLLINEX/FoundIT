@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles
+      allow read: if request.auth != null;
+      // Users can only write/update their own profile
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /items/{itemId} {
+      // Authenticated users can read all items
+      allow read: if request.auth != null;
+      // Authenticated users can create items
+      allow create: if request.auth != null;
+      // Users can update their own reported items OR Admins can update any item
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.user_id || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Only Admins can delete items OR the user who created it
+      allow delete: if request.auth != null && 
+        (request.auth.uid == resource.data.user_id || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+    }
+    
+    match /claims/{claimId} {
+      // Authenticated users can read claims
+      allow read: if request.auth != null;
+      // Authenticated users can create claims
+      allow create: if request.auth != null;
+      // Only claimant, item owner, or Admin can update a claim
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.claimant_id || 
+         request.auth.uid == resource.data.owner_id || 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+    }
+  }
+}

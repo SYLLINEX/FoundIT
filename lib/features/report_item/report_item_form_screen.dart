@@ -1,0 +1,429 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'tag_location_screen.dart';
+import '../../services/tflite_service.dart';
+import '../../widgets/app_confirmation_dialog.dart';
+import '../../widgets/found_it_loading_indicator.dart';
+
+class ReportItemFormScreen extends StatefulWidget {
+  final String reportType; // 'Lost' or 'Found'
+
+  const ReportItemFormScreen({super.key, required this.reportType});
+
+  @override
+  State<ReportItemFormScreen> createState() => _ReportItemFormScreenState();
+}
+
+class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
+  DateTime? selectedDate;
+  String? selectedCategory;
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
+  final TFLiteService _tfliteService = TFLiteService();
+  bool _isAnalyzing = false;
+  List<String> _detectedLabels = [];
+
+  final _primaryDark = const Color(0xFF3B394D); // Deep purple/gray from design
+  final _bgColor = const Color(0xFFF3F4F6); // Light gray from design
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showAppConfirmationDialog<ImageSource>(
+      context: context,
+      title: 'Add Photo',
+      message: 'Choose image source.',
+      confirmText: 'Camera',
+      cancelText: 'Gallery',
+      confirmValue: ImageSource.camera,
+      cancelValue: ImageSource.gallery,
+    );
+
+    if (source == null) return;
+    final pickedFile = await _picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+        _isAnalyzing = true;
+      });
+
+      try {
+        final topLabels = await _tfliteService.getTopLabels(_image!, count: 5);
+        if (topLabels.isNotEmpty) {
+          setState(() {
+            _detectedLabels = topLabels;
+            final String primaryLabel = topLabels.first;
+            _titleController.text =
+                primaryLabel; // Auto-fill title with AI label
+            // Try to map to category, fallback to 'Other'
+            final l = primaryLabel.toLowerCase();
+            if (l.contains('phone') ||
+                l.contains('laptop') ||
+                l.contains('watch') ||
+                l.contains('mouse') ||
+                l.contains('keyboard') ||
+                l.contains('computer')) {
+              selectedCategory = 'Electronics';
+            } else if (l.contains('wallet') ||
+                l.contains('card') ||
+                l.contains('id') ||
+                l.contains('purse')) {
+              selectedCategory = 'Wallet/ID';
+            } else if (l.contains('key')) {
+              selectedCategory = 'Keys';
+            } else if (l.contains('shirt') ||
+                l.contains('shoe') ||
+                l.contains('bag') ||
+                l.contains('jacket') ||
+                l.contains('glasses') ||
+                l.contains('backpack')) {
+              selectedCategory = 'Clothing';
+            } else {
+              selectedCategory = 'Other';
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint('TFLite Error: $e');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isAnalyzing = false;
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bgColor,
+      appBar: AppBar(
+        backgroundColor: _primaryDark,
+        elevation: 0,
+        centerTitle: false,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: InkWell(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 16,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          'Report ${widget.reportType} Item',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(
+          left: 16.0,
+          right: 16.0,
+          top: 24.0,
+          bottom: 100.0,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Image Upload Section
+            const Text(
+              'Item Image (Optional but recommended)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4B5563),
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: _pickImage,
+              child: Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[300]!, width: 2),
+                  image: _image != null
+                      ? DecorationImage(
+                          image: FileImage(_image!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: _image == null
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _bgColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.upload_file,
+                              size: 24,
+                              color: Color(0xFF4B5563),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Tap to Upload',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'JPG, PNG up to 5MB',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    : _isAnalyzing
+                    ? const Center(child: FoundItLoadingIndicator())
+                    : const SizedBox(),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Item Title
+            _buildLabel('Item Title'),
+            const SizedBox(height: 8),
+            _buildTextField(
+              hint: 'e.g. Blue Car Keys',
+              controller: _titleController,
+            ),
+            const SizedBox(height: 20),
+
+            // Category
+            _buildLabel('Category'),
+            const SizedBox(height: 8),
+            _buildDropdown(),
+            const SizedBox(height: 20),
+
+            // Description
+            _buildLabel('Description'),
+            const SizedBox(height: 8),
+            _buildTextField(
+              hint: 'Describe the item in detail...',
+              maxLines: 4,
+              controller: _descriptionController,
+            ),
+            const SizedBox(height: 20),
+
+            // Date
+            _buildLabel('Date'),
+            const SizedBox(height: 8),
+            _buildDateField(),
+          ],
+        ),
+      ),
+      bottomSheet: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryDark,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: const Size(double.infinity, 50),
+              elevation: 0,
+            ),
+            onPressed: () {
+              if (_titleController.text.isEmpty || selectedCategory == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill all required fields'),
+                  ),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TagLocationScreen(
+                    reportType: widget.reportType,
+                    title: _titleController.text,
+                    description: _descriptionController.text,
+                    category: selectedCategory!,
+                    date: selectedDate ?? DateTime.now(),
+                    imageFile: _image,
+                    aiLabels: _detectedLabels,
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              'Next: Tag Location',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF4B5563),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required String hint,
+    int maxLines = 1,
+    TextEditingController? controller,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        filled: true,
+        fillColor: const Color(0xFFE2E4EA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue:
+          selectedCategory != null &&
+              [
+                'Electronics',
+                'Wallet/ID',
+                'Keys',
+                'Clothing',
+                'Other',
+              ].contains(selectedCategory)
+          ? selectedCategory
+          : null,
+      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+      decoration: InputDecoration(
+        hintText: 'Select a category',
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        filled: true,
+        fillColor: const Color(0xFFE2E4EA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      items: [
+        'Electronics',
+        'Wallet/ID',
+        'Keys',
+        'Clothing',
+        'Other',
+      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      onChanged: (val) {
+        setState(() {
+          selectedCategory = val;
+        });
+      },
+    );
+  }
+
+  Widget _buildDateField() {
+    return InkWell(
+      onTap: () async {
+        final date = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+        );
+        if (date != null) {
+          setState(() => selectedDate = date);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2E4EA),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              selectedDate == null
+                  ? 'Select date'
+                  : '${selectedDate!.toLocal()}'.split(' ')[0],
+              style: TextStyle(
+                color: selectedDate == null ? Colors.grey[400] : Colors.black87,
+                fontSize: 16,
+              ),
+            ),
+            const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
