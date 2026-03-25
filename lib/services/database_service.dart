@@ -45,6 +45,21 @@ class DatabaseService {
         });
   }
 
+  // Fetch claims for a specific user
+  Stream<List<ClaimModel>> getUserClaimsStream(String userId) {
+    return _firestore
+        .collection('claims')
+        .where('claimant_id', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          final claims = snapshot.docs.map((doc) {
+            return ClaimModel.fromMap(doc.id, doc.data());
+          }).toList();
+          claims.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return claims;
+        });
+  }
+
   // Add a new item with location
   Future<String> addItem(ItemModel item) async {
     final Map<String, dynamic> data = item.toMap();
