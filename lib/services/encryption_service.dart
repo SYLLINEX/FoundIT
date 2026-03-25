@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:crypto/crypto.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EncryptionService {
-  static const String _appSalt = "FoundIT_Deepmind_Secure_Key_2026";
+  static String get _appSalt => dotenv.env['ENCRYPTION_SALT'] ?? "FoundIT_Deepmind_Secure_Key_2026";
 
   static encrypt.Key _getKey(String roomId) {
     final bytes = utf8.encode(roomId + _appSalt);

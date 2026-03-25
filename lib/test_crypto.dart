@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:crypto/crypto.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   final plainText = "Hello World";
   final roomId = "room123";
-  final _appSalt = "FoundIT_Deepmind_Secure_Key_2026";
+  final _appSalt = dotenv.env['ENCRYPTION_SALT'] ?? "FoundIT_Deepmind_Secure_Key_2026";
 
   final bytes = utf8.encode(roomId + _appSalt);
   final digest = sha256.convert(bytes);
