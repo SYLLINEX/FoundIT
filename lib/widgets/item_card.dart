@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ItemCard extends StatelessWidget {
   final String imageUrl;
@@ -47,12 +49,17 @@ class ItemCard extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    child: Image.network(
-                      imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) =>
                           Container(color: AppColors.mist, child: const Icon(Icons.broken_image)),
                     ),
                   ),

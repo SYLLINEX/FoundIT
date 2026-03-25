@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/item_model.dart';
 import '../home/main_wrapper.dart';
 import '../claims/claim_item_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MatchResultsScreen extends StatelessWidget {
   final List<ItemModel> matches;
@@ -84,13 +86,18 @@ class MatchResultsScreen extends StatelessWidget {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: item.imageUrl.isNotEmpty
-                                  ? Image.network(
-                                      item.imageUrl,
+                                  ? CachedNetworkImage(
+                                      imageUrl: item.imageUrl,
                                       width: 80,
                                       height: 80,
                                       fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
+                                      placeholder: (context, url) => Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: Container(width: 80, height: 80, color: Colors.white),
+                                      ),
+                                      errorWidget:
+                                          (context, url, error) =>
                                               Container(
                                                 width: 80,
                                                 height: 80,

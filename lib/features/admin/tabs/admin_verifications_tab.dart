@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../models/claim_model.dart';
 import '../../../models/item_model.dart';
-import '../../../services/ai_service.dart';
+import '../../../models/claim_model.dart';
 import '../../../services/notification_service.dart';
-import '../../../widgets/app_confirmation_dialog.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
+import '../../../services/ai_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../../widgets/app_confirmation_dialog.dart';
 
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
@@ -927,29 +929,37 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       );
     }
 
+    final chatRoomRef = FirebaseFirestore.instance.collection('chat_rooms').doc();
+    await chatRoomRef.set({
+      'claim_id': claim.claimId,
+      'item_id': claim.itemId,
+      'participants': [item.userId, claim.claimantId],
+      'last_message': '',
+      'last_updated': FieldValue.serverTimestamp(),
+      'status': 'active',
+      'typing_status': {
+        item.userId: false,
+        claim.claimantId: false,
+      },
+      'unread_counts': {
+        item.userId: 0,
+        claim.claimantId: 0,
+      }
+    });
+
     await _notificationService.createNotification(
       userId: item.userId,
-      title: 'Someone found your report',
-      body: 'A claim for "${item.title}" was approved by admin.',
-      type: 'report_found',
+      title: 'Claim Approved & Chat Opened!',
+      body: 'A claim for "${item.title}" was approved. A secure private chat has been opened in your Chat Hub to arrange the return.',
+      type: 'report_reserved',
       relatedItemId: item.itemId,
       data: {'claim_id': claim.claimId},
     );
 
     await _notificationService.createNotification(
-      userId: item.userId,
-      title: 'Report reserved',
-      body:
-          'Your report "${item.title}" is now reserved for claimant verification.',
-      type: 'report_reserved',
-      relatedItemId: item.itemId,
-    );
-
-    await _notificationService.createNotification(
       userId: claim.claimantId,
-      title: 'Claim approved',
-      body:
-          'Your claim for "${item.title}" is approved. The item is reserved for you.',
+      title: 'Claim Approved & Chat Opened!',
+      body: 'Your claim for "${item.title}" is approved. A secure private chat has been opened in your Chat Hub.',
       type: 'report_reserved',
       relatedItemId: item.itemId,
       data: {'claim_id': claim.claimId},
@@ -1209,12 +1219,17 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           if (item.imageUrl.isNotEmpty)
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                item.imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: item.imageUrl,
                 width: double.infinity,
                 height: 160,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(color: Colors.white),
+                ),
+                errorWidget: (_, __, ___) => Container(
                   width: double.infinity,
                   height: 160,
                   alignment: Alignment.center,
@@ -1393,12 +1408,17 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       if (item.imageUrl.isNotEmpty)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            item.imageUrl,
+                          child: CachedNetworkImage(
+                            imageUrl: item.imageUrl,
                             height: 220,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            placeholder: (context, url) => Shimmer.fromColors(
+                              baseColor: Colors.grey[300]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(color: Colors.white),
+                            ),
+                            errorWidget: (_, __, ___) =>
                                 _buildImagePlaceholder(),
                           ),
                         )

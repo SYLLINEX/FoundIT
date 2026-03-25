@@ -8,6 +8,8 @@ import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
 import '../claims/claim_item_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ItemDetailsScreen extends StatelessWidget {
   final ItemModel item;
@@ -53,10 +55,15 @@ class ItemDetailsScreen extends StatelessWidget {
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.45,
-            child: Image.network(
-              item.imageUrl,
+            child: CachedNetworkImage(
+              imageUrl: item.imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(color: Colors.white),
+              ),
+              errorWidget: (context, url, error) => Container(
                 color: AppColors.mist,
                 child: const Icon(Icons.broken_image, size: 50),
               ),

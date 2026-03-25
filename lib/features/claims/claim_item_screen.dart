@@ -10,10 +10,13 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/ai_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/tflite_service.dart';
 import '../home/main_wrapper.dart';
 import 'package:uuid/uuid.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ClaimItemScreen extends StatefulWidget {
   final ItemModel item;
@@ -33,16 +36,25 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
   final TextEditingController _detailsController = TextEditingController();
   bool _isConfirmed = false;
   final ImagePicker _imagePicker = ImagePicker();
-  final List<XFile> _selectedImages = [];
+  final List<XFile> _proofImages = [];
+  final List<XFile> _itemImages = [];
+  List<XFile> get _allImages => [..._itemImages, ..._proofImages];
+
   final AuthService _authService = AuthService();
   final DatabaseService _dbService = DatabaseService();
   final NotificationService _notificationService = NotificationService();
   final AIService _aiService = AIService();
+  final TFLiteService _tfliteService = TFLiteService();
 
   bool _isSubmitting = false;
   bool _isCalculatingSimilarity = false;
+  bool _isAnalyzingPhotos = false;
   ItemModel? _selectedLostReport;
   double? _similarityPercentage;
+  double? _photoSimilarityPercentage;
+
+  bool get _isPhotoSimilarityLow =>
+      _photoSimilarityPercentage != null && _photoSimilarityPercentage! < 80.0;
 
   bool get _isSimilarityLow =>
       _aiService.isLowSimilarity(_similarityPercentage);
@@ -56,6 +68,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
   @override
   void initState() {
     super.initState();
+    _tfliteService.initialize();
     _detailsController.addListener(() {
       if (!mounted) return;
       setState(() {});
@@ -89,28 +102,107 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
 
   @override
   void dispose() {
+    _tfliteService.dispose();
     _detailsController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImages() async {
-    final pickedFiles = await _imagePicker.pickMultiImage(
-      imageQuality: 85,
-      maxWidth: 1024,
-      maxHeight: 1024,
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('What type of photo?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt, color: Colors.indigo),
+                  title: const Text('Picture of the Item'),
+                  subtitle: const Text('AI will scan these to calculate similarity match.'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickItemImages();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.receipt_long, color: Colors.indigo),
+                  title: const Text('Ownership Proof'),
+                  subtitle: const Text('Receipts, serial numbers, packaging, etc.'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickProofImages();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
+  }
 
+  Future<void> _pickProofImages() async {
+    final pickedFiles = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 1024, maxHeight: 1024);
+    if (pickedFiles.isNotEmpty) setState(() => _proofImages.addAll(pickedFiles));
+  }
+
+  Future<void> _pickItemImages() async {
+    final pickedFiles = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 1024, maxHeight: 1024);
     if (pickedFiles.isNotEmpty) {
       setState(() {
-        _selectedImages.addAll(pickedFiles);
+        _itemImages.addAll(pickedFiles);
+        _isAnalyzingPhotos = true;
       });
+      await _analyzeItemImages();
     }
+  }
+
+  Future<void> _analyzeItemImages() async {
+    if (_itemImages.isEmpty) {
+      setState(() {
+        _photoSimilarityPercentage = null;
+        _isAnalyzingPhotos = false;
+      });
+      return;
+    }
+
+    Set<String> allDetectedLabels = {};
+    for (var file in _itemImages) {
+      final labels = await _tfliteService.getTopLabels(File(file.path));
+      allDetectedLabels.addAll(labels);
+    }
+
+    if (widget.item.aiLabels.isEmpty || allDetectedLabels.isEmpty) {
+      setState(() {
+        _photoSimilarityPercentage = 0.0;
+        _isAnalyzingPhotos = false;
+      });
+      return;
+    }
+
+    int matchCount = widget.item.aiLabels.where((label) => 
+        allDetectedLabels.any((detected) => detected.toLowerCase() == label.toLowerCase())
+    ).length;
+    
+    double score = (matchCount / widget.item.aiLabels.length) * 100;
+
+    setState(() {
+      _photoSimilarityPercentage = score;
+      _isAnalyzingPhotos = false;
+    });
   }
 
   Future<List<String>> _uploadProofImages(String userId) async {
     List<String> uploadedUrls = [];
     try {
-      for (XFile image in _selectedImages) {
+      for (XFile image in _allImages) {
         final ref = FirebaseStorage.instance
             .ref()
             .child('claim_proofs')
@@ -292,9 +384,18 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                       ? ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          child: Image.network(
-                                            report.imageUrl,
+                                          child: CachedNetworkImage(
+                                            imageUrl: report.imageUrl,
                                             fit: BoxFit.cover,
+                                            placeholder: (context, url) => Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(color: Colors.white),
+                                            ),
+                                            errorWidget: (context, url, error) => const Icon(
+                                              Icons.image_not_supported_outlined,
+                                              color: Colors.grey,
+                                            ),
                                           ),
                                         )
                                       : const Icon(
@@ -620,17 +721,17 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(child: _buildSectionTitle('Supporting Photos', 'Add images of the item or ownership proof.')),
-                if (_selectedImages.isNotEmpty)
+                if (_allImages.isNotEmpty)
                   TextButton(
-                    onPressed: _pickImages,
+                    onPressed: _showImagePickerOptions,
                     child: const Text('Add More'),
                   ),
               ],
             ),
             const SizedBox(height: 12),
-            if (_selectedImages.isEmpty)
+            if (_allImages.isEmpty)
               GestureDetector(
-                onTap: _pickImages,
+                onTap: _showImagePickerOptions,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 24),
@@ -651,55 +752,48 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   ),
                 ),
               )
-            else
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _selectedImages.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              File(_selectedImages[index].path),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
+            else ...[
+              _buildImageList(_itemImages, true),
+              _buildImageList(_proofImages, false),
+            ],
+
+            if (_itemImages.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _isAnalyzingPhotos 
+                ? const Row(
+                    children: [
+                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      SizedBox(width: 12),
+                      Text('Analyzing photos with AI...', style: TextStyle(color: Colors.grey)),
+                    ],
+                  )
+                : Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _isPhotoSimilarityLow ? Colors.orange.shade200 : Colors.green.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Photo Match Score', style: TextStyle(fontWeight: FontWeight.w600)),
+                            Text('${_photoSimilarityPercentage?.toStringAsFixed(0) ?? 0}%',
+                                style: TextStyle(fontWeight: FontWeight.w800, color: _isPhotoSimilarityLow ? Colors.orange.shade700 : Colors.green.shade600)
                             ),
-                          ),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedImages.removeAt(index);
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.6),
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(6),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                          ),
+                          ],
+                        ),
+                        if (_isPhotoSimilarityLow) ...[
+                          const SizedBox(height: 8),
+                          Text('Match is below 80%. Please provide highly detailed descriptions above to prove ownership.', style: TextStyle(color: Colors.orange.shade800, height: 1.4, fontSize: 12)),
                         ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+                      ]
+                    )
+                  )
+            ],
             const SizedBox(height: 32),
 
             // Confirmation Checkbox
@@ -789,7 +883,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   try {
                     // Upload proof images if any were selected
                     List<String> proofImageUrls = [];
-                    if (_selectedImages.isNotEmpty) {
+                    if (_allImages.isNotEmpty) {
                       proofImageUrls = await _uploadProofImages(uid);
                     }
 
@@ -885,6 +979,70 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                 ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImageList(List<XFile> images, bool isItemPhoto) {
+    if (images.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(isItemPhoto ? 'Item Photos (AI Scanned)' : 'Proof Photos (Receipts, etc.)', 
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo)),
+        ),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(images[index].path),
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            images.removeAt(index);
+                            if (isItemPhoto) _analyzeItemImages();
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(6),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
