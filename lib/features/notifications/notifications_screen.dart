@@ -19,6 +19,8 @@ class NotificationsScreen extends StatelessWidget {
         return Icons.search;
       case 'report_reserved':
         return Icons.bookmark_added;
+      case 'lost_report_resolved':
+        return Icons.task_alt;
       default:
         return Icons.notifications;
     }
@@ -34,6 +36,8 @@ class NotificationsScreen extends StatelessWidget {
         return Colors.orange;
       case 'report_reserved':
         return Colors.purple;
+      case 'lost_report_resolved':
+        return Colors.teal;
       default:
         return AppColors.deepLavender;
     }

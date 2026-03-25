@@ -14,6 +14,7 @@ class AdminNotificationsTab extends StatelessWidget {
     if (type == 'report_approved') return Icons.verified;
     if (type == 'report_found') return Icons.search;
     if (type == 'report_reserved') return Icons.bookmark_added;
+    if (type == 'lost_report_resolved') return Icons.task_alt;
     return Icons.notifications;
   }
 

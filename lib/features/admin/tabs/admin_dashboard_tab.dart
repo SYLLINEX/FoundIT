@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/item_model.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
 import '../../../widgets/item_card.dart';
+import '../../../widgets/app_confirmation_dialog.dart';
 import '../../reports/item_details_screen.dart';
 
 class AdminDashboardTab extends StatefulWidget {
@@ -35,10 +36,12 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
           }
 
           var items = snapshot.data!.docs
-              .map((doc) => ItemModel.fromMap(
-                    doc.id,
-                    doc.data() as Map<String, dynamic>,
-                  ))
+              .map(
+                (doc) => ItemModel.fromMap(
+                  doc.id,
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
               .toList();
 
           // Filter items based on selected category
@@ -56,16 +59,17 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             children: [
               // Filter Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFE2E2EA),
-                        ),
+                        border: Border.all(color: const Color(0xFFE2E2EA)),
                       ),
                       child: PopupMenuButton<String>(
                         shape: RoundedRectangleBorder(
@@ -101,7 +105,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             value: 'Found Items',
                             child: Row(
                               children: [
-                                Icon(Icons.check_circle, size: 20, color: Colors.green),
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 20,
+                                  color: Colors.green,
+                                ),
                                 SizedBox(width: 8),
                                 Text('Found Items'),
                               ],
@@ -109,7 +117,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                           ),
                         ],
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           child: Row(
                             children: [
                               const Icon(Icons.filter_list, size: 20),
@@ -164,7 +175,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             imageUrl: item.imageUrl,
                             title: item.title,
                             status: item.postType.toUpperCase(),
-                            location: (item.specificLocation != null &&
+                            location:
+                                (item.specificLocation != null &&
                                     item.specificLocation!.isNotEmpty)
                                 ? item.specificLocation!
                                 : item.locationName,
@@ -198,9 +210,16 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete, size: 18, color: Colors.red),
+                                    Icon(
+                                      Icons.delete,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
                                     SizedBox(width: 8),
-                                    Text('Delete', style: TextStyle(color: Colors.red)),
+                                    Text(
+                                      'Delete',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -232,9 +251,9 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   }
 
   void _showEditSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Edit feature coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Edit feature coming soon')));
   }
 
   String _formatTime(DateTime timestamp) {
@@ -248,30 +267,18 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   }
 
   void _showDeleteConfirmation(BuildContext context, ItemModel item) {
-    showDialog(
+    showAppConfirmationDialog<bool>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Delete Item'),
-        content: const Text(
-            'Are you sure you want to delete this item? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _deleteItem(item.itemId);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
+      title: 'Delete Item?',
+      message: 'This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      confirmColor: Colors.red,
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        await _deleteItem(item.itemId);
+      }
+    });
   }
 
   Future<void> _deleteItem(String itemId) async {
@@ -283,9 +290,9 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting item: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting item: $e')));
     }
   }
 }

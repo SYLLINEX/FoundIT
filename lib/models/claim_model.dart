@@ -9,6 +9,8 @@ class ClaimModel {
   final String status;
   final DateTime timestamp;
   List<String>? proofImageUrls;
+  String? linkedLostReportId;
+  double? similarityScore;
 
   ClaimModel({
     required this.claimId,
@@ -19,6 +21,8 @@ class ClaimModel {
     required this.status,
     required this.timestamp,
     this.proofImageUrls,
+    this.linkedLostReportId,
+    this.similarityScore,
   });
 
   factory ClaimModel.fromMap(String id, Map<String, dynamic> data) {
@@ -31,6 +35,8 @@ class ClaimModel {
       status: data['status'] ?? 'Pending',
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       proofImageUrls: List<String>.from(data['proof_image_urls'] ?? []),
+      linkedLostReportId: data['linked_lost_report_id'],
+      similarityScore: (data['similarity_score'] as num?)?.toDouble(),
     );
   }
 
@@ -43,6 +49,8 @@ class ClaimModel {
       'status': status,
       'timestamp': FieldValue.serverTimestamp(),
       'proof_image_urls': proofImageUrls ?? [],
+      'linked_lost_report_id': linkedLostReportId,
+      'similarity_score': similarityScore,
     };
   }
 }

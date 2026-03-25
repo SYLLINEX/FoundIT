@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/item_card.dart';
 import 'widgets/home_header.dart';
-import 'widgets/category_tabs.dart';
 import '../../services/database_service.dart';
 import '../../models/item_model.dart';
 import '../reports/item_details_screen.dart';
@@ -18,6 +17,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _databaseService = DatabaseService();
+  final List<String> _categories = const ['All Items', 'Lost Items', 'Found Items'];
+  int _selectedCategoryIndex = 0;
   String _selectedCategory = 'All Items';
 
   @override
@@ -26,19 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppColors.mist,
       body: Column(
         children: [
-          const HomeHeader(),
-          const SizedBox(height: 24),
-          CategoryTabs(
-            categories: const ['All Items', 'Lost Items', 'Found Items'],
-            onTabSelected: (index) {
+          HomeHeader(
+            categories: _categories,
+            selectedCategoryIndex: _selectedCategoryIndex,
+            onCategorySelected: (index) {
               setState(() {
-                if (index == 0) {
-                  _selectedCategory = 'All Items';
-                } else if (index == 1) {
-                  _selectedCategory = 'Lost Items';
-                } else {
-                  _selectedCategory = 'Found Items';
-                }
+                _selectedCategoryIndex = index;
+                _selectedCategory = _categories[index];
               });
             },
           ),

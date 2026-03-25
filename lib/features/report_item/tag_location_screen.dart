@@ -51,6 +51,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
   final NotificationService _notificationService = NotificationService();
   final _primaryDark = const Color(0xFF3B394D);
 
+  String get _normalizedPostType {
+    return widget.reportType.toLowerCase() == 'lost' ? 'Lost' : 'Found';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -217,7 +221,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       final item = ItemModel(
         itemId: '', // Firestore auto-generates ID if stored this way
         userId: user.uid,
-        postType: widget.reportType,
+        postType: _normalizedPostType,
         category: widget.category,
         title: widget.title,
         description: widget.description,
@@ -239,10 +243,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       await _notificationService.notifyAdmins(
         title: 'New report pending approval',
         body:
-            '${widget.reportType} report "${widget.title}" was submitted and is waiting for review.',
+            '$_normalizedPostType report "${widget.title}" was submitted and is waiting for review.',
         type: 'admin_alert',
         relatedItemId: createdItemId,
-        data: {'post_type': widget.reportType, 'category': widget.category},
+        data: {'post_type': _normalizedPostType, 'category': widget.category},
       );
 
       if (mounted) {
@@ -270,6 +274,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                       .map((m) => m['distance'] as double)
                       .toList(),
                   scores: matchesInfo.map((m) => m['score'] as double).toList(),
+                  createdLostReportId: createdItemId,
                 ),
               ),
               (Route<dynamic> route) => false,

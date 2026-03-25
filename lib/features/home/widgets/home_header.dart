@@ -5,9 +5,19 @@ import '../../../core/theme/app_colors.dart';
 import '../../../services/auth_service.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../services/notification_service.dart';
+import 'category_tabs.dart';
 
 class HomeHeader extends StatefulWidget {
-  const HomeHeader({super.key});
+  final List<String> categories;
+  final int selectedCategoryIndex;
+  final ValueChanged<int> onCategorySelected;
+
+  const HomeHeader({
+    super.key,
+    required this.categories,
+    required this.selectedCategoryIndex,
+    required this.onCategorySelected,
+  });
 
   @override
   State<HomeHeader> createState() => _HomeHeaderState();
@@ -151,7 +161,7 @@ class _HomeHeaderState extends State<HomeHeader> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'What are you looking for today?',
+            'Lost something today?',
             style: TextStyle(color: Colors.white70, fontSize: 16),
           ),
           const SizedBox(height: 24),
@@ -175,21 +185,11 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
-              Container(
-                height: 50,
-                width: 50,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white30, width: 1.5),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.filter_alt_outlined,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {},
-                ),
+              const SizedBox(width: 12),
+              CategoryTabs(
+                categories: widget.categories,
+                selectedIndex: widget.selectedCategoryIndex,
+                onTabSelected: widget.onCategorySelected,
               ),
             ],
           ),

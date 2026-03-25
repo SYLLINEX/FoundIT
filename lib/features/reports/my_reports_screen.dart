@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'item_details_screen.dart';
 import 'edit_report_screen.dart';
+import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 
 class MyReportsScreen extends StatefulWidget {
@@ -259,27 +260,13 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             const SizedBox(width: 8),
             SlidableAction(
               onPressed: (context) async {
-                final confirm = await showDialog<bool>(
+                final confirm = await showAppConfirmationDialog<bool>(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Report'),
-                    content: const Text(
-                      'Are you sure you want to delete this report?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
+                  title: 'Delete Report?',
+                  message: 'This action cannot be undone.',
+                  confirmText: 'Delete',
+                  cancelText: 'Cancel',
+                  confirmColor: Colors.red,
                 );
 
                 if (confirm == true) {

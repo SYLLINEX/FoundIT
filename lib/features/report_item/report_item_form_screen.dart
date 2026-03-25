@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'tag_location_screen.dart';
 import '../../services/tflite_service.dart';
+import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 
 class ReportItemFormScreen extends StatefulWidget {
@@ -37,28 +38,18 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await showDialog<XFile>(
+    final source = await showAppConfirmationDialog<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Select Image Source'),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final file = await _picker.pickImage(source: ImageSource.camera);
-              if (ctx.mounted) Navigator.pop(ctx, file);
-            },
-            child: const Text('Camera'),
-          ),
-          TextButton(
-            onPressed: () async {
-              final file = await _picker.pickImage(source: ImageSource.gallery);
-              if (ctx.mounted) Navigator.pop(ctx, file);
-            },
-            child: const Text('Gallery'),
-          ),
-        ],
-      ),
+      title: 'Add Photo',
+      message: 'Choose image source.',
+      confirmText: 'Camera',
+      cancelText: 'Gallery',
+      confirmValue: ImageSource.camera,
+      cancelValue: ImageSource.gallery,
     );
+
+    if (source == null) return;
+    final pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile != null) {
       setState(() {

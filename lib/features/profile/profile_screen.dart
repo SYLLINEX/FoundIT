@@ -58,13 +58,11 @@ class ProfileScreen extends StatelessWidget {
 
           final bottomSpacing = MediaQuery.of(context).padding.bottom + 120;
 
-          return SafeArea(
-            bottom: false,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.only(bottom: bottomSpacing),
-              child: Column(
-                children: [
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(bottom: bottomSpacing),
+            child: Column(
+              children: [
                   // Custom Top Bar with Avatar
                   Stack(
                     clipBehavior: Clip.none,
@@ -85,29 +83,29 @@ class ProfileScreen extends StatelessWidget {
                             bottomRight: Radius.circular(40),
                           ),
                         ),
-                        child: SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20.0,
-                              vertical: 10,
-                            ),
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                    child: Text(
-                                      'Profile',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: 20.0,
+                            right: 20.0,
+                            top: MediaQuery.of(context).padding.top + 8,
+                            bottom: 22,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Profile',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -300,8 +298,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
-                ],
-              ),
+              ],
             ),
           );
         },

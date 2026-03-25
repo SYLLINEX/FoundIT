@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 
-class CustomBottomNavBar extends StatelessWidget {
+class CustomBottomNavBar extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
   final VoidCallback onAddTapped;
@@ -14,59 +14,94 @@ class CustomBottomNavBar extends StatelessWidget {
   });
 
   @override
+  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+}
+
+class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+  final List<String> _labels = ['Home', 'Map', 'Reports', 'Profile'];
+
+  @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Positioned(
-      bottom: 24,
-      left: 24,
-      right: 24,
+      bottom: 14 + bottomInset,
+      left: 20,
+      right: 20,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Container(
-            height: 65,
+            height: 92,
             decoration: BoxDecoration(
               color: AppColors.nightfall,
-              borderRadius: BorderRadius.circular(40),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.nightfall.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(Icons.home_filled, 0),
-                _buildNavItem(Icons.map_outlined, 1),
-                const SizedBox(width: 48), // Space for FAB
-                _buildNavItem(Icons.checklist_rtl_rounded, 2),
-                _buildNavItem(Icons.person_outline, 3),
+                Expanded(
+                  child: _buildNavItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home,
+                    index: 0,
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    icon: Icons.map_outlined,
+                    activeIcon: Icons.map,
+                    index: 1,
+                  ),
+                ),
+                const SizedBox(width: 72),
+                Expanded(
+                  child: _buildNavItem(
+                    icon: Icons.assignment_outlined,
+                    activeIcon: Icons.assignment,
+                    index: 2,
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    icon: Icons.person_outline_rounded,
+                    activeIcon: Icons.person,
+                    index: 3,
+                  ),
+                ),
               ],
             ),
           ),
           Positioned(
-            top: -24,
+            top: -20,
             child: GestureDetector(
-              onTap: onAddTapped,
+              onTap: widget.onAddTapped,
               child: Container(
-                height: 60,
-                width: 60,
+                height: 54,
+                width: 54,
                 decoration: BoxDecoration(
-                  color: AppColors.nightfall,
+                  color: AppColors.deepLavender,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
+                  border: Border.all(
+                    color: AppColors.silverShadow.withValues(alpha: 0.95),
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.nightfall.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
+                      color: Colors.black.withValues(alpha: 0.24),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 32),
+                child: const Icon(Icons.add, color: Colors.white, size: 30),
               ),
             ),
           ),
@@ -75,22 +110,44 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index) {
-    bool isSelected = selectedIndex == index;
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required int index,
+  }) {
+    final bool isSelected = widget.selectedIndex == index;
+
     return GestureDetector(
-      onTap: () => onItemTapped(index),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(16),
-              )
-            : null,
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.white60,
-          size: 26,
+      onTap: () => widget.onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                key: ValueKey<bool>(isSelected),
+                size: 22,
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.silverShadow.withValues(alpha: 0.65),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _labels[index],
+              style: TextStyle(
+                color: isSelected
+                    ? Colors.white
+                    : AppColors.silverShadow.withValues(alpha: 0.65),
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

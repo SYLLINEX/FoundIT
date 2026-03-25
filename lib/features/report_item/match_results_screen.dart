@@ -5,14 +5,17 @@ import '../claims/claim_item_screen.dart';
 
 class MatchResultsScreen extends StatelessWidget {
   final List<ItemModel> matches;
-  final List<double> distances; // Distances in meters corresponding to matches list
+  final List<double>
+  distances; // Distances in meters corresponding to matches list
   final List<double> scores; // Similarity scores (0 to 100)
+  final String? createdLostReportId;
 
   const MatchResultsScreen({
-    super.key, 
-    required this.matches, 
-    required this.distances, 
+    super.key,
+    required this.matches,
+    required this.distances,
     required this.scores,
+    this.createdLostReportId,
   });
 
   @override
@@ -20,7 +23,10 @@ class MatchResultsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
-        title: const Text('Matches Found!', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Matches Found!',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFF3B394D),
         elevation: 0,
         leading: IconButton(
@@ -53,10 +59,7 @@ class MatchResultsScreen extends StatelessWidget {
               Text(
                 'Review the items below to see if any match what you lost.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               const SizedBox(height: 24),
               Expanded(
@@ -68,7 +71,9 @@ class MatchResultsScreen extends StatelessWidget {
 
                     return Card(
                       elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       margin: const EdgeInsets.only(bottom: 16),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -78,12 +83,29 @@ class MatchResultsScreen extends StatelessWidget {
                             // Image
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: item.imageUrl.isNotEmpty 
-                                  ? Image.network(item.imageUrl, width: 80, height: 80, fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      width: 80, height: 80, color: Colors.grey[300], child: const Icon(Icons.image_not_supported)
-                                    ))
-                                  : Container(width: 80, height: 80, color: Colors.grey[300], child: const Icon(Icons.image)),
+                              child: item.imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      item.imageUrl,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: Colors.grey[300],
+                                                child: const Icon(
+                                                  Icons.image_not_supported,
+                                                ),
+                                              ),
+                                    )
+                                  : Container(
+                                      width: 80,
+                                      height: 80,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.image),
+                                    ),
                             ),
                             const SizedBox(width: 16),
                             // Details
@@ -93,18 +115,42 @@ class MatchResultsScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     item.title,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(Icons.auto_awesome, size: 14, color: Colors.amber[700]),
+                                      Icon(
+                                        Icons.auto_awesome,
+                                        size: 14,
+                                        color: Colors.amber[700],
+                                      ),
                                       const SizedBox(width: 4),
-                                      Text('${scores.length > index ? scores[index].toStringAsFixed(0) : "0"}% Match', style: TextStyle(color: Colors.amber[700], fontSize: 12, fontWeight: FontWeight.bold)),
+                                      Text(
+                                        '${scores.length > index ? scores[index].toStringAsFixed(0) : "0"}% Match',
+                                        style: TextStyle(
+                                          color: Colors.amber[700],
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                       const SizedBox(width: 8),
-                                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                      const Icon(
+                                        Icons.location_on,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: 4),
-                                      Text('${(distance / 1000).toStringAsFixed(1)} km away', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                      Text(
+                                        '${(distance / 1000).toStringAsFixed(1)} km away',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
@@ -112,22 +158,36 @@ class MatchResultsScreen extends StatelessWidget {
                                     item.description,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[800],
+                                    ),
                                   ),
                                   const SizedBox(height: 12),
                                   SizedBox(
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF10B981), // Emerald green
+                                        backgroundColor: const Color(
+                                          0xFF10B981,
+                                        ), // Emerald green
                                         foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
                                       ),
                                       onPressed: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => ClaimItemScreen(item: item),
+                                            builder: (context) =>
+                                                ClaimItemScreen(
+                                                  item: item,
+                                                  initialLostReportId:
+                                                      createdLostReportId,
+                                                ),
                                           ),
                                         );
                                       },
@@ -136,7 +196,7 @@ class MatchResultsScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
