@@ -10,9 +10,10 @@ class ReportItemScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6), // Light grayish-blue background
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Align(
@@ -74,6 +75,7 @@ class ReportItemScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

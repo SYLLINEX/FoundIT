@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/auth_service.dart';
 import '../../notifications/notifications_screen.dart';
+import '../../chat/chat_list_screen.dart';
 import '../../../services/notification_service.dart';
 import 'category_tabs.dart';
 
@@ -79,60 +80,77 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                   Row(
                     children: [
-                      if (currentUser != null)
+                      if (currentUser != null) ...[
+                        StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance.collection('chat_rooms').where('participants', arrayContains: currentUser!.uid).snapshots(),
+                          builder: (context, chatSnap) {
+                            int unreadChats = 0;
+                            if (chatSnap.hasData) {
+                               for (var doc in chatSnap.data!.docs) {
+                                   final data = doc.data() as Map<String, dynamic>;
+                                   final countData = data['unread_counts'] as Map<String, dynamic>?;
+                                   if (countData != null) {
+                                       int myCount = countData[currentUser!.uid] ?? 0;
+                                       unreadChats += myCount;
+                                   }
+                               }
+                            }
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const ChatListScreen()),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                                ),
+                                if (unreadChats > 0)
+                                  Positioned(
+                                    top: 6,
+                                    right: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                      child: Text(
+                                        unreadChats > 99 ? '99+' : unreadChats.toString(),
+                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }
+                        ),
+                        const SizedBox(width: 4),
                         StreamBuilder<int>(
-                          stream: _notificationService.getUnreadCountStream(
-                            currentUser!.uid,
-                          ),
+                          stream: _notificationService.getUnreadCountStream(currentUser!.uid),
                           builder: (context, unreadSnapshot) {
                             final unread = unreadSnapshot.data ?? 0;
                             return Stack(
                               clipBehavior: Clip.none,
                               children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const NotificationsScreen(),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(
-                                      Icons.notifications_none,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.notifications_none, color: Colors.white),
                                 ),
                                 if (unread > 0)
                                   Positioned(
-                                    top: 2,
-                                    right: 2,
+                                    top: 6,
+                                    right: 4,
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(10),
-                                        ),
-                                      ),
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                                       child: Text(
                                         unread > 99 ? '99+' : unread.toString(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ),
@@ -140,6 +158,8 @@ class _HomeHeaderState extends State<HomeHeader> {
                             );
                           },
                         ),
+                        const SizedBox(width: 12),
+                      ],
                       CircleAvatar(
                         radius: 20,
                         backgroundColor: AppColors.mist,
