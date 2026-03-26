@@ -25,23 +25,23 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Positioned(
-      bottom: 14 + bottomInset,
-      left: 20,
-      right: 20,
+      bottom: 12 + bottomInset,
+      left: 16,
+      right: 16,
       child: Stack(
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
           Container(
-            height: 92,
+            height: 76, // Reduced from 92
             decoration: BoxDecoration(
               color: AppColors.nightfall,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.22),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -61,7 +61,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     index: 1,
                   ),
                 ),
-                const SizedBox(width: 72),
+                const Spacer(), // Replaced hardcoded SizedBox width with flexible Spacer
                 Expanded(
                   child: _buildNavItem(
                     icon: Icons.assignment_outlined,
@@ -80,12 +80,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             ),
           ),
           Positioned(
-            top: -20,
+            top: -16, // Adjusted slightly for smaller FAB
             child: GestureDetector(
               onTap: widget.onAddTapped,
               child: Container(
-                height: 54,
-                width: 54,
+                height: 48, // Reduced from 54
+                width: 48,
                 decoration: BoxDecoration(
                   color: AppColors.deepLavender,
                   shape: BoxShape.circle,
@@ -96,12 +96,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.24),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 30),
+                child: const Icon(Icons.add, color: Colors.white, size: 26),
               ),
             ),
           ),
@@ -130,20 +130,20 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               child: Icon(
                 isSelected ? activeIcon : icon,
                 key: ValueKey<bool>(isSelected),
-                size: 22,
+                size: 20, // Reduced from 22
                 color: isSelected
                     ? Colors.white
                     : AppColors.silverShadow.withValues(alpha: 0.65),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2), // Reduced from 4
             Text(
               _labels[index],
               style: TextStyle(
                 color: isSelected
                     ? Colors.white
                     : AppColors.silverShadow.withValues(alpha: 0.65),
-                fontSize: 11,
+                fontSize: 10, // Reduced from 11
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

@@ -84,9 +84,24 @@ class _FoundItAppState extends State<FoundItApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       builder: (context, child) {
-        return ColoredBox(
-          color: AppColors.mist,
-          child: child ?? const SizedBox.shrink(),
+        final mediaQueryData = MediaQuery.of(context);
+        
+        // Find the current system scale factor and reduce it by 15% globally
+        final systemScale = mediaQueryData.textScaler.scale(1.0);
+        final reducedScale = systemScale * 0.85;
+
+        // Clamp the final scaled result to prevent extreme layout breakage
+        final finalScaler = TextScaler.linear(reducedScale).clamp(
+          minScaleFactor: 0.7,
+          maxScaleFactor: 1.1,
+        );
+
+        return MediaQuery(
+          data: mediaQueryData.copyWith(textScaler: finalScaler),
+          child: ColoredBox(
+            color: AppColors.mist,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
       home: const SplashScreen(),

@@ -67,6 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       .toList();
                 }
 
+                // Dynamically calculate aspect ratio for smaller screens
+                final screenWidth = MediaQuery.of(context).size.width;
+                // Base ratio is 0.75 for standard screens. Decrease ratio to limit overflow on narrow screens.
+                // At 0.58 we provide enough vertical padding for 4 lines of scaled text.
+                final aspectRatio = screenWidth < 380 ? 0.58 : 0.72;
+
                 return GridView.builder(
                   padding: const EdgeInsets.only(
                     left: 20,
@@ -74,9 +80,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     top: 8,
                     bottom: 100,
                   ), // Bottom padding for custom nav bar
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.75, // Adjust for card proportions
+                    childAspectRatio: aspectRatio, // Dynamic card proportions
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
