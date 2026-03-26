@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import 'package:path/path.dart' as p;
 import '../../widgets/found_it_loading_indicator.dart';
@@ -89,6 +90,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'profile_img': imageUrl,
             'email': widget.userModel.email, // Preserve email just in case
           }, SetOptions(merge: true));
+
+      // Update FirebaseAuth profile to keep it in sync and prevent UI flicker
+      await FirebaseAuth.instance.currentUser?.updateProfile(
+        displayName: _usernameController.text.trim(),
+        photoURL: imageUrl,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

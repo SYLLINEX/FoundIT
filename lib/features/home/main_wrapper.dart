@@ -29,7 +29,10 @@ class _MainWrapperState extends State<MainWrapper> {
       extendBody: true,
       body: Stack(
         children: [
-          _screens[_currentIndex],
+          IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
           CustomBottomNavBar(
             selectedIndex: _currentIndex,
             onItemTapped: (index) {
