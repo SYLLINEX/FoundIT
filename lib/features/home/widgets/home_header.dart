@@ -84,7 +84,7 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                   Row(
                     children: [
-                      if (currentUser != null) ...[
+                      if (currentUser != null)
                         StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance.collection('chat_rooms').where('participants', arrayContains: currentUser!.uid).snapshots(),
                           builder: (context, chatSnap) {
@@ -99,84 +99,130 @@ class _HomeHeaderState extends State<HomeHeader> {
                                    }
                                }
                             }
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const ChatListScreen()),
-                                    );
+                            return StreamBuilder<int>(
+                              stream: _notificationService.getUnreadCountStream(currentUser!.uid),
+                              builder: (context, unreadSnapshot) {
+                                final unreadNotifications = unreadSnapshot.data ?? 0;
+                                final totalUnread = unreadChats + unreadNotifications;
+                                
+                                return PopupMenuButton<String>(
+                                  offset: const Offset(0, 48),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  color: Colors.white,
+                                  onSelected: (value) {
+                                    if (value == 'messages') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const ChatListScreen()),
+                                      );
+                                    } else if (value == 'notifications') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                                      );
+                                    }
                                   },
-                                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                                ),
-                                if (unreadChats > 0)
-                                  Positioned(
-                                    top: 6,
-                                    right: 4,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                      child: Text(
-                                        unreadChats > 99 ? '99+' : unreadChats.toString(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                    PopupMenuItem<String>(
+                                      value: 'messages',
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Icon(Icons.chat_bubble_outline, color: AppColors.nightfall, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('Messages', style: TextStyle(color: AppColors.nightfall, fontWeight: FontWeight.w600)),
+                                            ],
+                                          ),
+                                          if (unreadChats > 0)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                                              child: Text(
+                                                unreadChats > 99 ? '99+' : unreadChats.toString(),
+                                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ),
+                                    const PopupMenuDivider(),
+                                    PopupMenuItem<String>(
+                                      value: 'notifications',
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Icon(Icons.notifications_none, color: AppColors.nightfall, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('Notifications', style: TextStyle(color: AppColors.nightfall, fontWeight: FontWeight.w600)),
+                                            ],
+                                          ),
+                                          if (unreadNotifications > 0)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
+                                              child: Text(
+                                                unreadNotifications > 99 ? '99+' : unreadNotifications.toString(),
+                                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: AppColors.mist,
+                                        backgroundImage: profileImg.isNotEmpty
+                                            ? NetworkImage(profileImg)
+                                            : null,
+                                        child: profileImg.isEmpty
+                                            ? const Icon(
+                                                Icons.person,
+                                                color: AppColors.nightfall,
+                                              )
+                                            : null,
+                                      ),
+                                      if (totalUnread > 0)
+                                        Positioned(
+                                          top: -2,
+                                          right: -2,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(color: AppColors.nightfall, width: 2),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                              ],
+                                );
+                              },
                             );
                           }
+                        )
+                      else
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.mist,
+                          backgroundImage: profileImg.isNotEmpty
+                              ? NetworkImage(profileImg)
+                              : null,
+                          child: profileImg.isEmpty
+                              ? const Icon(
+                                  Icons.person,
+                                  color: AppColors.nightfall,
+                                )
+                              : null,
                         ),
-                        const SizedBox(width: 4),
-                        StreamBuilder<int>(
-                          stream: _notificationService.getUnreadCountStream(currentUser!.uid),
-                          builder: (context, unreadSnapshot) {
-                            final unread = unreadSnapshot.data ?? 0;
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.notifications_none, color: Colors.white),
-                                ),
-                                if (unread > 0)
-                                  Positioned(
-                                    top: 6,
-                                    right: 4,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                      child: Text(
-                                        unread > 99 ? '99+' : unread.toString(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                      ],
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.mist,
-                        backgroundImage: profileImg.isNotEmpty
-                            ? NetworkImage(profileImg)
-                            : null,
-                        child: profileImg.isEmpty
-                            ? const Icon(
-                                Icons.person,
-                                color: AppColors.nightfall,
-                              )
-                            : null,
-                      ),
                     ],
                   ),
                 ],

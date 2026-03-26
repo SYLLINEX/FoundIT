@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../chat/chat_list_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -200,6 +201,25 @@ class ProfileScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 70,
+                      endIndent: 20,
+                      color: Color(0xFFEEEDF2),
+                    ),
+                    _buildMenuItem(
+                      icon: PhosphorIcons.chatCircleText(PhosphorIconsStyle.fill),
+                      title: 'Messages',
+                      subtitle: 'View your conversations',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ChatListScreen(),
                           ),
                         );
                       },
