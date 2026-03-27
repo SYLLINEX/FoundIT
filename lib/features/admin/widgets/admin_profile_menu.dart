@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../services/auth_service.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../auth/auth_screen.dart';
+import '../../../widgets/app_confirmation_dialog.dart';
 
 class AdminProfileMenu extends StatefulWidget {
   final int unreadNotifications;
@@ -206,6 +207,16 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                 ),
                 onTap: () async {
                   Navigator.of(context).pop();
+
+                  final confirm = await showAppConfirmationDialog<bool>(
+                    context: context,
+                    title: 'Log Out',
+                    message: 'Are you sure you want to log out of the admin panel?',
+                    confirmText: 'Log Out',
+                    confirmColor: Colors.red,
+                  );
+                  if (confirm != true) return;
+
                   await AuthService().signOut();
                   if (!context.mounted) return;
                   Navigator.of(context).pushAndRemoveUntil(

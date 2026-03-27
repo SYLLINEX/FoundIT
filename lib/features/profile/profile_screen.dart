@@ -11,6 +11,7 @@ import 'settings_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -278,6 +279,15 @@ class ProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: ElevatedButton(
                     onPressed: () async {
+                      final confirm = await showAppConfirmationDialog<bool>(
+                        context: context,
+                        title: 'Log Out',
+                        message: 'Are you sure you want to log out from your account?',
+                        confirmText: 'Log Out',
+                        confirmColor: Colors.red,
+                      );
+                      if (confirm != true) return;
+
                       await AuthService().signOut();
                       if (!context.mounted) return;
                       Navigator.of(

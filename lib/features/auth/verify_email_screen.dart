@@ -8,6 +8,7 @@ import '../admin/admin_dashboard_screen.dart';
 import '../../services/auth_service.dart';
 import 'auth_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -88,6 +89,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     }
   }
 
+  Future<void> _confirmAndLogout() async {
+    final confirm = await showAppConfirmationDialog<bool>(
+      context: context,
+      title: 'Log Out',
+      message: 'Are you sure you want to log out? You will need to log in again to verify your email later.',
+      confirmText: 'Log Out',
+      confirmColor: Colors.red,
+    );
+    if (confirm != true) return;
+
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const AuthScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,15 +120,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         actions: [
           IconButton(
             icon: Icon(PhosphorIconsRegular.signOut, color: AppColors.dusk),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!context.mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const AuthScreen()),
-                (route) => false,
-              );
-            },
+            onPressed: _confirmAndLogout,
           ),
         ],
       ),
@@ -176,15 +188,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
               ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  if (!context.mounted) return;
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AuthScreen()),
-                    (route) => false,
-                  );
-                },
+                onPressed: _confirmAndLogout,
                 icon: Icon(PhosphorIconsRegular.signOut, color: AppColors.error),
                 label: const Text(
                   'Back to Login / Logout',
