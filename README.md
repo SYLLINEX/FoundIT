@@ -1,114 +1,119 @@
+<div align = "center">
+   <img src="assets/images/foundit_logo.png" width="200">
+</div>
+
 # FoundIT
 
-FoundIT is a comprehensive Lost and Found mobile application built with Flutter and Firebase. It aims to reunite people with their lost belongings by providing a seamless, intelligent, and secure platform. Users can report lost and found items, browse through listings on a map, verify claims, and securely communicate through end-to-end encrypted chats. The application also integrates on-device AI using TensorFlow Lite for automated image tagging and classification, simplifying the reporting process. 
+Reuniting people with what matters most.
 
-##  Key Features (Functional Requirements)
+FoundIT is an intelligent mobile ecosystem designed to bridge the gap between lost items and their owners. By combining Real-time Geospatial Mapping, On-device AI, and End-to-End Encrypted Messaging, we provide a secure and seamless recovery experience.
 
-1. **User Authentication & Profiles:** 
-   - Secure login and registration using Firebase Authentication.
-   - Google Sign-In integration.
-   - User profile management.
+## Screenshots
 
-2. **Reporting Items:** 
-   - Report a "Lost" or "Found" item with images, description, and location.
-   - **AI-Powered Image Recognition:** Automatically categorize item types from uploaded photos using an on-device TensorFlow Lite model (`mobilenet_v2`).
+*(Add screenshots here)*
 
-3. **Map & Location Services:** 
-   - Interactive map interface (Google Maps) to display lost and found items based on their geographical coordinates.
-   - Geolocation-based distance calculation and radius searching using `geoflutterfire_plus`.
+## Core Innovation
 
-4. **Secure In-App Messaging:**
-   - Real-time chat functionality using Firestore.
-   - **End-to-End Encryption:** Messages are encrypted locally on the device before transmission to ensure maximum privacy between users coordinating item returns.
-   - Reply, reaction, and swipe-to-reply capabilities for a complete chat experience.
- 
-5. **Claims & Matching System:**
-   - Users can securely file a claim for a found item.
-   - Owners are notified of potential matches, ensuring a streamlined return process.
+### On-Device AI Intelligence
 
-6. **Push Notifications:** 
-   - Real-time alerts for new messages, nearby item matches, and claim updates via Firebase Cloud Messaging (FCM).
+Unlike traditional platforms, FoundIT uses a localized TensorFlow Lite (MobileNet V2) model.
 
-7. **Admin Dashboard & Moderation:** 
-   - Admin capabilities to review reported items, handle inappropriate content, and manage user disputes.
+- **Privacy First:** Images are analyzed on-device; category metadata is extracted before the image even hits the cloud.
+- **Smart Tagging:** Automatically suggests item categories (e.g., "Electronics", "Wallet", "Keys") to speed up the reporting process.
 
-##  Non-Functional Requirements (NFR)
+### Privacy & Security (E2EE)
 
-1. **Performance & Responsiveness:** 
-   - The app must load lists and maps quickly.
-   - Images are optimized using cached networks (`cached_network_image`) and shimmer effects for a fluid UX, reducing bandwidth usage.
+Communication is the most sensitive part of item recovery.
 
-2. **Security & Privacy:** 
-   - **Data Protection:** Firestore Security Rules and Firebase Storage Rules strictly govern data access paths to prevent unauthorized access.
-   - **Chat Privacy:** Messages utilize symmetric encryption (`encrypt` and `crypto` algorithms), preventing anyone (including admins) from reading private communications.
+- **End-to-End Encryption:** We use AES-256 symmetric encryption.
+- **Zero-Knowledge:** Chat payloads are encrypted locally. Even as database admins, we cannot read the coordination details between users.
 
-3. **Scalability & Reliability:**
-   - Hosted entirely on Firebase's scalable infrastructure, capable of adapting to a growing user base.
-   - Offline capabilities through Firestore caching mechanisms where applicable.
+## Key Features
 
-4. **Usability & Aesthetics:** 
-   - Modern, intuitive, and responsive UI utilizing `google_fonts`, custom animations (`flutter_spinkit`), and cohesive styling to ensure ease-of-use without a steep learning curve. The interface employs a feature-first approach to display complex logic simply.
+- **Seamless Auth:** Google SSO and Email/Password via Firebase.
+- **Smart Mapping:** Interactive Google Maps integration with radius-based searching using `geoflutterfire_plus`.
+- **Rich Messaging:** Real-time Firestore chats with replies, reactions, and swipe-to-reply.
+- **Instant Alerts:** Push notifications for nearby matches and claim updates via FCM.
+- **Moderation Suite:** Dedicated Admin Dashboard for dispute resolution and content filtering.
 
-##  Project Directory Structure
+## Tech Stack
 
-FoundIT follows a feature-centric modular architecture to ensure the codebase remains maintainable and scalable.
+| Category | Technology |
+| --- | --- |
+| **Frontend** | Flutter, Google Fonts, Flutter Spinkit |
+| **Backend** | Firebase (Auth, Firestore, Storage) |
+| **Intelligence** | TensorFlow Lite (MobileNet V2) |
+| **Security** | PointyCastle (AES), Firestore Security Rules |
+| **Maps** | Google Maps API, GeoFlutterFire+ |
+
+## Project Architecture
+
+We follow a Feature-Driven Modular Architecture for maximum scalability.
 
 ```text
 lib/
-├── core/                   # App-wide constants, global state, themes, and robust utilities.
-├── features/               # Contains all UI-centric application features.
-│   ├── admin/              # Admin dashboard and item moderation screens.
-│   ├── auth/               # Login, registration, and password recovery workflows.
-│   ├── chat/               # Inter-user messaging interfaces and controllers.
-│   ├── claims/             # Logic and UI for making and resolving item claims.
-│   ├── home/               # Main item feeds and navigation hub.
-│   ├── map/                # Google Maps integration and localized search.
-│   ├── notifications/      # In-app notification center.
-│   ├── profile/            # User account settings and personal listings.
-│   ├── report_item/        # Forms and logic for submitting new items (Lost/Found).
-│   ├── reports/            # Global reporting functions and user feedback viewing.
-│   └── splash/             # Application initialization and Splash Screen.
-├── models/                 # Dart Data classes and models representing DB schemas.
-├── services/               # Core business logic, backend connections, and 3rd party integrations.
-│   ├── ai_service.dart               # High-level AI coordination.
-│   ├── auth_service.dart             # Firebase Authentication logic.
-│   ├── database_service.dart         # Firestore read/write operations.
-│   ├── encryption_service.dart       # Cryptographic algorithms for E2E Encrypted Chats.
-│   ├── location_service.dart         # Geolocator & Map APIs interactions.
-│   ├── notification_service.dart     # Local and push notification dispatchers.
-│   ├── push_notification_service.dart # FCM Token management and foreground messaging.
-│   ├── storage_service.dart          # Firebase Storage uploads/downloads.
-│   └── tflite_service.dart           # On-device image classification (MobileNet2).
-├── widgets/                # Reusable, global UI components (Buttons, Dialogs, Cards).
-├── firebase_options.dart   # Firebase configuration details (Auto-generated).
-└── main.dart               # Application entry point.
+├── core/               # Global constants, themes, and shared utilities
+├── features/           # UI-centric slices of the app
+│   ├── auth/           # Onboarding & Authentication
+│   ├── map/            # Geospatial discovery & Map logic
+│   ├── chat/           # E2E Encrypted messaging system
+│   └── report_item/    # AI-integrated submission forms
+├── models/             # Type-safe data structures
+├── services/           # The "Engine Room" (API & Logic)
+│   ├── ai_service.dart      # AI Orchestration
+│   ├── encryption_service.dart # Cryptographic logic
+│   └── tflite_service.dart  # Low-level ML processing
+└── widgets/            # Reusable UI components
 ```
 
-##  System Architecture
-
-FoundIT utilizes a robust cloud-based setup tightly coupled with a clean client architecture:
-
-### 1. Client App Architecture
-The Flutter frontend relies on a combination of decoupled **Services** (handling backend operations) and **Features** (handling UI and state). This is akin to a feature-first Domain-Driven Design approach. State management and injection allow the UI layer to seamlessly connect with Firebase without hardcoding backend queries directly in widget trees. This keeps the presentation logic entirely separate from database integration.
-
-### 2. Backend Services (Firebase Ecosystem)
-- **Cloud Firestore:** The NoSQL database stores user profiles, item metadata (location hashes via GeoFlutterFire), real-time chats, and active claims. 
-- **Firebase Storage:** Accommodates high-resolution images submitted by users. Access is governed via customized Security Rules.
-- **Firebase Authentication:** Single Sign-On (SSO) and native email/password handling.
-
-### 3. Edge / On-Device Processing
-- **TFLite AI Model:** In order to minimize server costs and maximize speed/privacy, image classification is executed directly on the user's hardware. Images are pre-processed and fed into `mobilenet_v2.tflite` via `tflite_service.dart` during the item submission flow.
-- **Local Encryption Context:** Sensitive operations like chat encryption/decryption are processed locally. Only encrypted ciphertexts travel across the network.
-
-##  Getting Started
+## Installation & Setup
 
 ### Prerequisites
-- Flutter SDK (`^3.10.0`)
-- Valid Firebase Project
-- Google Maps API Key
 
-### Setup
-1. Clone the repository.
-2. Run `flutter pub get` in the root directory to fetch all dependencies.
-3. Configure your API keys inside your `.env` file (e.g., Maps API keys).
-4. Run the app securely using `flutter run`.
+- Flutter SDK (^3.10.0)
+- A Firebase Project with Firestore and Storage enabled.
+- A Google Maps API Key.
+
+### Steps
+
+**Clone the Repo**
+
+```bash
+git clone https://github.com/yourusername/foundit.git
+cd foundit
+```
+
+**Install Dependencies**
+
+```bash
+flutter pub get
+```
+
+**Configure Firebase**
+
+- Add your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS).
+- Run `flutterfire configure`.
+
+**Environment Variables**
+
+Create a `.env` file in the root directory:
+
+```env
+MAPS_API_KEY=your_key_here
+```
+
+**Launch**
+
+```bash
+flutter run
+```
+
+## Contribution
+
+FoundIT is an open-source initiative. If you'd like to improve the AI model or security protocols:
+
+1. Fork the Project.
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
