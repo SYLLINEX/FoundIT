@@ -12,6 +12,7 @@ import 'item_details_screen.dart';
 import 'edit_report_screen.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -28,6 +29,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
   String _selectedFilter = 'All';
   String _viewType = 'Reports';
+  final List<String> _reportFilters = const ['All', 'Pending', 'Open', 'Resolved'];
 
   @override
   Widget build(BuildContext context) {
@@ -35,100 +37,126 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
+      floatingActionButton: _viewType == 'Reports'
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 100.0), // Clear the bottom nav bar
+              child: ExpandableFilterFab(
+                categories: _reportFilters,
+                selectedCategoryIndex: _reportFilters.indexOf(_selectedFilter),
+                onCategorySelected: (index) {
+                  setState(() {
+                    _selectedFilter = _reportFilters[index];
+                  });
+                },
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.only(
-              top: 50,
+            height: MediaQuery.of(context).padding.top + 64,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top,
               left: 16,
-              right: 16,
-              bottom: 20,
+              right: 12,
             ),
             decoration: const BoxDecoration(
               color: AppColors.nightfall,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
+              boxShadow: [
+                BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+              ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'My Activity',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                // Left: Icon Avatar
+                const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.white24,
+                  child: Icon(PhosphorIconsRegular.clipboardText, color: Colors.white, size: 24),
                 ),
-                const SizedBox(height: 24),
-                // Segmented Toggle for Reports vs Claims
+                const SizedBox(width: 14),
+
+                // Middle: Title
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'My Activity',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Track your reports & claims',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right: Segmented Toggle for Reports vs Claims
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  height: 36,
+                  padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _viewType = 'Reports'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _viewType == 'Reports'
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'My Reports',
-                                style: TextStyle(
-                                  color: _viewType == 'Reports'
-                                      ? AppColors.nightfall
-                                      : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                      GestureDetector(
+                        onTap: () => setState(() => _viewType = 'Reports'),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _viewType == 'Reports' ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Reports',
+                              style: TextStyle(
+                                color: _viewType == 'Reports' ? AppColors.nightfall : Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _viewType = 'Claims'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: _viewType == 'Claims'
-                                  ? Colors.white
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                'My Claims',
-                                style: TextStyle(
-                                  color: _viewType == 'Claims'
-                                      ? AppColors.nightfall
-                                      : Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                      GestureDetector(
+                        onTap: () => setState(() => _viewType = 'Claims'),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _viewType == 'Claims' ? Colors.white : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Claims',
+                              style: TextStyle(
+                                color: _viewType == 'Claims' ? AppColors.nightfall : Colors.white70,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -137,29 +165,9 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     ],
                   ),
                 ),
-                if (_viewType == 'Reports') ...[
-                  const SizedBox(height: 16),
-                  // Custom Tab Bar for filters
-                  Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTabButton('All'),
-                        _buildTabButton('Pending'),
-                        _buildTabButton('Open'),
-                        _buildTabButton('Resolved'),
-                      ],
-                    ),
-                  ),
-                ]
               ],
             ),
           ),
-
           const SizedBox(height: 8),
 
           Expanded(
@@ -170,33 +178,6 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     : _buildClaimsStream(userId),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String text) {
-    final isSelected = _selectedFilter == text;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedFilter = text;
-          });
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isSelected ? AppColors.nightfall : Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -323,7 +304,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: const Center(child: Text('Loading item details...')),
             );
@@ -358,7 +339,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                 ],
               ),
               child: Row(
@@ -529,7 +510,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
