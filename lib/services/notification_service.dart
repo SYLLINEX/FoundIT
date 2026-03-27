@@ -92,6 +92,24 @@ class NotificationService {
     await batch.commit();
   }
 
+  Future<void> deleteNotifications(List<String> notificationIds) async {
+    if (notificationIds.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final id in notificationIds) {
+      batch.delete(_firestore.collection('notifications').doc(id));
+    }
+    await batch.commit();
+  }
+
+  Future<void> markNotificationsAsRead(List<String> notificationIds) async {
+    if (notificationIds.isEmpty) return;
+    final batch = _firestore.batch();
+    for (final id in notificationIds) {
+      batch.update(_firestore.collection('notifications').doc(id), {'is_read': true});
+    }
+    await batch.commit();
+  }
+
   Future<void> notifyNearbyUsersForReport({
     required ItemModel report,
     required double radiusMeters,
