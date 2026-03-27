@@ -32,7 +32,7 @@ FoundIT is a comprehensive Lost and Found mobile application built with Flutter 
 7. **Admin Dashboard & Moderation:** 
    - Admin capabilities to review reported items, handle inappropriate content, and manage user disputes.
 
-## 🛠 Non-Functional Requirements (NFR)
+##  Non-Functional Requirements (NFR)
 
 1. **Performance & Responsiveness:** 
    - The app must load lists and maps quickly.
@@ -84,7 +84,7 @@ lib/
 └── main.dart               # Application entry point.
 ```
 
-## 🏗 System Architecture
+##  System Architecture
 
 FoundIT utilizes a robust cloud-based setup tightly coupled with a clean client architecture:
 
