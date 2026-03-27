@@ -132,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                                 : null,
                             child: userModel.profileImg.isEmpty
                                 ? const Icon(
-                                    Icons.person,
+                                    PhosphorIconsRegular.user,
                                     size: 50,
                                     color: Colors.grey,
                                   )
@@ -173,7 +173,7 @@ class ProfileScreen extends StatelessWidget {
                   // Group 1: Edit Profile & Settings
                   _buildMenuCard([
                     _buildMenuItem(
-                      icon: PhosphorIcons.userCircle(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.userCircle,
                       title: 'Edit Profile',
                       subtitle: 'Change your details',
                       onTap: () {
@@ -193,7 +193,7 @@ class ProfileScreen extends StatelessWidget {
                       color: Color(0xFFEEEDF2),
                     ),
                     _buildMenuItem(
-                      icon: PhosphorIcons.gear(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.gear,
                       title: 'Settings',
                       subtitle: 'Notifications & Privacy',
                       onTap: () {
@@ -212,7 +212,7 @@ class ProfileScreen extends StatelessWidget {
                       color: Color(0xFFEEEDF2),
                     ),
                     _buildMenuItem(
-                      icon: PhosphorIcons.chatCircleText(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.chatCircleText,
                       title: 'Messages',
                       subtitle: 'View your conversations',
                       onTap: () {
@@ -231,7 +231,7 @@ class ProfileScreen extends StatelessWidget {
                       color: Color(0xFFEEEDF2),
                     ),
                     _buildMenuItem(
-                      icon: PhosphorIcons.bell(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.bell,
                       title: 'Notifications',
                       subtitle: 'View updates about your reports',
                       onTap: () {
@@ -250,7 +250,7 @@ class ProfileScreen extends StatelessWidget {
                   // Group 2: Help & Support & Terms of Service
                   _buildMenuCard([
                     _buildMenuItem(
-                      icon: PhosphorIcons.question(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.question,
                       title: 'Help & Support',
                       subtitle: 'FAQ & Contact us',
                       onTap: () {
@@ -264,7 +264,7 @@ class ProfileScreen extends StatelessWidget {
                       color: Color(0xFFEEEDF2),
                     ),
                     _buildMenuItem(
-                      icon: PhosphorIcons.shieldCheck(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.shieldCheck,
                       title: 'Terms of Service',
                       subtitle: 'Rules & Guidelines',
                       onTap: () {
@@ -304,7 +304,7 @@ class ProfileScreen extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.logout, size: 20),
+                          Icon(PhosphorIconsRegular.signOut, size: 20),
                           SizedBox(width: 8),
                           Text(
                             'Log Out',
@@ -373,7 +373,7 @@ class ProfileScreen extends StatelessWidget {
         style: const TextStyle(color: Color(0xFF6B6A7C), fontSize: 13),
       ),
       trailing: const Icon(
-        Icons.arrow_forward_ios,
+        PhosphorIconsRegular.caretRight,
         size: 16,
         color: Color(0xFFD1D1D6),
       ),

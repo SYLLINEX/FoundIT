@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
@@ -380,10 +381,10 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                                highlightColor: Colors.grey[100]!,
                                child: Container(color: Colors.white),
                              ),
-                             errorWidget: (context, url, error) => const Icon(Icons.image, color: Colors.grey),
+                             errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                            ),
                          )
-                       : const Icon(Icons.image, color: Colors.grey),
+                       : const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -429,25 +430,25 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     if (status == 'RESOLVED' || status == 'CLAIMED') {
       statusColor = Colors.green[700]!;
       statusBgColor = Colors.green[100]!;
-      leadingIcon = Icons.check_circle;
+      leadingIcon = PhosphorIconsRegular.checkCircle;
       iconColor = Colors.green;
       iconBgColor = Colors.green[50]!;
     } else if (status == 'PENDING' || status == 'PENDING FOR APPROVAL') {
       statusColor = Colors.orange[700]!;
       statusBgColor = Colors.orange[100]!;
-      leadingIcon = Icons.motion_photos_on; 
+      leadingIcon = PhosphorIconsRegular.spinner; 
       iconColor = Colors.orange;
       iconBgColor = Colors.orange[50]!;
     } else if (status == 'MATCHED') {
       statusColor = Colors.purple[700]!;
       statusBgColor = Colors.purple[100]!;
-      leadingIcon = Icons.handshake;
+      leadingIcon = PhosphorIconsRegular.handshake;
       iconColor = Colors.purple;
       iconBgColor = Colors.purple[50]!;
     } else {
       statusColor = Colors.blue[700]!;
       statusBgColor = Colors.blue[100]!;
-      leadingIcon = Icons.error_outline;
+      leadingIcon = PhosphorIconsRegular.warningCircle;
       iconColor = Colors.blue;
       iconBgColor = Colors.blue[50]!;
     }
@@ -476,7 +477,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               },
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
-              icon: Icons.edit,
+              icon: PhosphorIconsRegular.pencilSimple,
               label: 'Edit',
               borderRadius: BorderRadius.circular(16),
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -506,7 +507,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               },
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
-              icon: Icons.delete,
+              icon: PhosphorIconsRegular.trash,
               label: 'Delete',
               borderRadius: BorderRadius.circular(16),
             ),
@@ -585,7 +586,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: 20),
+                Icon(PhosphorIconsRegular.caretRight, color: Colors.grey[400], size: 20),
               ],
             ),
           ),

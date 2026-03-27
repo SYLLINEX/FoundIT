@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/theme/app_colors.dart';
@@ -51,7 +52,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       decoration: InputDecoration(
                         hintText: 'Search...',
                         prefixIcon: const Icon(
-                          Icons.search,
+                          PhosphorIconsRegular.magnifyingGlass,
                           color: Colors.grey,
                         ),
                         filled: true,
@@ -85,10 +86,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       ),
                       child: Icon(
                         _selectedFilter == 'All'
-                            ? Icons.filter_alt_outlined
+                            ? PhosphorIconsRegular.funnel
                             : _selectedFilter == 'Reports'
-                            ? Icons.article_outlined
-                            : Icons.assignment_turned_in_outlined,
+                            ? PhosphorIconsRegular.article
+                            : PhosphorIconsRegular.checkSquareOffset,
                         size: 20,
                         color: AppColors.adminVerificationInk,
                       ),
@@ -393,7 +394,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           Row(
             children: [
               const Icon(
-                Icons.location_on_outlined,
+                PhosphorIconsRegular.mapPin,
                 size: 16,
                 color: Colors.grey,
               ),
@@ -595,7 +596,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           // Claimant
           Row(
             children: [
-              const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+              const Icon(PhosphorIconsRegular.user, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -659,7 +660,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.link_rounded,
+                    PhosphorIconsRegular.link,
                     size: 16,
                     color: Colors.indigo.shade400,
                   ),
@@ -1507,7 +1508,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                             Navigator.pop(context);
                             _openReportMap(item);
                           },
-                          icon: const Icon(Icons.map_outlined, size: 18),
+                          icon: const Icon(PhosphorIconsRegular.mapTrifold, size: 18),
                           label: const Text(
                             'View Map',
                             style: TextStyle(fontWeight: FontWeight.w600),
@@ -1547,7 +1548,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.image_not_supported_outlined,
+            PhosphorIconsRegular.imageBroken,
             size: 32,
             color: Colors.grey,
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../models/item_model.dart';
 import '../home/main_wrapper.dart';
 import '../claims/claim_item_screen.dart';
@@ -32,7 +33,7 @@ class MatchResultsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF3B394D),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: const Icon(PhosphorIconsRegular.x, color: Colors.white),
           onPressed: () {
             // Dismiss and go home
             Navigator.of(context).pushAndRemoveUntil(
@@ -103,7 +104,7 @@ class MatchResultsScreen extends StatelessWidget {
                                                 height: 80,
                                                 color: Colors.grey[300],
                                                 child: const Icon(
-                                                  Icons.image_not_supported,
+                                                  PhosphorIconsRegular.imageBroken,
                                                 ),
                                               ),
                                     )
@@ -111,7 +112,7 @@ class MatchResultsScreen extends StatelessWidget {
                                       width: 80,
                                       height: 80,
                                       color: Colors.grey[300],
-                                      child: const Icon(Icons.image),
+                                      child: const Icon(PhosphorIconsRegular.image),
                                     ),
                             ),
                             const SizedBox(width: 16),
@@ -131,7 +132,7 @@ class MatchResultsScreen extends StatelessWidget {
                                   Row(
                                     children: [
                                       Icon(
-                                        Icons.auto_awesome,
+                                        PhosphorIconsRegular.sparkle,
                                         size: 14,
                                         color: Colors.amber[700],
                                       ),
@@ -146,7 +147,7 @@ class MatchResultsScreen extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 8),
                                       const Icon(
-                                        Icons.location_on,
+                                        PhosphorIconsRegular.mapPin,
                                         size: 14,
                                         color: Colors.grey,
                                       ),

@@ -65,7 +65,7 @@ class ItemDetailsScreen extends StatelessWidget {
               ),
               errorWidget: (context, url, error) => Container(
                 color: AppColors.mist,
-                child: const Icon(Icons.broken_image, size: 50),
+                child: const Icon(PhosphorIconsRegular.imageBroken, size: 50),
               ),
             ),
           ),
@@ -83,7 +83,7 @@ class ItemDetailsScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.arrow_back_ios_new,
+                  PhosphorIconsRegular.caretLeft,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -142,7 +142,7 @@ class ItemDetailsScreen extends StatelessWidget {
 
                     // Info Cards
                     _buildInfoCard(
-                      icon: PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.mapPin,
                       title: 'Location',
                       value:
                           (item.specificLocation != null &&
@@ -152,9 +152,7 @@ class ItemDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
-                      icon: PhosphorIcons.calendarBlank(
-                        PhosphorIconsStyle.fill,
-                      ),
+                      icon: PhosphorIconsFill.calendarBlank,
                       title: 'Date',
                       value: DateFormat(
                         'MMM d, yyyy - hh:mm a',
@@ -162,7 +160,7 @@ class ItemDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
-                      icon: PhosphorIcons.tag(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.tag,
                       title: 'Category',
                       value: item.category,
                     ),
@@ -173,7 +171,7 @@ class ItemDetailsScreen extends StatelessWidget {
                     Row(
                       children: const [
                         Icon(
-                          Icons.info_outline,
+                          PhosphorIconsRegular.info,
                           size: 20,
                           color: AppColors.nightfall,
                         ),
@@ -238,7 +236,7 @@ class ItemDetailsScreen extends StatelessWidget {
                                   ? NetworkImage(profileImg)
                                   : null,
                               child: profileImg.isEmpty
-                                  ? const Icon(Icons.person, color: Colors.grey)
+                                  ? const Icon(PhosphorIconsRegular.user, color: Colors.grey)
                                   : null,
                             ),
                             const SizedBox(width: 12),
@@ -484,7 +482,7 @@ class ItemMapScreen extends StatelessWidget {
         backgroundColor: AppColors.nightfall,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_ios_new,
+            PhosphorIconsRegular.caretLeft,
             color: Colors.white,
             size: 20,
           ),

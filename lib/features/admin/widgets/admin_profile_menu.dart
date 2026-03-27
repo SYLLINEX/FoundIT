@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_colors.dart';
@@ -68,7 +69,7 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                               : null,
                           child: profileImg.isEmpty
                               ? const Icon(
-                                  Icons.admin_panel_settings,
+                                  PhosphorIconsRegular.shieldCheck,
                                   color: AppColors.nightfall,
                                 )
                               : null,
@@ -116,7 +117,7 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(
-                          Icons.notifications_none,
+                          PhosphorIconsRegular.bell,
                           color: Colors.red,
                           size: 18,
                         ),
@@ -187,7 +188,7 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        Icons.logout,
+                        PhosphorIconsRegular.signOut,
                         color: Colors.red.shade700,
                         size: 18,
                       ),
@@ -237,7 +238,7 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                     : null,
                 child: profileImg.isEmpty
                     ? const Icon(
-                        Icons.admin_panel_settings,
+                        PhosphorIconsRegular.shieldCheck,
                         color: AppColors.nightfall,
                         size: 18,
                       )

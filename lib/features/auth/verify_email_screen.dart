@@ -99,7 +99,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         iconTheme: const IconThemeData(color: AppColors.dusk),
         actions: [
           IconButton(
-            icon: Icon(PhosphorIcons.signOut(), color: AppColors.dusk),
+            icon: Icon(PhosphorIconsRegular.signOut, color: AppColors.dusk),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               if (!context.mounted) return;
@@ -120,7 +120,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Icon(
-                PhosphorIcons.envelopeOpen(PhosphorIconsStyle.light),
+                PhosphorIconsLight.envelopeOpen,
                 size: 80,
                 color: AppColors.deepLavender,
               ),
@@ -185,7 +185,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     (route) => false,
                   );
                 },
-                icon: Icon(PhosphorIcons.signOut(), color: AppColors.error),
+                icon: Icon(PhosphorIconsRegular.signOut, color: AppColors.error),
                 label: const Text(
                   'Back to Login / Logout',
                   style: TextStyle(

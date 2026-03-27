@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 
 class CategoryTabs extends StatelessWidget {
@@ -41,7 +42,7 @@ class CategoryTabs extends StatelessWidget {
                 ),
                 if (isSelected)
                   const Icon(
-                    Icons.check,
+                    PhosphorIconsRegular.check,
                     color: AppColors.nightfall,
                     size: 18,
                   ),
@@ -51,16 +52,16 @@ class CategoryTabs extends StatelessWidget {
         }).toList();
       },
       child: Container(
-        height: 50,
-        width: 50,
+        height: 48,
+        width: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.white.withOpacity(0.15),
+          shape: BoxShape.circle,
         ),
         child: const Icon(
-          Icons.filter_alt_outlined,
-          color: AppColors.nightfall,
-          size: 24,
+          PhosphorIconsRegular.slidersHorizontal, // Using a more modern filter icon
+          color: Colors.white,
+          size: 22,
         ),
       ),
     );

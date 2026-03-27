@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -333,7 +334,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.arrow_back_ios_new,
+                PhosphorIconsRegular.caretLeft,
                 size: 16,
                 color: Colors.white,
               ),
@@ -404,7 +405,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.info_outline, color: Colors.blue),
+                              Icon(PhosphorIconsRegular.info, color: Colors.blue),
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text(

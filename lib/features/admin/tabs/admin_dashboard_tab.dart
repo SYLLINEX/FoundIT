@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/item_model.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
@@ -85,7 +86,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             value: 'All Items',
                             child: Row(
                               children: [
-                                Icon(Icons.category, size: 20),
+                                Icon(PhosphorIconsRegular.squaresFour, size: 20),
                                 SizedBox(width: 8),
                                 Text('All Items'),
                               ],
@@ -95,7 +96,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             value: 'Lost Items',
                             child: Row(
                               children: [
-                                Icon(Icons.search, size: 20, color: Colors.red),
+                                Icon(PhosphorIconsRegular.magnifyingGlass, size: 20, color: Colors.red),
                                 SizedBox(width: 8),
                                 Text('Lost Items'),
                               ],
@@ -106,7 +107,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.check_circle,
+                                  PhosphorIconsRegular.checkCircle,
                                   size: 20,
                                   color: Colors.green,
                                 ),
@@ -123,7 +124,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.filter_list, size: 20),
+                              const Icon(PhosphorIconsRegular.funnel, size: 20),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedCategory,
@@ -200,7 +201,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                 value: 'edit',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.edit, size: 18),
+                                    Icon(PhosphorIconsRegular.pencilSimple, size: 18),
                                     SizedBox(width: 8),
                                     Text('Edit'),
                                   ],
@@ -211,7 +212,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                 child: Row(
                                   children: [
                                     Icon(
-                                      Icons.delete,
+                                      PhosphorIconsRegular.trash,
                                       size: 18,
                                       color: Colors.red,
                                     ),
@@ -231,7 +232,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                               ),
                               padding: const EdgeInsets.all(4),
                               child: const Icon(
-                                Icons.more_vert,
+                                PhosphorIconsRegular.dotsThreeVertical,
                                 color: Colors.white,
                                 size: 18,
                               ),

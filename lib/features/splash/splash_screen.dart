@@ -132,7 +132,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 //     shape: BoxShape.circle,
                 //   ),
                 //   child: Icon(
-                //     PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
+                //     PhosphorIconsBold.magnifyingGlass,
                 //     size: 48,
                 //     color: AppColors.deepLavender,
                 //   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class AdminNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -36,22 +37,22 @@ class AdminNavBar extends StatelessWidget {
             children: [
               _buildNavItem(
                 0,
-                Icons.dashboard_rounded,
+                PhosphorIconsRegular.squaresFour,
                 'Dashboard',
               ),
               _buildNavItem(
                 1,
-                Icons.verified_outlined,
+                PhosphorIconsRegular.sealCheck,
                 'Verification',
               ),
               _buildNavItem(
                 2,
-                Icons.map_outlined,
+                PhosphorIconsRegular.mapTrifold,
                 'Map',
               ),
               _buildNavItem(
                 3,
-                Icons.person_outline,
+                PhosphorIconsRegular.user,
                 'Profile',
               ),
             ],

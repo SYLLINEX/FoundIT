@@ -105,7 +105,7 @@ class AdminProfileTab extends StatelessWidget {
                                 profileImg.isNotEmpty ? NetworkImage(profileImg) : null,
                             child: profileImg.isEmpty
                                 ? const Icon(
-                                    Icons.person,
+                                    PhosphorIconsRegular.user,
                                     size: 40,
                                     color: Colors.grey,
                                   )
@@ -141,7 +141,7 @@ class AdminProfileTab extends StatelessWidget {
                   // Admin Notifications
                   _buildMenuCard([
                     _buildMenuItem(
-                      icon: PhosphorIcons.bell(PhosphorIconsStyle.fill),
+                      icon: PhosphorIconsFill.bell,
                       title: 'Notifications',
                       subtitle: 'View system updates',
                       onTap: () {
@@ -186,7 +186,7 @@ class AdminProfileTab extends StatelessWidget {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.logout, size: 20),
+                          Icon(PhosphorIconsRegular.signOut, size: 20),
                           SizedBox(width: 8),
                           Text(
                             'Log Out',

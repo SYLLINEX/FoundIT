@@ -192,9 +192,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: Icon(
-                                  PhosphorIcons.magnifyingGlass(
-                                    PhosphorIconsStyle.bold,
-                                  ),
+                                  PhosphorIconsBold.magnifyingGlass,
                                   size: 48,
                                   color: AppColors.mist,
                                 ),
@@ -239,7 +237,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: InputDecoration(
                         hintText: 'example@example.com',
                         prefixIcon: Icon(
-                          PhosphorIcons.envelopeSimple(),
+                          PhosphorIconsRegular.envelopeSimple,
                           color: AppColors.dusk,
                         ),
                       ),
@@ -273,14 +271,14 @@ class _AuthScreenState extends State<AuthScreen> {
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         prefixIcon: Icon(
-                          PhosphorIcons.lockKey(),
+                          PhosphorIconsRegular.lockKey,
                           color: AppColors.dusk,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
-                                ? PhosphorIcons.eyeClosed()
-                                : PhosphorIcons.eye(),
+                                ? PhosphorIconsRegular.eyeClosed
+                                : PhosphorIconsRegular.eye,
                             color: AppColors.dusk,
                           ),
                           onPressed: () {
@@ -376,7 +374,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                     // Google Sign In Button
                     OutlinedButton.icon(
-                      icon: Icon(PhosphorIcons.googleLogo(), size: 24),
+                      icon: Icon(PhosphorIconsRegular.googleLogo, size: 24),
                       label: const Text(
                         'Sign in with Google',
                         style: TextStyle(

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -10,12 +11,12 @@ class AdminNotificationsTab extends StatelessWidget {
   const AdminNotificationsTab({super.key});
 
   IconData _iconForType(String type) {
-    if (type == 'admin_alert') return Icons.admin_panel_settings;
-    if (type == 'report_approved') return Icons.verified;
-    if (type == 'report_found') return Icons.search;
-    if (type == 'report_reserved') return Icons.bookmark_added;
-    if (type == 'lost_report_resolved') return Icons.task_alt;
-    return Icons.notifications;
+    if (type == 'admin_alert') return PhosphorIconsRegular.shieldCheck;
+    if (type == 'report_approved') return PhosphorIconsRegular.sealCheck;
+    if (type == 'report_found') return PhosphorIconsRegular.magnifyingGlass;
+    if (type == 'report_reserved') return PhosphorIconsRegular.bookmarkSimple;
+    if (type == 'lost_report_resolved') return PhosphorIconsRegular.checkCircle;
+    return PhosphorIconsRegular.bell;
   }
 
   @override

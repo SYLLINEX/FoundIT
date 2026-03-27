@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../core/theme/app_colors.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
@@ -49,30 +50,30 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               children: [
                 Expanded(
                   child: _buildNavItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home,
+                    icon: PhosphorIconsRegular.house,
+                    activeIcon: PhosphorIconsRegular.house,
                     index: 0,
                   ),
                 ),
                 Expanded(
                   child: _buildNavItem(
-                    icon: Icons.map_outlined,
-                    activeIcon: Icons.map,
+                    icon: PhosphorIconsRegular.mapTrifold,
+                    activeIcon: PhosphorIconsRegular.mapTrifold,
                     index: 1,
                   ),
                 ),
                 const Spacer(), // Replaced hardcoded SizedBox width with flexible Spacer
                 Expanded(
                   child: _buildNavItem(
-                    icon: Icons.assignment_outlined,
-                    activeIcon: Icons.assignment,
+                    icon: PhosphorIconsRegular.clipboardText,
+                    activeIcon: PhosphorIconsRegular.clipboardText,
                     index: 2,
                   ),
                 ),
                 Expanded(
                   child: _buildNavItem(
-                    icon: Icons.person_outline_rounded,
-                    activeIcon: Icons.person,
+                    icon: PhosphorIconsRegular.user,
+                    activeIcon: PhosphorIconsRegular.user,
                     index: 3,
                   ),
                 ),
@@ -101,7 +102,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 26),
+                child: const Icon(PhosphorIconsRegular.plus, color: Colors.white, size: 26),
               ),
             ),
           ),

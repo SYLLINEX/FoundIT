@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../core/theme/app_colors.dart';
@@ -66,7 +67,7 @@ class ChatListScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade400),
+          Icon(PhosphorIconsRegular.chatCircle, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           const Text('No active messages', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.obsidian)),
           const SizedBox(height: 8),
@@ -131,7 +132,7 @@ class ChatListRoomTile extends StatelessWidget {
                   radius: 28,
                   backgroundColor: AppColors.mist,
                   backgroundImage: otherProfilePic.isNotEmpty ? NetworkImage(otherProfilePic) : null,
-                  child: otherProfilePic.isEmpty ? const Icon(Icons.person, color: Colors.grey, size: 28) : null,
+                  child: otherProfilePic.isEmpty ? const Icon(PhosphorIconsRegular.user, color: Colors.grey, size: 28) : null,
                 ),
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

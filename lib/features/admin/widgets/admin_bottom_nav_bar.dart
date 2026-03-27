@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AdminBottomNavBar extends StatefulWidget {
@@ -48,11 +49,11 @@ class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNavItem(Icons.dashboard_rounded, 0),
-            _buildNavItem(Icons.verified_outlined, 1),
-            _buildNavItem(Icons.map_outlined, 2),
-            _buildNavItem(Icons.analytics_outlined, 3),
-            _buildNavItem(Icons.person_outline, 4),
+            _buildNavItem(PhosphorIconsRegular.squaresFour, 0),
+            _buildNavItem(PhosphorIconsRegular.sealCheck, 1),
+            _buildNavItem(PhosphorIconsRegular.mapTrifold, 2),
+            _buildNavItem(PhosphorIconsRegular.chartBar, 3),
+            _buildNavItem(PhosphorIconsRegular.user, 4),
           ],
         ),
       ),

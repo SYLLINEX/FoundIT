@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -196,7 +197,7 @@ class _AdminMapTabState extends State<AdminMapTab> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isLost ? Icons.search : Icons.check_circle_outline,
+                      isLost ? PhosphorIconsRegular.magnifyingGlass : PhosphorIconsRegular.checkCircle,
                       color: typeColor,
                       size: 28,
                     ),
@@ -557,8 +558,8 @@ class _MapSettingsMenuWidgetState extends State<_MapSettingsMenuWidget>
                         index: 0,
                         dx: -6,
                         icon: widget.currentMapType == MapType.normal
-                            ? Icons.layers_outlined
-                            : Icons.layers,
+                            ? PhosphorIconsRegular.stack
+                            : PhosphorIconsRegular.stack,
                         onTap: () {
                           widget.onMapTypeChanged(
                             widget.currentMapType == MapType.normal
@@ -570,19 +571,19 @@ class _MapSettingsMenuWidgetState extends State<_MapSettingsMenuWidget>
                       _buildAnimatedItem(
                         index: 1,
                         dx: -18,
-                        icon: Icons.my_location,
+                        icon: PhosphorIconsRegular.crosshair,
                         onTap: widget.onRecenter,
                       ),
                       _buildAnimatedItem(
                         index: 2,
                         dx: -28,
-                        icon: Icons.add,
+                        icon: PhosphorIconsRegular.plus,
                         onTap: widget.onZoomIn,
                       ),
                       _buildAnimatedItem(
                         index: 3,
                         dx: -20,
-                        icon: Icons.remove,
+                        icon: PhosphorIconsRegular.minus,
                         onTap: widget.onZoomOut,
                       ),
                     ],
@@ -593,7 +594,7 @@ class _MapSettingsMenuWidgetState extends State<_MapSettingsMenuWidget>
           },
         ),
         _MapControlButton(
-          icon: _animationController.isCompleted ? Icons.close : Icons.settings,
+          icon: _animationController.isCompleted ? PhosphorIconsRegular.x : PhosphorIconsRegular.gear,
           onTap: _toggleMenu,
         ),
       ],

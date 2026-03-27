@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/claim_model.dart';
 import '../../../models/item_model.dart';
@@ -105,25 +106,25 @@ class AdminAnalyticsTab extends StatelessWidget {
                       _buildStatCard(
                         'Pending Verifications',
                         '$pendingItems',
-                        Icons.verified_user,
+                        PhosphorIconsRegular.shieldCheck,
                         Colors.orange,
                       ),
                       _buildStatCard(
                         'Unresolved Lost',
                         '$unresolvedLost',
-                        Icons.error_outline,
+                        PhosphorIconsRegular.warningCircle,
                         Colors.red,
                       ),
                       _buildStatCard(
                         'Found Items',
                         '$foundItems',
-                        Icons.inventory_2,
+                        PhosphorIconsRegular.package,
                         Colors.green,
                       ),
                       _buildStatCard(
                         'Reserved',
                         '$reservedItems',
-                        Icons.bookmark_added,
+                        PhosphorIconsRegular.bookmarkSimple,
                         Colors.purple,
                       ),
                     ],
@@ -229,7 +230,7 @@ class AdminAnalyticsTab extends StatelessWidget {
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.chevron_right,
+                                  PhosphorIconsRegular.caretRight,
                                   size: 20,
                                 ),
                               ),
@@ -267,7 +268,7 @@ class AdminAnalyticsTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.insights, color: Colors.white),
+              const Icon(PhosphorIconsRegular.chartLineUp, color: Colors.white),
               const SizedBox(width: 8),
               const Text(
                 'Weekly Activity Trend',
@@ -333,7 +334,7 @@ class AdminAnalyticsTab extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.stacked_bar_chart),
+              Icon(PhosphorIconsRegular.chartBar),
               SizedBox(width: 8),
               Text(
                 'Top Missing Item Categories',

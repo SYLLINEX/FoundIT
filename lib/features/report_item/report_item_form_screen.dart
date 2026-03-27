@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'tag_location_screen.dart';
@@ -123,7 +124,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.arrow_back_ios_new,
+                PhosphorIconsRegular.caretLeft,
                 size: 16,
                 color: Colors.white,
               ),
@@ -185,7 +186,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              Icons.upload_file,
+                              PhosphorIconsRegular.uploadSimple,
                               size: 24,
                               color: Color(0xFF4B5563),
                             ),
@@ -359,7 +360,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
               ].contains(selectedCategory)
           ? selectedCategory
           : null,
-      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+      icon: const Icon(PhosphorIconsRegular.caretDown, color: Colors.grey),
       decoration: InputDecoration(
         hintText: 'Select a category',
         hintStyle: TextStyle(color: Colors.grey[400]),
@@ -420,7 +421,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                 fontSize: 16,
               ),
             ),
-            const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
+            const Icon(PhosphorIconsRegular.calendarBlank, color: Colors.grey, size: 20),
           ],
         ),
       ),

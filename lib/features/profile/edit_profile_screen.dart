@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -143,7 +144,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         child:
                             _imageFile == null &&
                                 widget.userModel.profileImg.isEmpty
-                            ? const Icon(Icons.camera_alt, size: 40)
+                            ? const Icon(PhosphorIconsRegular.camera, size: 40)
                             : null,
                       ),
                     ),
@@ -159,7 +160,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         labelText: 'Email Address',
                         fillColor: Colors.grey.shade200,
                         filled: true,
-                        prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                        prefixIcon: const Icon(PhosphorIconsRegular.envelopeSimple, color: Colors.grey),
                       ),
                       readOnly: true,
                       style: const TextStyle(color: Colors.grey),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -123,7 +124,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                 const Text('What type of photo?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Colors.indigo),
+                  leading: const Icon(PhosphorIconsRegular.camera, color: Colors.indigo),
                   title: const Text('Picture of the Item'),
                   subtitle: const Text('AI will scan these to calculate similarity match.'),
                   onTap: () {
@@ -132,7 +133,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.receipt_long, color: Colors.indigo),
+                  leading: const Icon(PhosphorIconsRegular.receipt, color: Colors.indigo),
                   title: const Text('Ownership Proof'),
                   subtitle: const Text('Receipts, serial numbers, packaging, etc.'),
                   onTap: () {
@@ -309,7 +310,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.article_outlined,
+                                PhosphorIconsRegular.article,
                                 size: 48,
                                 color: Colors.grey,
                               ),
@@ -393,13 +394,13 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                               child: Container(color: Colors.white),
                                             ),
                                             errorWidget: (context, url, error) => const Icon(
-                                              Icons.image_not_supported_outlined,
+                                              PhosphorIconsRegular.imageBroken,
                                               color: Colors.grey,
                                             ),
                                           ),
                                         )
                                       : const Icon(
-                                          Icons.image_not_supported_outlined,
+                                          PhosphorIconsRegular.imageBroken,
                                           color: Colors.grey,
                                         ),
                                 ),
@@ -432,8 +433,8 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                 ),
                                 Icon(
                                   isSelected
-                                      ? Icons.check_circle
-                                      : Icons.chevron_right,
+                                      ? PhosphorIconsRegular.checkCircle
+                                      : PhosphorIconsRegular.caretRight,
                                   color: isSelected
                                       ? Colors.indigo
                                       : Colors.grey.shade400,
@@ -508,7 +509,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
         centerTitle: true,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.obsidian, size: 20),
+          icon: const Icon(PhosphorIconsRegular.caretLeft, color: AppColors.obsidian, size: 20),
         ),
       ),
       body: SingleChildScrollView(
@@ -590,7 +591,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   ),
                   child: const Column(
                     children: [
-                      Icon(Icons.link_rounded, color: Colors.indigo, size: 28),
+                      Icon(PhosphorIconsRegular.link, color: Colors.indigo, size: 28),
                       SizedBox(height: 8),
                       Text(
                         'Tap to link a LOST report',
@@ -646,7 +647,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                 _similarityPercentage = null;
                               });
                             },
-                            icon: const Icon(Icons.close, color: Colors.grey),
+                            icon: const Icon(PhosphorIconsRegular.x, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -742,7 +743,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   ),
                   child: const Column(
                     children: [
-                      Icon(Icons.add_photo_alternate_outlined, color: Colors.grey, size: 32),
+                      Icon(PhosphorIconsRegular.imageSquare, color: Colors.grey, size: 32),
                       SizedBox(height: 8),
                       Text(
                         'Tap to upload photos',
@@ -812,7 +813,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      _isConfirmed ? Icons.check_circle : Icons.radio_button_unchecked,
+                      _isConfirmed ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.circle,
                       color: _isConfirmed ? Colors.indigo : Colors.grey.shade400,
                     ),
                     const SizedBox(width: 16),
@@ -1028,7 +1029,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                           ),
                           padding: const EdgeInsets.all(6),
                           child: const Icon(
-                            Icons.close,
+                            PhosphorIconsRegular.x,
                             color: Colors.white,
                             size: 14,
                           ),

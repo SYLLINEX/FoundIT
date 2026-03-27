@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../core/theme/app_colors.dart';
@@ -12,17 +13,17 @@ class NotificationsScreen extends StatelessWidget {
   IconData _iconForType(String type) {
     switch (type) {
       case 'report_approved':
-        return Icons.verified;
+        return PhosphorIconsRegular.sealCheck;
       case 'nearby_report':
-        return Icons.near_me;
+        return PhosphorIconsRegular.paperPlaneTilt;
       case 'report_found':
-        return Icons.search;
+        return PhosphorIconsRegular.magnifyingGlass;
       case 'report_reserved':
-        return Icons.bookmark_added;
+        return PhosphorIconsRegular.bookmarkSimple;
       case 'lost_report_resolved':
-        return Icons.task_alt;
+        return PhosphorIconsRegular.checkCircle;
       default:
-        return Icons.notifications;
+        return PhosphorIconsRegular.bell;
     }
   }
 

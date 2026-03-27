@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
@@ -293,7 +294,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                             fontSize: 16,
                           ),
                           prefixIcon: const Icon(
-                            Icons.search,
+                            PhosphorIconsRegular.magnifyingGlass,
                             color: Colors.grey,
                           ),
                           border: InputBorder.none,
@@ -307,7 +308,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                   const SizedBox(width: 10),
                   // Filter Button
                   _buildIconButton(
-                    Icons.filter_alt_outlined,
+                    PhosphorIconsRegular.funnel,
                     _showFilterSettingsDialog,
                   ),
                 ],
@@ -325,8 +326,8 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                   // Map Layer Toggle
                   _buildIconButton(
                     _currentMapType == MapType.normal
-                        ? Icons.layers_outlined
-                        : Icons.layers,
+                        ? PhosphorIconsRegular.stack
+                        : PhosphorIconsRegular.stack,
                     () {
                       setState(() {
                         _currentMapType = _currentMapType == MapType.normal
@@ -564,7 +565,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isLost ? Icons.search : Icons.check_circle_outline,
+                      isLost ? PhosphorIconsRegular.magnifyingGlass : PhosphorIconsRegular.checkCircle,
                       color: typeColor,
                       size: 28,
                     ),

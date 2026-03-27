@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -306,14 +307,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       highlightColor: Colors.grey[100]!,
                       child: Container(color: Colors.white),
                     ),
-                    errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                    errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.imageBroken, size: 50, color: Colors.grey),
                   ),
                 )
               else
                 Container(
                   height: 180, width: double.infinity,
                   decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                  child: const Icon(PhosphorIconsRegular.imageBroken, size: 50, color: Colors.grey),
                 ),
               const SizedBox(height: 16),
               Text(widget.itemTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.obsidian)),
@@ -321,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.person, size: 16, color: Colors.grey),
+                  const Icon(PhosphorIconsRegular.user, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
                   Text('Chatting with ${widget.otherUserName}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
                 ],
@@ -333,7 +334,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.calendar_today, size: 16, color: Colors.indigo),
+                    const Icon(PhosphorIconsRegular.calendarBlank, size: 16, color: Colors.indigo),
                     const SizedBox(width: 8),
                     Text('Started ${DateFormat.yMMMd().format(widget.room.lastUpdated)}', style: TextStyle(color: Colors.indigo.shade900, fontWeight: FontWeight.w600)),
                   ],
@@ -366,7 +367,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 radius: 20,
                 backgroundImage: widget.otherProfilePicUrl.isNotEmpty ? NetworkImage(widget.otherProfilePicUrl) : null,
                 backgroundColor: Colors.grey.shade200,
-                child: widget.otherProfilePicUrl.isEmpty ? const Icon(Icons.person, color: Colors.grey, size: 20) : null,
+                child: widget.otherProfilePicUrl.isEmpty ? const Icon(PhosphorIconsRegular.user, color: Colors.grey, size: 20) : null,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -408,7 +409,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     )
                   );
                 },
-                icon: const Icon(Icons.check_circle, color: Colors.green),
+                icon: const Icon(PhosphorIconsRegular.checkCircle, color: Colors.green),
                 label: const Text('Resolve', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
               );
             }
@@ -427,7 +428,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 child: const Row(
                   children: [
-                     Icon(Icons.check_circle, color: Colors.green, size: 20),
+                     Icon(PhosphorIconsRegular.checkCircle, color: Colors.green, size: 20),
                      SizedBox(width: 8),
                      Expanded(
                        child: Text('Case Resolved. This chat will auto-delete in 3 days.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 13)),
@@ -537,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             },
                             backgroundColor: Colors.transparent,
                             foregroundColor: Colors.indigo,
-                            icon: Icons.reply,
+                            icon: PhosphorIconsRegular.arrowBendUpLeft,
                             label: 'Reply',
                           ),
                         ],
@@ -566,7 +567,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             },
                             backgroundColor: Colors.transparent,
                             foregroundColor: Colors.indigo,
-                            icon: Icons.reply,
+                            icon: PhosphorIconsRegular.arrowBendUpLeft,
                             label: 'Reply',
                           ),
                         ],
@@ -622,7 +623,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                         if (isMe) ...[
                                           const SizedBox(width: 4),
-                                          Icon(Icons.done_all, size: 14, color: msg.isRead ? Colors.lightBlueAccent : Colors.white54),
+                                          Icon(PhosphorIconsRegular.checks, size: 14, color: msg.isRead ? Colors.lightBlueAccent : Colors.white54),
                                         ],
                                       ],
                                     ),
@@ -689,7 +690,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 8),
                           child: Row(
                             children: [
-                              const Icon(Icons.reply, size: 18, color: Colors.indigo),
+                              const Icon(PhosphorIconsRegular.arrowBendUpLeft, size: 18, color: Colors.indigo),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
@@ -702,7 +703,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close, size: 20),
+                                icon: const Icon(PhosphorIconsRegular.x, size: 20),
                                 onPressed: () => setState(() {
                                   _replyingToMessage = null;
                                   _replyingToDecryptedText = '';
@@ -716,7 +717,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Row(
                           children: [
                             IconButton(
-                              icon: Icon(_showEmojiKeyboard ? Icons.keyboard : Icons.emoji_emotions_outlined, color: Colors.grey.shade600),
+                              icon: Icon(_showEmojiKeyboard ? PhosphorIconsRegular.keyboard : PhosphorIconsRegular.smiley, color: Colors.grey.shade600),
                               onPressed: _onEmojiButtonPressed,
                             ),
                             Expanded(
@@ -748,7 +749,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               child: IconButton(
                                 icon: _isSending 
                                   ? const SizedBox(width: 20, height: 20, child: FoundItLoadingIndicator(size: 16, color: Colors.white)) 
-                                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                                  : const Icon(PhosphorIconsRegular.paperPlaneRight, color: Colors.white, size: 20),
                                 onPressed: _isSending ? null : _sendMessage,
                               ),
                             ),

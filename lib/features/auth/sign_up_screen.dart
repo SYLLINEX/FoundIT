@@ -179,7 +179,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: InputDecoration(
                         hintText: 'John Doe',
                         prefixIcon: Icon(
-                          PhosphorIcons.user(),
+                          PhosphorIconsRegular.user,
                           color: AppColors.dusk,
                         ),
                       ),
@@ -201,7 +201,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: InputDecoration(
                         hintText: 'student@university.edu',
                         prefixIcon: Icon(
-                          PhosphorIcons.envelopeSimple(),
+                          PhosphorIconsRegular.envelopeSimple,
                           color: AppColors.dusk,
                         ),
                       ),
@@ -225,7 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: InputDecoration(
                         hintText: '+60 123 456 789',
                         prefixIcon: Icon(
-                          PhosphorIcons.phone(),
+                          PhosphorIconsRegular.phone,
                           color: AppColors.dusk,
                         ),
                       ),
@@ -247,14 +247,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         prefixIcon: Icon(
-                          PhosphorIcons.lockKey(),
+                          PhosphorIconsRegular.lockKey,
                           color: AppColors.dusk,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
-                                ? PhosphorIcons.eyeClosed()
-                                : PhosphorIcons.eye(),
+                                ? PhosphorIconsRegular.eyeClosed
+                                : PhosphorIconsRegular.eye,
                             color: AppColors.dusk,
                           ),
                           onPressed: () => setState(
@@ -283,14 +283,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       decoration: InputDecoration(
                         hintText: '••••••••',
                         prefixIcon: Icon(
-                          PhosphorIcons.lockKey(),
+                          PhosphorIconsRegular.lockKey,
                           color: AppColors.dusk,
                         ),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscureConfirmPassword
-                                ? PhosphorIcons.eyeClosed()
-                                : PhosphorIcons.eye(),
+                                ? PhosphorIconsRegular.eyeClosed
+                                : PhosphorIconsRegular.eye,
                             color: AppColors.dusk,
                           ),
                           onPressed: () => setState(
@@ -365,7 +365,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                     // Google Sign Up Button
                     OutlinedButton.icon(
-                      icon: Icon(PhosphorIcons.googleLogo(), size: 24),
+                      icon: Icon(PhosphorIconsRegular.googleLogo, size: 24),
                       label: const Text(
                         'Sign up with Google',
                         style: TextStyle(

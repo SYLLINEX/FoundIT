@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../notifications/notifications_screen.dart';
@@ -74,7 +75,7 @@ class _AdminMinimalHeaderState extends State<AdminMinimalHeader> {
                   );
                 },
                 icon: const Icon(
-                  Icons.notifications_none,
+                  PhosphorIconsRegular.bell,
                   color: Colors.white,
                   size: 24,
                 ),

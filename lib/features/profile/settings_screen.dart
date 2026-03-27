@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 
@@ -50,10 +51,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ListTile(
-            leading: const Icon(Icons.lock_reset),
+            leading: const Icon(PhosphorIconsRegular.lockKey),
             title: const Text('Reset Password'),
             subtitle: const Text('Send a password reset link to your email'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(PhosphorIconsRegular.caretRight),
             tileColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -79,7 +80,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           ListTile(
-            leading: const Icon(Icons.notifications),
+            leading: const Icon(PhosphorIconsRegular.bell),
             title: const Text('Notifications'),
             trailing: Switch(
               value: true,

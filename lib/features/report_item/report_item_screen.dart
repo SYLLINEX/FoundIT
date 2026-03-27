@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:google_fonts/google_fonts.dart'; // Assuming google_fonts is available, let's use default bold if not
 import 'report_item_form_screen.dart';
 
@@ -27,7 +28,7 @@ class ReportItemScreen extends StatelessWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF374151)),
+                    child: const Icon(PhosphorIconsRegular.caretLeft, size: 18, color: Color(0xFF374151)),
                   ),
                 ),
               ),
@@ -56,7 +57,7 @@ class ReportItemScreen extends StatelessWidget {
                 context,
                 title: 'I Lost Something',
                 subtitle: "Report an item you've misplaced and\nneed help finding.",
-                icon: Icons.question_mark,
+                icon: PhosphorIconsRegular.question,
                 iconColor: Colors.white,
                 circleBgColor: const Color(0xFFE11D48),
                 lightCircleBgolor: const Color(0xFFFEE2E2),
@@ -67,7 +68,7 @@ class ReportItemScreen extends StatelessWidget {
                 context,
                 title: 'I Found Something',
                 subtitle: "Report an item you've discovered to\nhelp return it.",
-                icon: Icons.navigation_rounded,
+                icon: PhosphorIconsRegular.navigationArrow,
                 iconColor: Colors.white,
                 circleBgColor: const Color(0xFF10B981),
                 lightCircleBgolor: const Color(0xFFD1FAE5),
