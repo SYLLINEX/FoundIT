@@ -177,7 +177,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 100.0),
+        padding: const EdgeInsets.only(bottom: 80.0),
         child: ExpandableFilterFab(
           categories: _categories,
           selectedCategoryIndex: _selectedCategoryIndex,

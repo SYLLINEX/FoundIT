@@ -13,6 +13,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../widgets/app_confirmation_dialog.dart';
 import '../widgets/admin_header.dart';
 import '../../notifications/notifications_screen.dart';
+import '../../../widgets/expandable_filter_fab.dart';
 
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
@@ -22,6 +23,8 @@ class AdminVerificationsTab extends StatefulWidget {
 }
 
 class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
+  final List<String> _categories = const ['All', 'Reports', 'Claims'];
+  int _selectedCategoryIndex = 0;
   String _selectedFilter = 'All'; // 'All', 'Reports', or 'Claims'
   String _searchQuery = '';
   final NotificationService _notificationService = NotificationService();
@@ -35,9 +38,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        AdminHeader(
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        children: [
+          AdminHeader(
           title: 'Verifications',
           onNotificationTap: () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
@@ -72,36 +77,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  PopupMenuButton<String>(
-                    tooltip: 'Filter list',
-                    onSelected: (value) {
-                      setState(() => _selectedFilter = value);
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'All', child: Text('All')),
-                      PopupMenuItem(value: 'Reports', child: Text('Reports')),
-                      PopupMenuItem(value: 'Claims', child: Text('Claims')),
-                    ],
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Icon(
-                        _selectedFilter == 'All'
-                            ? PhosphorIconsRegular.funnel
-                            : _selectedFilter == 'Reports'
-                            ? PhosphorIconsRegular.article
-                            : PhosphorIconsRegular.checkSquareOffset,
-                        size: 20,
-                        color: AppColors.adminVerificationInk,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -109,7 +84,22 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         ),
         // List Area
         Expanded(child: _buildAllList()),
-      ],
+        ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: ExpandableFilterFab(
+          categories: _categories,
+          selectedCategoryIndex: _selectedCategoryIndex,
+          onCategorySelected: (index) {
+            setState(() {
+              _selectedCategoryIndex = index;
+              _selectedFilter = _categories[index];
+            });
+          },
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

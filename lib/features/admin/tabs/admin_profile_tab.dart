@@ -6,7 +6,10 @@ import '../../../services/auth_service.dart';
 import '../../auth/auth_screen.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
-
+import '../../../models/user_model.dart';
+import '../../profile/edit_profile_screen.dart';
+import '../../profile/settings_screen.dart';
+import '../../chat/chat_list_screen.dart';
 
 class AdminProfileTab extends StatelessWidget {
   const AdminProfileTab({super.key});
@@ -39,6 +42,17 @@ class AdminProfileTab extends StatelessWidget {
           final adminName = data['username'] ?? data['name'] ?? 'Admin';
           final adminEmail = data['email'] ?? currentUser.email ?? '';
           final profileImg = data['profile_img'] ?? currentUser.photoURL ?? '';
+
+          final userModel = UserModel(
+            uid: currentUser.uid,
+            username: adminName,
+            email: adminEmail,
+            role: 'admin',
+            matricNo: data['matric_no'] ?? '',
+            phoneNum: data['phone_num'] ?? '',
+            profileImg: profileImg,
+            createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          );
 
           final bottomSpacing = MediaQuery.of(context).padding.bottom + 120;
 
@@ -138,8 +152,66 @@ class AdminProfileTab extends StatelessWidget {
 
                   const SizedBox(height: 32),
 
-                  // Admin Notifications
+                  // Group 1: Edit Profile & Settings
                   _buildMenuCard([
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.userCircle,
+                      title: 'Edit Profile',
+                      subtitle: 'Change your details',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                EditProfileScreen(userModel: userModel),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 70,
+                      endIndent: 20,
+                      color: Color(0xFFEEEDF2),
+                    ),
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.gear,
+                      title: 'Settings',
+                      subtitle: 'Notifications & Privacy',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 70,
+                      endIndent: 20,
+                      color: Color(0xFFEEEDF2),
+                    ),
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.chatCircleText,
+                      title: 'Messages',
+                      subtitle: 'View your conversations',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ChatListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 70,
+                      endIndent: 20,
+                      color: Color(0xFFEEEDF2),
+                    ),
                     _buildMenuItem(
                       icon: PhosphorIconsFill.bell,
                       title: 'Notifications',
@@ -151,6 +223,34 @@ class AdminProfileTab extends StatelessWidget {
                             builder: (context) => const NotificationsScreen(),
                           ),
                         );
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  // Group 2: Help & Support & Terms of Service
+                  _buildMenuCard([
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.question,
+                      title: 'Help & Support',
+                      subtitle: 'FAQ & Contact us',
+                      onTap: () {
+                        // Placeholder
+                      },
+                    ),
+                    const Divider(
+                      height: 1,
+                      indent: 70,
+                      endIndent: 20,
+                      color: Color(0xFFEEEDF2),
+                    ),
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.shieldCheck,
+                      title: 'Terms of Service',
+                      subtitle: 'Rules & Guidelines',
+                      onTap: () {
+                        // Placeholder
                       },
                     ),
                   ]),
@@ -233,7 +333,7 @@ class AdminProfileTab extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: const BoxDecoration(
@@ -247,14 +347,17 @@ class AdminProfileTab extends StatelessWidget {
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           color: Color(0xFF262532),
+          fontSize: 16,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(
-          color: Color(0xFF6B6A7C),
-          fontSize: 12,
-        ),
+        style: const TextStyle(color: Color(0xFF6B6A7C), fontSize: 13),
+      ),
+      trailing: const Icon(
+        PhosphorIconsRegular.caretRight,
+        size: 16,
+        color: Color(0xFFD1D1D6),
       ),
       onTap: onTap,
     );
