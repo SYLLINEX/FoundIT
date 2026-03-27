@@ -14,6 +14,7 @@ import '../../models/chat_room_model.dart';
 import '../../models/message_model.dart';
 import '../../services/encryption_service.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -196,7 +197,7 @@ class _ChatScreenState extends State<ChatScreen> {
           userId: widget.otherUserId,
           title: myName,
           body: text,
-          type: 'chat_message',
+          type: 'new_message',
           relatedItemId: widget.room.itemId,
           data: {'chat_room_id': widget.room.id},
         );
@@ -390,24 +391,18 @@ class _ChatScreenState extends State<ChatScreen> {
               if (closed) return const SizedBox.shrink();
               return TextButton.icon(
                 onPressed: () {
-                  showDialog(
+                  showAppConfirmationDialog<bool>(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Mark as Returned?'),
-                      content: const Text('This will close the chat room, mark the item as Resolved, and set this chat to auto-delete in 3 days. Are you sure?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _markAsResolved();
-                          },
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                          child: const Text('Confirm', style: TextStyle(color: Colors.white)),
-                        )
-                      ]
-                    )
-                  );
+                    title: 'Mark as Returned?',
+                    message: 'This will close the chat room, mark the item as Resolved, and set this chat to auto-delete in 3 days. Are you sure?',
+                    confirmText: 'Confirm',
+                    cancelText: 'Cancel',
+                    confirmColor: Colors.green,
+                  ).then((confirmed) {
+                    if (confirmed == true) {
+                      _markAsResolved();
+                    }
+                  });
                 },
                 icon: const Icon(PhosphorIconsRegular.checkCircle, color: Colors.green),
                 label: const Text('Resolve', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),

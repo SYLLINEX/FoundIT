@@ -22,6 +22,10 @@ class NotificationsScreen extends StatelessWidget {
         return PhosphorIconsRegular.bookmarkSimple;
       case 'lost_report_resolved':
         return PhosphorIconsRegular.checkCircle;
+      case 'post_deleted':
+        return PhosphorIconsRegular.xCircle;
+      case 'new_message':
+        return PhosphorIconsRegular.chatCircleDots;
       default:
         return PhosphorIconsRegular.bell;
     }
@@ -39,6 +43,10 @@ class NotificationsScreen extends StatelessWidget {
         return Colors.purple;
       case 'lost_report_resolved':
         return Colors.teal;
+      case 'post_deleted':
+        return Colors.red;
+      case 'new_message':
+        return Colors.blue;
       default:
         return AppColors.deepLavender;
     }

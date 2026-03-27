@@ -9,6 +9,7 @@ import '../../reports/item_details_screen.dart';
 import '../../../widgets/expandable_filter_fab.dart';
 import '../widgets/admin_header.dart';
 import '../../notifications/notifications_screen.dart';
+import '../../../services/notification_service.dart';
 
 class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
@@ -208,25 +209,36 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   }
 
   void _showDeleteConfirmation(BuildContext context, ItemModel item) {
-    showAppConfirmationDialog<bool>(
+    showAppInputDialog(
       context: context,
-      title: 'Delete Item?',
-      message: 'This action cannot be undone.',
+      title: 'Delete Item',
+      message: 'Please provide a reason for taking down this post. The owner will be notified.',
+      hintText: 'Reason for deletion...',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       confirmColor: Colors.red,
-    ).then((confirmed) async {
-      if (confirmed == true) {
-        await _deleteItem(item.itemId);
+    ).then((reason) async {
+      if (reason != null && reason.isNotEmpty) {
+        await _deleteItem(item, reason);
       }
     });
   }
 
-  Future<void> _deleteItem(String itemId) async {
+  Future<void> _deleteItem(ItemModel item, String reason) async {
     try {
-      await FirebaseFirestore.instance.collection('items').doc(itemId).delete();
+      await FirebaseFirestore.instance.collection('items').doc(item.itemId).delete();
+      
+      final notificationService = NotificationService();
+      await notificationService.createNotification(
+        userId: item.userId,
+        title: 'Post Removed',
+        body: 'Your post "${item.title}" has been taken down. Reason: $reason',
+        type: 'post_deleted',
+        relatedItemId: item.itemId,
+      );
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item deleted successfully')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item deleted and owner notified')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting item: $e')));
