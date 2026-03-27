@@ -64,260 +64,258 @@ class ProfileScreen extends StatelessWidget {
             padding: EdgeInsets.only(bottom: bottomSpacing),
             child: Column(
               children: [
-                  // Custom Top Bar with Avatar
-                  Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      // Dark purple background container
-                      Container(
-                        margin: const EdgeInsets.only(
-                          bottom: 60,
-                        ), // Space for the avatar to overlap
-                        height: 200,
-                        decoration: const BoxDecoration(
-                          color: Color(
-                            0xFF413F54,
-                          ), // Matches the dark appbar color
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(40),
-                            bottomRight: Radius.circular(40),
-                          ),
+                // Custom Top Bar with Avatar
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    // Dark purple background container
+                    Container(
+                      margin: const EdgeInsets.only(
+                        bottom: 60,
+                      ), // Space for the avatar to overlap
+                      height: 200,
+                      decoration: const BoxDecoration(
+                        color: Color(
+                          0xFF413F54,
+                        ), // Matches the dark appbar color
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(40),
+                          bottomRight: Radius.circular(40),
                         ),
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            left: 20.0,
-                            right: 20.0,
-                            top: MediaQuery.of(context).padding.top + 8,
-                            bottom: 22,
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    'Profile',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: 20.0,
+                          right: 20.0,
+                          top: MediaQuery.of(context).padding.top + 8,
+                          bottom: 22,
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                child: Text(
+                                  'Profile',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      // Profile Avatar overlapping the bottom edge
-                      Positioned(
-                        bottom: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(
-                            6,
-                          ), // White border effect
-                          decoration: const BoxDecoration(
-                            color: Color(
-                              0xFFF2F2F6,
-                            ), // Match scaffold background to act as border
-                            shape: BoxShape.circle,
-                          ),
-                          child: CircleAvatar(
-                            radius: 56,
-                            backgroundColor: Colors.white,
-                            backgroundImage: userModel.profileImg.isNotEmpty
-                                ? NetworkImage(userModel.profileImg)
-                                : null,
-                            child: userModel.profileImg.isEmpty
-                                ? const Icon(
-                                    PhosphorIconsRegular.user,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  )
-                                : null,
-                          ),
+                    ),
+                    // Profile Avatar overlapping the bottom edge
+                    Positioned(
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6), // White border effect
+                        decoration: const BoxDecoration(
+                          color: Color(
+                            0xFFF2F2F6,
+                          ), // Match scaffold background to act as border
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          radius: 56,
+                          backgroundColor: Colors.white,
+                          backgroundImage: userModel.profileImg.isNotEmpty
+                              ? NetworkImage(userModel.profileImg)
+                              : null,
+                          child: userModel.profileImg.isEmpty
+                              ? const Icon(
+                                  PhosphorIconsRegular.user,
+                                  size: 50,
+                                  color: Colors.grey,
+                                )
+                              : null,
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // User Info
+                Text(
+                  userModel.username.isNotEmpty
+                      ? userModel.username
+                      : 'Unknown',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF262532),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // User Info
-                  Text(
-                    userModel.username.isNotEmpty
-                        ? userModel.username
-                        : 'Unknown',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF262532),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  userModel.matricNo.isNotEmpty
+                      ? userModel.matricNo
+                      : 'No ID Available',
+                  style: const TextStyle(
+                    color: Color(0xFF6B6A7C),
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    userModel.matricNo.isNotEmpty
-                        ? userModel.matricNo
-                        : 'No ID Available',
-                    style: const TextStyle(
-                      color: Color(0xFF6B6A7C),
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
+                ),
 
-                  const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-                  // Group 1: Edit Profile & Settings
-                  _buildMenuCard([
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.userCircle,
-                      title: 'Edit Profile',
-                      subtitle: 'Change your details',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                EditProfileScreen(userModel: userModel),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(
-                      height: 1,
-                      indent: 70,
-                      endIndent: 20,
-                      color: Color(0xFFEEEDF2),
-                    ),
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.gear,
-                      title: 'Settings',
-                      subtitle: 'Notifications & Privacy',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SettingsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(
-                      height: 1,
-                      indent: 70,
-                      endIndent: 20,
-                      color: Color(0xFFEEEDF2),
-                    ),
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.chatCircleText,
-                      title: 'Messages',
-                      subtitle: 'View your conversations',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ChatListScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(
-                      height: 1,
-                      indent: 70,
-                      endIndent: 20,
-                      color: Color(0xFFEEEDF2),
-                    ),
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.bell,
-                      title: 'Notifications',
-                      subtitle: 'View updates about your reports',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ]),
-
-                  const SizedBox(height: 16),
-
-                  // Group 2: Help & Support & Terms of Service
-                  _buildMenuCard([
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.question,
-                      title: 'Help & Support',
-                      subtitle: 'FAQ & Contact us',
-                      onTap: () {
-                        // Placeholder
-                      },
-                    ),
-                    const Divider(
-                      height: 1,
-                      indent: 70,
-                      endIndent: 20,
-                      color: Color(0xFFEEEDF2),
-                    ),
-                    _buildMenuItem(
-                      icon: PhosphorIconsFill.shieldCheck,
-                      title: 'Terms of Service',
-                      subtitle: 'Rules & Guidelines',
-                      onTap: () {
-                        // Placeholder
-                      },
-                    ),
-                  ]),
-
-                  const SizedBox(height: 32),
-
-                  // Log Out Button matching screenshot
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await AuthService().signOut();
-                        if (!context.mounted) return;
-                        Navigator.of(
-                          context,
-                          rootNavigator: true,
-                        ).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const AuthScreen(),
-                          ),
-                          (route) => false,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFBE8EA),
-                        foregroundColor: const Color(0xFFD32F2F),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                // Group 1: Edit Profile & Settings
+                _buildMenuCard([
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.userCircle,
+                    title: 'Edit Profile',
+                    subtitle: 'Change your details',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EditProfileScreen(userModel: userModel),
                         ),
-                        elevation: 0,
+                      );
+                    },
+                  ),
+                  const Divider(
+                    height: 1,
+                    indent: 70,
+                    endIndent: 20,
+                    color: Color(0xFFEEEDF2),
+                  ),
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.gear,
+                    title: 'Settings',
+                    subtitle: 'Notifications & Privacy',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(
+                    height: 1,
+                    indent: 70,
+                    endIndent: 20,
+                    color: Color(0xFFEEEDF2),
+                  ),
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.chatCircleText,
+                    title: 'Messages',
+                    subtitle: 'View your conversations',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChatListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(
+                    height: 1,
+                    indent: 70,
+                    endIndent: 20,
+                    color: Color(0xFFEEEDF2),
+                  ),
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.bell,
+                    title: 'Notifications',
+                    subtitle: 'View updates about your reports',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // Group 2: Help & Support & Terms of Service
+                _buildMenuCard([
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.question,
+                    title: 'Help & Support',
+                    subtitle: 'FAQ & Contact us',
+                    onTap: () {
+                      // Placeholder
+                    },
+                  ),
+                  const Divider(
+                    height: 1,
+                    indent: 70,
+                    endIndent: 20,
+                    color: Color(0xFFEEEDF2),
+                  ),
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.shieldCheck,
+                    title: 'Terms of Service',
+                    subtitle: 'Rules & Guidelines',
+                    onTap: () {
+                      // Placeholder
+                    },
+                  ),
+                ]),
+
+                const SizedBox(height: 32),
+
+                // Log Out Button matching screenshot
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await AuthService().signOut();
+                      if (!context.mounted) return;
+                      Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      ).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (context) => const AuthScreen(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFBE8EA),
+                      foregroundColor: const Color(0xFFD32F2F),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(PhosphorIconsRegular.signOut, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'Log Out',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      elevation: 0,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(PhosphorIconsRegular.signOut, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Log Out',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                ),
+                const SizedBox(height: 40),
               ],
             ),
           );
@@ -328,7 +326,8 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildMenuCard(List<Widget> children) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      // margin: const EdgeInsets.symmetric(horizontal: 24),
+      margin: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 0.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -351,7 +350,7 @@ class ProfileScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: const BoxDecoration(

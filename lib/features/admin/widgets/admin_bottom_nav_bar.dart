@@ -17,7 +17,6 @@ class AdminBottomNavBar extends StatefulWidget {
 }
 
 class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
-  // Maintained your original labels
   final List<String> _labels = [
     'Dashboard',
     'Verifications',
@@ -29,23 +28,22 @@ class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 24,
-      left: 24,
-      right: 24,
+      bottom: 20,
+      left: 16,
+      right: 16,
       child: Container(
-        height: 65,
+        height: 58,
         decoration: BoxDecoration(
           color: AppColors.nightfall,
-          borderRadius: BorderRadius.circular(40),
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
               color: AppColors.nightfall.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
-        // spaceEvenly perfectly distributes the changing widths during animation
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -70,13 +68,12 @@ class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 12,
+          horizontal: isSelected ? 12 : 8,
+          vertical: 8,
         ),
         decoration: BoxDecoration(
-          // Soft slate-blue color pulled from your screenshot reference
           color: isSelected ? const Color(0xFF385374) : Colors.transparent,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -84,27 +81,25 @@ class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
             Icon(
               icon,
               color: isSelected ? Colors.white : Colors.white60,
-              size: 26,
+              size: 22,
             ),
-            // AnimatedSize handles the smooth expanding/collapsing of the label
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
               alignment: Alignment.centerLeft,
               child: isSelected
                   ? Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
+                      padding: const EdgeInsets.only(left: 6.0),
                       child: Text(
                         _labels[index],
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                     )
-                  // Maintaining the height of the icon (26) prevents vertical jumping
-                  : const SizedBox(width: 0, height: 26), 
+                  : const SizedBox(width: 0, height: 22), 
             ),
           ],
         ),

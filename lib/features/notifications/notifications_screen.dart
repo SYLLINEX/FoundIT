@@ -51,7 +51,7 @@ class NotificationsScreen extends StatelessWidget {
   ) {
     final color = _colorForType(notification.type);
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 9),
       decoration: BoxDecoration(
         color: notification.isRead ? Colors.white : const Color(0xFFF4F7FF),
         borderRadius: BorderRadius.circular(16),
@@ -67,7 +67,7 @@ class NotificationsScreen extends StatelessWidget {
             await service.markAsRead(notification.id);
           }
         },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 1),
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.14),
           child: Icon(_iconForType(notification.type), color: color),

@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/claim_model.dart';
 import '../../../models/item_model.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
+import '../widgets/admin_header.dart';
+import '../../notifications/notifications_screen.dart';
 
 class AdminAnalyticsTab extends StatelessWidget {
   const AdminAnalyticsTab({super.key});
@@ -31,14 +33,23 @@ class AdminAnalyticsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(
-        left: 20.0,
-        right: 20.0,
-        top: 0.0,
-        bottom: 140.0,
-      ),
-      child: Column(
+    return Column(
+      children: [
+        AdminHeader(
+          title: 'Analytics',
+          onNotificationTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+          },
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(
+              left: 20.0,
+              right: 20.0,
+              top: 16.0,
+              bottom: 140.0,
+            ),
+            child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           StreamBuilder<QuerySnapshot>(
@@ -246,8 +257,11 @@ class AdminAnalyticsTab extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+     ),
+    ),
+   ],
+  );
+}
 
   Widget _buildTrendCard(List<int> trendCounts, int successRate) {
     final maxValue = trendCounts.isEmpty

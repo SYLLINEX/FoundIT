@@ -11,6 +11,8 @@ import '../../../services/ai_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../widgets/app_confirmation_dialog.dart';
+import '../widgets/admin_header.dart';
+import '../../notifications/notifications_screen.dart';
 
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
@@ -35,13 +37,18 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        AdminHeader(
+          title: 'Verifications',
+          onNotificationTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+          },
+        ),
         // Header
         Container(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
               // Search Bar
               Row(
                 children: [

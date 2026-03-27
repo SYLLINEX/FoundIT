@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AdminHeader extends StatefulWidget {
+  final String title;
   final VoidCallback onNotificationTap;
 
   const AdminHeader({
     super.key,
+    required this.title,
     required this.onNotificationTap,
   });
 
@@ -16,119 +16,101 @@ class AdminHeader extends StatefulWidget {
   State<AdminHeader> createState() => _AdminHeaderState();
 }
 
-class _AdminHeaderState extends State<AdminHeader> {
-  final currentUser = FirebaseAuth.instance.currentUser;
+class _AdminHeaderState extends State<AdminHeader> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _fadeTextAnimation;
+  late Animation<double> _fadeIconAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
+    _fadeTextAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: const Interval(0.3, 0.7, curve: Curves.easeIn)),
+    );
+    _fadeIconAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _animationController, curve: const Interval(0.6, 1.0, curve: Curves.easeIn)),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.nightfall,
-            AppColors.nightfall.withOpacity(0.85),
+    final topPadding = MediaQuery.of(context).padding.top;
+    
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Container(
+        height: topPadding + 64,
+        padding: EdgeInsets.only(top: topPadding, left: 24, right: 16),
+        decoration: const BoxDecoration(
+          color: AppColors.nightfall, // Dark theme map to user mockup
+          boxShadow: [
+            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.nightfall.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          StreamBuilder<DocumentSnapshot>(
-            stream: currentUser != null
-                ? FirebaseFirestore.instance
-                      .collection('admins')
-                      .doc(currentUser!.uid)
-                      .snapshots()
-                : null,
-            builder: (context, snapshot) {
-              String adminName = 'Admin';
-              String profileImg = '';
-
-              if (snapshot.hasData && snapshot.data!.exists) {
-                final data = snapshot.data!.data() as Map<String, dynamic>;
-                final name = data['name'] ?? data['username'] ?? '';
-                if (name.isNotEmpty) {
-                  adminName = name.split(' ')[0];
-                }
-                profileImg = data['profile_img'] ?? '';
-              } else if (currentUser != null &&
-                  currentUser!.displayName != null) {
-                final names = currentUser!.displayName!.split(' ');
-                adminName = names.isNotEmpty ? names[0] : 'Admin';
-                profileImg = currentUser!.photoURL ?? '';
-              }
-
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome, $adminName! 👨‍💼',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'SRC Management Portal',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Middle: Title Column mapped to mockup constraints
+            Expanded(
+              child: FadeTransition(
+                opacity: _fadeTextAnimation,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    padding: const EdgeInsets.all(8),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.mist,
-                      backgroundImage: profileImg.isNotEmpty
-                          ? NetworkImage(profileImg)
-                          : null,
-                      child: profileImg.isEmpty
-                          ? const Icon(
-                              PhosphorIconsRegular.shieldCheck,
-                              color: AppColors.nightfall,
-                              size: 20,
-                            )
-                          : null,
+                    const SizedBox(height: 2),
+                    const Text(
+                      'FoundIT - Lost and Found',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ],
+                ),
+              ),
+            ),
+            
+            // Right: Unboxed Notification icon representing the action area
+            FadeTransition(
+              opacity: _fadeIconAnimation,
+              child: IconButton(
+                onPressed: widget.onNotificationTap,
+                icon: const Icon(
+                  PhosphorIconsRegular.bell,
+                  color: Colors.white,
+                  size: 26,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
