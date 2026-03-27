@@ -29,7 +29,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
 
   String _selectedFilter = 'All';
   String _viewType = 'Reports';
-  final List<String> _reportFilters = const ['All', 'Pending', 'Open', 'Resolved'];
+  final List<String> _reportFilters = const ['All', 'Open', 'Pending', 'Resolved'];
 
   @override
   Widget build(BuildContext context) {
