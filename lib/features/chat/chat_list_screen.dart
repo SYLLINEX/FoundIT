@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../models/chat_room_model.dart';
 import '../../services/encryption_service.dart';
+import '../../widgets/empty_state_view.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
@@ -63,20 +64,10 @@ class ChatListScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(PhosphorIconsRegular.chatCircle, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          const Text('No active messages', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.obsidian)),
-          const SizedBox(height: 8),
-          const Text('When a claim is approved, your secure\nprivate chat will appear here.', 
-            textAlign: TextAlign.center, 
-            style: TextStyle(color: Colors.grey, height: 1.4)
-          ),
-        ],
-      ),
+    return const EmptyStateView(
+      icon: PhosphorIconsRegular.chatCircle,
+      title: 'No active messages',
+      message: 'When a claim is approved, your secure\nprivate chat will appear here.',
     );
   }
 }

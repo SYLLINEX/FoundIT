@@ -8,7 +8,8 @@ import '../reports/item_details_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/expandable_filter_fab.dart';
-
+import '../../widgets/empty_state_view.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -58,7 +59,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return const SliverFillRemaining(
-                  child: Center(child: Text('No items found.')),
+                  child: EmptyStateView(
+                    icon: PhosphorIconsRegular.folderOpen,
+                    title: 'No items found',
+                    message: 'Try adjusting your filters or search differently.',
+                  ),
                 );
               }
 

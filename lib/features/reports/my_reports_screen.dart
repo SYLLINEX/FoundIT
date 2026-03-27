@@ -15,6 +15,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/empty_state_view.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -197,7 +198,11 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('No reports found.'));
+          return const EmptyStateView(
+            icon: PhosphorIconsRegular.clipboardText,
+            title: 'No reports found',
+            message: 'You haven\'t submitted any reports yet.',
+          );
         }
 
         var items = snapshot.data!;
@@ -258,7 +263,11 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           return Center(child: Text('Error loading claims: ${snapshot.error}'));
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('You have not submitted any claims.'));
+          return const EmptyStateView(
+            icon: PhosphorIconsRegular.handshake,
+            title: 'No claims submitted',
+            message: 'You haven\'t submitted any claims yet.',
+          );
         }
 
         final claims = snapshot.data!;

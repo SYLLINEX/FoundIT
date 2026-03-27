@@ -14,7 +14,7 @@ import '../../../widgets/app_confirmation_dialog.dart';
 import '../widgets/admin_header.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../widgets/expandable_filter_fab.dart';
-
+import '../../../widgets/empty_state_view.dart';
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
 
@@ -121,7 +121,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         }).toList();
 
         if (pendingDocs.isEmpty) {
-          return const Center(child: Text('No pending reports.'));
+          return const EmptyStateView(
+            icon: PhosphorIconsRegular.checkCircle,
+            title: 'No pending reports',
+            message: 'All reports have been reviewed.',
+          );
         }
 
         final docs = pendingDocs.where((doc) {
@@ -158,7 +162,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           return const Center(child: FoundItLoadingIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No pending claims.'));
+          return const EmptyStateView(
+            icon: PhosphorIconsRegular.checkCircle,
+            title: 'No pending claims',
+            message: 'All claims have been reviewed.',
+          );
         }
 
         return ListView.builder(
@@ -217,12 +225,24 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
 
             if (noReports && noClaims) {
               if (_selectedFilter == 'Reports') {
-                return const Center(child: Text('No pending reports.'));
+                return const EmptyStateView(
+                  icon: PhosphorIconsRegular.checkCircle,
+                  title: 'No pending reports',
+                  message: 'All reports have been reviewed.',
+                );
               }
               if (_selectedFilter == 'Claims') {
-                return const Center(child: Text('No pending claims.'));
+                return const EmptyStateView(
+                  icon: PhosphorIconsRegular.checkCircle,
+                  title: 'No pending claims',
+                  message: 'All claims have been reviewed.',
+                );
               }
-              return const Center(child: Text('No pending reports or claims.'));
+              return const EmptyStateView(
+                icon: PhosphorIconsRegular.checkCircle,
+                title: 'All caught up!',
+                message: 'There are no pending reports or claims to review.',
+              );
             }
 
             return ListView(
