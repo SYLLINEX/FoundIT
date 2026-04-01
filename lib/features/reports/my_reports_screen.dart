@@ -399,6 +399,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                       style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(PhosphorIconsRegular.caretRight, color: Colors.grey[400], size: 20),
                 ],
               ),
             ),
@@ -413,34 +415,19 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     final status = item.status.toUpperCase();
     Color statusColor;
     Color statusBgColor;
-    IconData leadingIcon;
-    Color iconColor;
-    Color iconBgColor;
 
     if (status == 'RESOLVED' || status == 'CLAIMED') {
       statusColor = Colors.green[700]!;
       statusBgColor = Colors.green[100]!;
-      leadingIcon = PhosphorIconsRegular.checkCircle;
-      iconColor = Colors.green;
-      iconBgColor = Colors.green[50]!;
     } else if (status == 'PENDING' || status == 'PENDING FOR APPROVAL') {
       statusColor = Colors.orange[700]!;
       statusBgColor = Colors.orange[100]!;
-      leadingIcon = PhosphorIconsRegular.spinner; 
-      iconColor = Colors.orange;
-      iconBgColor = Colors.orange[50]!;
     } else if (status == 'MATCHED') {
       statusColor = Colors.purple[700]!;
       statusBgColor = Colors.purple[100]!;
-      leadingIcon = PhosphorIconsRegular.handshake;
-      iconColor = Colors.purple;
-      iconBgColor = Colors.purple[50]!;
     } else {
       statusColor = Colors.blue[700]!;
       statusBgColor = Colors.blue[100]!;
-      leadingIcon = PhosphorIconsRegular.warningCircle;
-      iconColor = Colors.blue;
-      iconBgColor = Colors.blue[50]!;
     }
 
     final formattedDate = DateFormat('MMM dd, yyyy').format(item.timestamp);
@@ -531,10 +518,24 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: iconBgColor,
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(leadingIcon, color: iconColor),
+                  child: item.imageUrl.isNotEmpty
+                     ? ClipRRect(
+                         borderRadius: BorderRadius.circular(12),
+                         child: CachedNetworkImage(
+                           imageUrl: item.imageUrl,
+                           fit: BoxFit.cover,
+                           placeholder: (context, url) => Shimmer.fromColors(
+                             baseColor: Colors.grey[300]!,
+                             highlightColor: Colors.grey[100]!,
+                             child: Container(color: Colors.white),
+                           ),
+                           errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.image, color: Colors.grey),
+                         ),
+                       )
+                     : const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -547,6 +548,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(

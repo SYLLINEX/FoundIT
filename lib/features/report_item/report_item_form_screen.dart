@@ -27,9 +27,24 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   final TFLiteService _tfliteService = TFLiteService();
   bool _isAnalyzing = false;
   List<String> _detectedLabels = [];
+  List<double> _scoreVector = [];
 
-  final _primaryDark = const Color(0xFF3B394D); // Deep purple/gray from design
-  final _bgColor = const Color(0xFFF3F4F6); // Light gray from design
+  // The 10 categories mirror exactly what the fine-tuned model outputs
+  static const List<String> _categories = [
+    'Accessories',
+    'Bag / Backpack',
+    'Earphones / Earbuds',
+    'ID / Card',
+    'Keys',
+    'Laptop / Tablet',
+    'Mobile Phone',
+    'Stationery',
+    'Wallet / Purse',
+    'Water Bottle / Tumbler',
+  ];
+
+  final _primaryDark = const Color(0xFF3B394D);
+  final _bgColor = const Color(0xFFF3F4F6);
 
   @override
   void dispose() {
@@ -59,38 +74,24 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       });
 
       try {
-        final topLabels = await _tfliteService.getTopLabels(_image!, count: 5);
+        // Run both in parallel — top labels + score vector
+        final results = await Future.wait([
+          _tfliteService.getTopLabels(_image!, count: 5),
+          _tfliteService.getScoreVector(_image!),
+        ]);
+
+        final topLabels   = results[0] as List<String>;
+        final scoreVector = results[1] as List<double>;
+
         if (topLabels.isNotEmpty) {
           setState(() {
             _detectedLabels = topLabels;
+            _scoreVector    = scoreVector;
             final String primaryLabel = topLabels.first;
-            _titleController.text =
-                primaryLabel; // Auto-fill title with AI label
-            // Try to map to category, fallback to 'Other'
-            final l = primaryLabel.toLowerCase();
-            if (l.contains('phone') ||
-                l.contains('laptop') ||
-                l.contains('watch') ||
-                l.contains('mouse') ||
-                l.contains('keyboard') ||
-                l.contains('computer')) {
-              selectedCategory = 'Electronics';
-            } else if (l.contains('wallet') ||
-                l.contains('card') ||
-                l.contains('id') ||
-                l.contains('purse')) {
-              selectedCategory = 'Wallet/ID';
-            } else if (l.contains('key')) {
-              selectedCategory = 'Keys';
-            } else if (l.contains('shirt') ||
-                l.contains('shoe') ||
-                l.contains('bag') ||
-                l.contains('jacket') ||
-                l.contains('glasses') ||
-                l.contains('backpack')) {
-              selectedCategory = 'Clothing';
-            } else {
-              selectedCategory = 'Other';
+
+            // Direct match — model labels == dropdown options
+            if (_categories.contains(primaryLabel)) {
+              selectedCategory = primaryLabel;
             }
           });
         }
@@ -98,9 +99,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         debugPrint('TFLite Error: $e');
       } finally {
         if (mounted) {
-          setState(() {
-            _isAnalyzing = false;
-          });
+          setState(() => _isAnalyzing = false);
         }
       }
     }
@@ -297,6 +296,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                     date: selectedDate ?? DateTime.now(),
                     imageFile: _image,
                     aiLabels: _detectedLabels,
+                    aiScoreVector: _scoreVector,
                   ),
                 ),
               );
@@ -349,15 +349,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
 
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue:
-          selectedCategory != null &&
-              [
-                'Electronics',
-                'Wallet/ID',
-                'Keys',
-                'Clothing',
-                'Other',
-              ].contains(selectedCategory)
+      value: selectedCategory != null && _categories.contains(selectedCategory)
           ? selectedCategory
           : null,
       icon: const Icon(PhosphorIconsRegular.caretDown, color: Colors.grey),
@@ -375,13 +367,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           vertical: 14,
         ),
       ),
-      items: [
-        'Electronics',
-        'Wallet/ID',
-        'Keys',
-        'Clothing',
-        'Other',
-      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      items: _categories
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
       onChanged: (val) {
         setState(() {
           selectedCategory = val;

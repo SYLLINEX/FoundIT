@@ -9,8 +9,25 @@ import '../../services/encryption_service.dart';
 import '../../widgets/empty_state_view.dart';
 import 'chat_screen.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
+
+  @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  /// Deletes expired chat rooms from Firestore (fire-and-forget)
+  void _pruneExpiredChats(List<ChatRoomModel> expired) {
+    if (expired.isEmpty) return;
+    final batch = FirebaseFirestore.instance.batch();
+    for (final chat in expired) {
+      batch.delete(
+        FirebaseFirestore.instance.collection('chat_rooms').doc(chat.id),
+      );
+    }
+    batch.commit().catchError((_) {}); // silent — best effort
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,22 +58,32 @@ class ChatListScreen extends StatelessWidget {
             return Center(child: Text('Error loading messages: ${snapshot.error}'));
           }
 
-          final docs = snapshot.data?.docs ?? [];
-          final activeChats = docs.map((doc) => ChatRoomModel.fromMap(doc.id, doc.data() as Map<String, dynamic>)).toList();
-          
-          // Sort locally to bypass Firebase Composite Index missing error
+          final now = DateTime.now();
+          final allChats = (snapshot.data?.docs ?? [])
+              .map((doc) => ChatRoomModel.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+              .toList();
+
+          // Split into expired vs active
+          final expired = allChats
+              .where((c) => c.expiresAt != null && c.expiresAt!.isBefore(now))
+              .toList();
+          final activeChats = allChats
+              .where((c) => c.expiresAt == null || c.expiresAt!.isAfter(now))
+              .toList();
+
+          // Delete expired chats from Firestore (fire-and-forget)
+          if (expired.isNotEmpty) _pruneExpiredChats(expired);
+
+          // Sort by most recent
           activeChats.sort((a, b) => b.lastUpdated.compareTo(a.lastUpdated));
 
-          if (activeChats.isEmpty) {
-            return _buildEmptyState();
-          }
+          if (activeChats.isEmpty) return _buildEmptyState();
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: activeChats.length,
-            itemBuilder: (context, index) {
-              return ChatListRoomTile(room: activeChats[index], currentUserId: currentUser.uid);
-            },
+            itemBuilder: (context, index) =>
+                ChatListRoomTile(room: activeChats[index], currentUserId: currentUser.uid),
           );
         },
       ),
@@ -71,6 +98,7 @@ class ChatListScreen extends StatelessWidget {
     );
   }
 }
+
 
 class ChatListRoomTile extends StatelessWidget {
   final ChatRoomModel room;

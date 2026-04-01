@@ -12,6 +12,7 @@ class ItemModel {
   final String locationName;
   final String status;
   final List<String> aiLabels;
+  final List<double> aiScoreVector; // 10-dim probability vector from fine-tuned model
   final DateTime timestamp;
   final String? specificLocation;
   final String? reporterName;
@@ -28,6 +29,7 @@ class ItemModel {
     required this.locationName,
     required this.status,
     required this.aiLabels,
+    this.aiScoreVector = const [],
     required this.timestamp,
     this.specificLocation,
     this.reporterName,
@@ -51,9 +53,34 @@ class ItemModel {
       locationName: data['location_name'] ?? '',
       status: data['status'] ?? 'Active',
       aiLabels: List<String>.from(data['ai_labels'] ?? []),
+      aiScoreVector: List<double>.from(
+        (data['ai_score_vector'] as List<dynamic>? ?? []).map((e) => (e as num).toDouble()),
+      ),
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       specificLocation: data['specific_location'],
       reporterName: data['reporter_name'],
+    );
+  }
+
+  /// Returns a copy of this item with [scoreVector] substituted as [aiScoreVector].
+  /// Used by claim_item_screen when averaging claimant photo vectors for comparison.
+  ItemModel copyWithScoreVector(List<double> scoreVector) {
+    return ItemModel(
+      itemId: itemId,
+      userId: userId,
+      postType: postType,
+      category: category,
+      title: title,
+      description: description,
+      imageUrl: imageUrl,
+      location: location,
+      locationName: locationName,
+      status: status,
+      aiLabels: aiLabels,
+      aiScoreVector: scoreVector,
+      timestamp: timestamp,
+      specificLocation: specificLocation,
+      reporterName: reporterName,
     );
   }
 
@@ -69,6 +96,7 @@ class ItemModel {
       'location_name': locationName,
       'status': status,
       'ai_labels': aiLabels,
+      'ai_score_vector': aiScoreVector,
       'timestamp': FieldValue.serverTimestamp(),
       'specific_location': specificLocation,
       'reporter_name': reporterName,

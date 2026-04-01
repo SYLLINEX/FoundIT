@@ -12,6 +12,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../widgets/app_confirmation_dialog.dart';
 import '../widgets/admin_header.dart';
+import '../screens/found_tip_details_screen.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../widgets/expandable_filter_fab.dart';
 import '../../../widgets/empty_state_view.dart';
@@ -907,6 +908,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     if (itemData == null) return;
     final item = ItemModel.fromMap(itemDoc.id, itemData);
 
+    // Reserve the item
     await FirebaseFirestore.instance
         .collection('items')
         .doc(claim.itemId)
@@ -916,79 +918,126 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           'reserved_at': FieldValue.serverTimestamp(),
         });
 
-    final linkedLostReportId = claim.linkedLostReportId;
-    if (linkedLostReportId != null && linkedLostReportId.isNotEmpty) {
-      final lostReportRef = FirebaseFirestore.instance
-          .collection('items')
-          .doc(linkedLostReportId);
-      await lostReportRef.update({
-        'status': 'Resolved',
-        'resolved_by_claim_id': claim.claimId,
-        'resolved_at': FieldValue.serverTimestamp(),
+    // Chat room expires in 3 days
+    final expiresAt = DateTime.now().add(const Duration(days: 3));
+
+    if (claim.isFoundTip) {
+      // ── FOUND TIP: finder reported finding a lost item ──────────────────
+      // claimantId = the finder   |   ownerId = original lost-item reporter
+      final chatRoomRef =
+          FirebaseFirestore.instance.collection('chat_rooms').doc();
+      await chatRoomRef.set({
+        'claim_id': claim.claimId,
+        'item_id': claim.itemId,
+        'participants': [claim.ownerId, claim.claimantId],
+        'last_message': '',
+        'last_updated': FieldValue.serverTimestamp(),
+        'status': 'active',
+        'expires_at': Timestamp.fromDate(expiresAt),
+        'typing_status': {claim.ownerId: false, claim.claimantId: false},
+        'unread_counts': {claim.ownerId: 0, claim.claimantId: 0},
       });
 
-      await claimsRef.doc(claim.claimId).update({
-        'resolved_lost_report_id': linkedLostReportId,
-        'linked_lost_report_resolved': true,
-        'linked_lost_report_id': FieldValue.delete(),
+      // Notify original lost-item reporter 🎉
+      await _notificationService.createNotification(
+        userId: claim.ownerId,
+        title: '🎉 Someone Found Your Item!',
+        body:
+            'A user reported finding "${item.title}". A chat has been opened so you can arrange the return.',
+        type: 'item_found',
+        relatedItemId: item.itemId,
+        data: {'claim_id': claim.claimId, 'claim_type': 'found_tip'},
+      );
+
+      // Notify the finder too
+      await _notificationService.createNotification(
+        userId: claim.claimantId,
+        title: 'Report Approved!',
+        body:
+            'Your "found item" report for "${item.title}" was approved. A chat has been opened with the owner.',
+        type: 'found_tip_approved',
+        relatedItemId: item.itemId,
+        data: {'claim_id': claim.claimId},
+      );
+    } else {
+      // ── NORMAL CLAIM: person claims ownership of a found item ────────────
+      final linkedLostReportId = claim.linkedLostReportId;
+      if (linkedLostReportId != null && linkedLostReportId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('items')
+            .doc(linkedLostReportId)
+            .update({
+              'status': 'Resolved',
+              'resolved_by_claim_id': claim.claimId,
+              'resolved_at': FieldValue.serverTimestamp(),
+            });
+
+        await claimsRef.doc(claim.claimId).update({
+          'resolved_lost_report_id': linkedLostReportId,
+          'linked_lost_report_resolved': true,
+          'linked_lost_report_id': FieldValue.delete(),
+        });
+
+        await _notificationService.createNotification(
+          userId: claim.claimantId,
+          title: 'Linked LOST report resolved',
+          body: 'Your linked LOST report has been marked as resolved.',
+          type: 'lost_report_resolved',
+          relatedItemId: linkedLostReportId,
+          data: {
+            'claim_id': claim.claimId,
+            'resolved_lost_report_id': linkedLostReportId,
+          },
+        );
+      }
+
+      final chatRoomRef =
+          FirebaseFirestore.instance.collection('chat_rooms').doc();
+      await chatRoomRef.set({
+        'claim_id': claim.claimId,
+        'item_id': claim.itemId,
+        'participants': [item.userId, claim.claimantId],
+        'last_message': '',
+        'last_updated': FieldValue.serverTimestamp(),
+        'status': 'active',
+        'expires_at': Timestamp.fromDate(expiresAt),
+        'typing_status': {
+          item.userId: false,
+          claim.claimantId: false,
+        },
+        'unread_counts': {
+          item.userId: 0,
+          claim.claimantId: 0,
+        },
       });
 
       await _notificationService.createNotification(
-        userId: claim.claimantId,
-        title: 'Linked LOST report resolved',
+        userId: item.userId,
+        title: 'Claim Approved & Chat Opened!',
         body:
-            'Your linked LOST report has been marked as resolved after claim approval.',
-        type: 'lost_report_resolved',
-        relatedItemId: linkedLostReportId,
-        data: {
-          'claim_id': claim.claimId,
-          'resolved_lost_report_id': linkedLostReportId,
-        },
+            'A claim for "${item.title}" was approved. A secure private chat has been opened in your Chat Hub.',
+        type: 'report_reserved',
+        relatedItemId: item.itemId,
+        data: {'claim_id': claim.claimId},
+      );
+
+      await _notificationService.createNotification(
+        userId: claim.claimantId,
+        title: 'Claim Approved & Chat Opened!',
+        body:
+            'Your claim for "${item.title}" is approved. A secure private chat has been opened.',
+        type: 'report_reserved',
+        relatedItemId: item.itemId,
+        data: {'claim_id': claim.claimId},
       );
     }
 
-    final chatRoomRef = FirebaseFirestore.instance.collection('chat_rooms').doc();
-    await chatRoomRef.set({
-      'claim_id': claim.claimId,
-      'item_id': claim.itemId,
-      'participants': [item.userId, claim.claimantId],
-      'last_message': '',
-      'last_updated': FieldValue.serverTimestamp(),
-      'status': 'active',
-      'typing_status': {
-        item.userId: false,
-        claim.claimantId: false,
-      },
-      'unread_counts': {
-        item.userId: 0,
-        claim.claimantId: 0,
-      }
-    });
-
-    await _notificationService.createNotification(
-      userId: item.userId,
-      title: 'Claim Approved & Chat Opened!',
-      body: 'A claim for "${item.title}" was approved. A secure private chat has been opened in your Chat Hub to arrange the return.',
-      type: 'report_reserved',
-      relatedItemId: item.itemId,
-      data: {'claim_id': claim.claimId},
-    );
-
-    await _notificationService.createNotification(
-      userId: claim.claimantId,
-      title: 'Claim Approved & Chat Opened!',
-      body: 'Your claim for "${item.title}" is approved. A secure private chat has been opened in your Chat Hub.',
-      type: 'report_reserved',
-      relatedItemId: item.itemId,
-      data: {'claim_id': claim.claimId},
-    );
-
     if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Claim approved.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Claim approved.')));
     }
   }
+
 
   Future<void> _rejectClaim(ClaimModel claim) async {
     await FirebaseFirestore.instance
@@ -1015,6 +1064,22 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     ClaimModel claim,
     String claimerName,
   ) {
+    if (claim.isFoundTip) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FoundTipDetailsScreen(
+            targetItem: targetItem,
+            claim: claim,
+            claimerName: claimerName,
+            onApprove: _approveClaim,
+            onReject: _rejectClaim,
+          ),
+        ),
+      );
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (context) {
@@ -1029,17 +1094,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         }
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
-          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 900, maxHeight: 760),
             child: FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('items')
-                  .doc(linkedReportId)
-                  .get(),
+              future: FirebaseFirestore.instance.collection('items').doc(linkedReportId).get(),
               builder: (context, linkedSnapshot) {
                 if (linkedSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: FoundItLoadingIndicator());
@@ -1048,168 +1107,133 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                 final linkedData = linkedSnapshot.data?.data();
                 final linkedLostReport = linkedData == null
                     ? null
-                    : ItemModel.fromMap(
-                        linkedSnapshot.data!.id,
-                        linkedData as Map<String, dynamic>,
-                      );
+                    : ItemModel.fromMap(linkedSnapshot.data!.id, linkedData as Map<String, dynamic>);
 
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.adminVerificationSurfaceSoft,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.adminVerificationBorderSoft,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Claim Review',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.adminVerificationInk,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'By $claimerName',
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.adminVerificationSurfacePanel,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.adminVerificationBorderSoft,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Proof',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              claim.proofDesc,
-                              maxLines: 4,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (claim.similarityScore != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                (claim.similarityScore! <
-                                    AIService.lowSimilarityThreshold)
-                                ? Colors.orange.shade50
-                                : Colors.green.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color:
-                                  (claim.similarityScore! <
-                                      AIService.lowSimilarityThreshold)
-                                  ? Colors.orange.shade300
-                                  : Colors.green.shade300,
-                            ),
-                          ),
-                          child: Text(
-                            'AI Match ${claim.similarityScore!.toStringAsFixed(0)}%',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Comparison',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.adminVerificationComparisonTitle,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildComparisonPanel(
-                                heading: 'Claimed FOUND Item',
-                                item: targetItem,
-                                accent: Colors.blue,
-                              ),
-                              const SizedBox(width: 12),
-                              if (linkedLostReport != null)
-                                _buildComparisonPanel(
-                                  heading: 'Linked LOST Report',
-                                  item: linkedLostReport,
-                                  accent: Colors.red,
-                                )
-                              else
-                                _buildComparisonPlaceholder(),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 40,
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text('Done'),
-                        ),
-                      ),
-                    ],
-                  ),
+                return _buildClaimDetailsDialogUI(
+                  context: context,
+                  targetItem: targetItem,
+                  claim: claim,
+                  claimerName: claimerName,
+                  linkedLostReport: linkedLostReport,
                 );
               },
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildClaimDetailsDialogUI({
+    required BuildContext context,
+    required ItemModel targetItem,
+    required ClaimModel claim,
+    required String claimerName,
+    required ItemModel? linkedLostReport,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.adminVerificationSurfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.adminVerificationBorderSoft),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Claim Review',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.adminVerificationInk),
+                ),
+                const SizedBox(height: 4),
+                Text('By $claimerName', style: const TextStyle(color: Colors.black54, fontSize: 13)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.adminVerificationSurfacePanel,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.adminVerificationBorderSoft),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Proof', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                const SizedBox(height: 6),
+                Text(
+                  claim.proofDesc,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.black87, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (claim.similarityScore != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: (claim.similarityScore! < AIService.lowSimilarityThreshold) ? Colors.orange.shade50 : Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: (claim.similarityScore! < AIService.lowSimilarityThreshold) ? Colors.orange.shade300 : Colors.green.shade300),
+              ),
+              child: Text(
+                'AI Match ${claim.similarityScore!.toStringAsFixed(0)}%',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+          const SizedBox(height: 12),
+          const Text('Comparison', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.adminVerificationComparisonTitle)),
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildComparisonPanel(
+                    heading: 'Claimed FOUND Item',
+                    item: targetItem,
+                    accent: Colors.blue,
+                  ),
+                  const SizedBox(width: 12),
+                  if (linkedLostReport != null)
+                    _buildComparisonPanel(
+                      heading: 'Linked LOST Report',
+                      item: linkedLostReport,
+                      accent: Colors.red,
+                    )
+                  else
+                    _buildComparisonPlaceholder(),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: OutlinedButton(
+              onPressed: () => Navigator.pop(context),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

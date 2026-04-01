@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
 import '../claims/claim_item_screen.dart';
+import '../claims/found_this_item_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -337,16 +338,12 @@ class ItemDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildBottomSheet(BuildContext context, ItemModel item) {
-    if (isAdminView) {
-      return const SizedBox();
-    }
+    if (isAdminView) return const SizedBox();
 
     final currentUser = FirebaseAuth.instance.currentUser;
-    
-    // Don't show claim button if it's user's own item
-    if (currentUser?.uid == item.userId) {
-      return const SizedBox();
-    }
+    if (currentUser?.uid == item.userId) return const SizedBox();
+
+    final isLostReport = item.postType.toLowerCase() == 'lost';
 
     return StreamBuilder<DocumentSnapshot>(
       stream: currentUser != null
@@ -357,33 +354,35 @@ class ItemDetailsScreen extends StatelessWidget {
           : const Stream.empty(),
       builder: (context, adminSnapshot) {
         final isAdmin = adminSnapshot.hasData && adminSnapshot.data!.exists;
-        
-        // Don't show claim button for admin users
-        if (isAdmin) {
-          return const SizedBox();
-        }
+        if (isAdmin) return const SizedBox();
 
         return Container(
           color: const Color(0xFFF2F2F6),
-          padding: const EdgeInsets.only(
-            left: 24,
-            right: 24,
-            bottom: 32,
-            top: 16,
-          ),
+          padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 16),
           child: ElevatedButton(
             onPressed: _canClaim(item.status)
                 ? () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ClaimItemScreen(item: item),
-                      ),
-                    );
+                    if (isLostReport) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FoundThisItemScreen(lostItem: item),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClaimItemScreen(item: item),
+                        ),
+                      );
+                    }
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.deepLavender,
+              backgroundColor: isLostReport
+                  ? AppColors.statusFound   // green tint for positive "I found it"
+                  : AppColors.deepLavender, // purple for claim
               disabledBackgroundColor: Colors.grey,
               minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(
@@ -393,16 +392,18 @@ class ItemDetailsScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  PhosphorIconsRegular.handWaving,
+                Icon(
+                  isLostReport
+                      ? PhosphorIconsRegular.handCoins
+                      : PhosphorIconsRegular.handWaving,
                   color: Colors.white,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _canClaim(item.status)
-                      ? 'Claim This Item'
-                      : 'Item Not Claimable',
+                      ? (isLostReport ? 'I Found This Item!' : 'Claim This Item')
+                      : 'Item Not Available',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -416,6 +417,7 @@ class ItemDetailsScreen extends StatelessWidget {
       },
     );
   }
+
 
   Widget _buildInfoCard({
     required IconData icon,

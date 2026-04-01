@@ -174,13 +174,15 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
       return;
     }
 
-    Set<String> allDetectedLabels = {};
+    // Gather score vectors from all submitted item photos.
+    // Average them to get a representative embedding for this claim.
+    List<List<double>> allVectors = [];
     for (var file in _itemImages) {
-      final labels = await _tfliteService.getTopLabels(File(file.path));
-      allDetectedLabels.addAll(labels);
+      final vec = await _tfliteService.getScoreVector(File(file.path));
+      if (vec.isNotEmpty) allVectors.add(vec);
     }
 
-    if (widget.item.aiLabels.isEmpty || allDetectedLabels.isEmpty) {
+    if (allVectors.isEmpty) {
       setState(() {
         _photoSimilarityPercentage = 0.0;
         _isAnalyzingPhotos = false;
@@ -188,16 +190,59 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
       return;
     }
 
-    int matchCount = widget.item.aiLabels.where((label) => 
-        allDetectedLabels.any((detected) => detected.toLowerCase() == label.toLowerCase())
-    ).length;
-    
-    double score = (matchCount / widget.item.aiLabels.length) * 100;
+    // Average the vectors element-wise.
+    final int vecLen = allVectors.first.length;
+    final List<double> avgVector = List.filled(vecLen, 0.0);
+    for (final vec in allVectors) {
+      for (int i = 0; i < vecLen; i++) {
+        avgVector[i] += vec[i];
+      }
+    }
+    for (int i = 0; i < vecLen; i++) {
+      avgVector[i] /= allVectors.length;
+    }
+
+    // Compute cosine similarity directly between stored vector and photo vector.
+    // Do NOT use compareLostReportToClaim() here — that includes text/location
+    // which would inflate the score since we're comparing the item to itself.
+    double score;
+    if (widget.item.aiScoreVector.isNotEmpty &&
+        widget.item.aiScoreVector.length == avgVector.length) {
+      score = _cosineSimilarity(widget.item.aiScoreVector, avgVector);
+    } else {
+      // Fallback: label Jaccard
+      final Set<String> detectedLabels = {};
+      for (var file in _itemImages) {
+        final labels = await _tfliteService.getTopLabels(File(file.path));
+        detectedLabels.addAll(labels);
+      }
+      if (widget.item.aiLabels.isEmpty || detectedLabels.isEmpty) {
+        score = 0.0;
+      } else {
+        final lowerItem = widget.item.aiLabels.map((e) => e.toLowerCase().trim()).toSet();
+        final lowerDetected = detectedLabels.map((e) => e.toLowerCase().trim()).toSet();
+        final intersection = lowerItem.intersection(lowerDetected).length;
+        final union = lowerItem.union(lowerDetected).length;
+        score = union == 0 ? 0.0 : (intersection / union) * 100;
+      }
+    }
 
     setState(() {
-      _photoSimilarityPercentage = score;
+      _photoSimilarityPercentage = score.clamp(0.0, 100.0);
       _isAnalyzingPhotos = false;
     });
+  }
+
+  double _cosineSimilarity(List<double> a, List<double> b) {
+    if (a.isEmpty || b.isEmpty || a.length != b.length) return 0.0;
+    double dot = 0, magA = 0, magB = 0;
+    for (int i = 0; i < a.length; i++) {
+      dot  += a[i] * b[i];
+      magA += a[i] * a[i];
+      magB += b[i] * b[i];
+    }
+    if (magA == 0 || magB == 0) return 0.0;
+    return ((dot / (magA * magB)) * 100).clamp(0.0, 100.0);
   }
 
   Future<List<String>> _uploadProofImages(String userId) async {

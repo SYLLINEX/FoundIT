@@ -8,6 +8,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/ai_service.dart';
 import '../../models/item_model.dart';
 import '../home/main_wrapper.dart'; // To Pop back to home
 import 'match_results_screen.dart';
@@ -21,6 +22,7 @@ class TagLocationScreen extends StatefulWidget {
   final DateTime date;
   final File? imageFile;
   final List<String> aiLabels;
+  final List<double> aiScoreVector;
 
   const TagLocationScreen({
     super.key,
@@ -31,6 +33,7 @@ class TagLocationScreen extends StatefulWidget {
     required this.date,
     this.imageFile,
     this.aiLabels = const [],
+    this.aiScoreVector = const [],
   });
 
   @override
@@ -50,6 +53,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
   final AuthService _authService = AuthService();
   final StorageService _storageService = StorageService();
   final NotificationService _notificationService = NotificationService();
+  final AIService _aiService = AIService();
   final _primaryDark = const Color(0xFF3B394D);
 
   String get _normalizedPostType {
@@ -100,84 +104,69 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
     });
   }
 
+  /// Queries all active Found items within 5 km and scores them against
+  /// the new report using the same 5-signal AIService weights (visual cosine,
+  /// labels, text, category, location). Items scoring >= 70 are returned
+  /// sorted by score descending.
   Future<List<Map<String, dynamic>>> _findSimilarItems(
     GeoPoint userLocation,
   ) async {
-    // Query all found items and filter for publicly visible statuses.
     final snapshot = await FirebaseFirestore.instance
         .collection('items')
         .where('post_type', isEqualTo: 'Found')
         .get();
 
+    // Build a synthetic ItemModel for the new report so AIService can compare.
+    final newReport = ItemModel(
+      itemId: '',
+      userId: '',
+      postType: 'Lost',
+      category: widget.category,
+      title: widget.title,
+      description: widget.description,
+      imageUrl: '',
+      locationName: '',
+      location: userLocation,
+      status: 'Pending for Approval',
+      aiLabels: widget.aiLabels,
+      aiScoreVector: widget.aiScoreVector,
+      timestamp: DateTime.now(),
+    );
+
     List<Map<String, dynamic>> finalMatches = [];
 
     for (var doc in snapshot.docs) {
-      final itemMap = ItemModel.fromMap(doc.id, doc.data());
-      final status = itemMap.status.toLowerCase();
+      final foundItem = ItemModel.fromMap(doc.id, doc.data());
+      final status = foundItem.status.toLowerCase();
       if (status != 'open' && status != 'active' && status != 'reserved') {
         continue;
       }
+      if (foundItem.location == null) continue;
 
-      if (itemMap.location != null) {
-        // Filter using Haversine formula
-        final distanceInMeters = Geolocator.distanceBetween(
-          userLocation.latitude,
-          userLocation.longitude,
-          itemMap.location!.latitude,
-          itemMap.location!.longitude,
-        );
+      // Gate: skip items further than 5 km (AIService's max distance).
+      final distanceInMeters = Geolocator.distanceBetween(
+        userLocation.latitude,
+        userLocation.longitude,
+        foundItem.location!.latitude,
+        foundItem.location!.longitude,
+      );
+      if (distanceInMeters > AIService.maxDistanceForScoreMeters) continue;
 
-        if (distanceInMeters <= 1000) {
-          // expanded to 1km given similarity scoring
-          double score = 0.0;
+      final score = _aiService.compareLostReportToClaim(
+        linkedLostReport: newReport,
+        claimTargetItem: foundItem,
+        claimDescription: '',
+      );
 
-          // 1. Visual/Label Similarity (max 65 points)
-          int matchingLabels = 0;
-          for (var label in widget.aiLabels) {
-            for (var otherLabel in itemMap.aiLabels) {
-              if (label.toLowerCase() == otherLabel.toLowerCase()) {
-                matchingLabels++;
-                break;
-              }
-            }
-          }
-
-          if (widget.aiLabels.isNotEmpty && itemMap.aiLabels.isNotEmpty) {
-            double labelRatio =
-                matchingLabels /
-                (widget.aiLabels.length > itemMap.aiLabels.length
-                    ? widget.aiLabels.length
-                    : itemMap.aiLabels.length);
-            score += (labelRatio * 65); // 0 to 65 pts
-          } else if (matchingLabels > 0) {
-            score += 30; // some raw fallback
-          }
-
-          // 2. Category Match (15 points)
-          if (widget.category == itemMap.category) {
-            score += 15;
-          }
-
-          // 3. Distance Match (20 points max, drops off up to 5km)
-          // 0m = 20 pts, 5000m = 0 pts
-          double distanceScore = 20 - ((distanceInMeters / 5000) * 20);
-          score += distanceScore.clamp(0.0, 20.0);
-
-          // We consider it a match if score is reasonably high (e.g., > 30)
-          // or if they exactly match category and are very close (pure fallback)
-          if (score >= 30 ||
-              (widget.category == itemMap.category && distanceInMeters < 500)) {
-            finalMatches.add({
-              'item': itemMap,
-              'distance': distanceInMeters,
-              'score': score,
-            });
-          }
-        }
+      if (score >= 70.0) {
+        finalMatches.add({
+          'item': foundItem,
+          'distance': distanceInMeters,
+          'score': score,
+        });
       }
     }
 
-    // Sort by highest score first
     finalMatches.sort(
       (a, b) => (b['score'] as double).compareTo(a['score'] as double),
     );
@@ -220,14 +209,14 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       }
 
       final item = ItemModel(
-        itemId: '', // Firestore auto-generates ID if stored this way
+        itemId: '',
         userId: user.uid,
         postType: _normalizedPostType,
         category: widget.category,
         title: widget.title,
         description: widget.description,
         imageUrl: imageUrl,
-        locationName: 'Tagged Location', // Ideally reverse geocoded
+        locationName: 'Tagged Location',
         specificLocation: _specificLocationController.text.trim(),
         reporterName: reporterName,
         location: GeoPoint(
@@ -236,6 +225,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         ),
         status: 'Pending for Approval',
         aiLabels: widget.aiLabels,
+        aiScoreVector: widget.aiScoreVector,
         timestamp: DateTime.now(),
       );
 
@@ -259,9 +249,9 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
           );
           final allMatchesInfo = await _findSimilarItems(userLocation);
 
-          // Filter to only matches > 80%
+          // Filter to only matches > 70% (aligned with AIService min threshold)
           final matchesInfo = allMatchesInfo
-              .where((m) => (m['score'] as double) > 75.0)
+              .where((m) => (m['score'] as double) >= 70.0)
               .toList();
 
           if (matchesInfo.isNotEmpty) {

@@ -92,8 +92,12 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/mobilenet_v2.tflite
-    - assets/labels.txt
+    # ── AI Models ─────────────────────────────────────────────────────────
+    - assets/foundit_mobilenetv3.tflite  # ✅ Fine-tuned MobileNetV3 (93% val acc)
+    - assets/foundit_labels.txt          # 10 domain-specific class labels
+    # - assets/mobilenet_v2.tflite       # retired — kept for rollback only
+    # - assets/labels.txt                # retired — ImageNet 1001 labels
+    # ── Images ────────────────────────────────────────────────────────────
     - assets/images/foundit_animated_logo.gif
     - assets/images/foundit_logo.png
     - assets/images/foundit_logo_withtext.png
