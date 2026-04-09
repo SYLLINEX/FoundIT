@@ -8,6 +8,7 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
+          echo $FIREBASE_OPTIONS | base64 --decode > lib/firebase_options.dart
           flutter pub get
           
           # Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
