@@ -1,0 +1,30 @@
+workflows:
+  ios-debug-ipa:
+    name: iOS Debug IPA (Unsigned)
+    instance_type: mac_mini_m2
+    environment:
+      # groups:
+      #   - credentials # Uncomment if you need environment variables
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
+          cd ios && pod install
+      - name: Build iOS (No Codesign)
+        script: |
+          # We use --release because it's easier to sideload for testing
+          flutter build ios --release --no-codesign
+      - name: Manual IPA Packaging
+        script: |
+          # Xcode creates a .app folder; we must wrap it in 'Payload' to make it an .ipa
+          mkdir -p build/ios/iphoneos/Payload
+          cd build/ios/iphoneos
+          mv Runner.app Payload/
+          # We must use -y to preserve symlinks inside iOS frameworks, otherwise the app is corrupted
+          zip -r -y found_it.ipa Payload
+    artifacts:
+      - build/ios/iphoneos/*.ipa
+
+  

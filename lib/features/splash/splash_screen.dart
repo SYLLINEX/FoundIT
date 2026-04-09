@@ -21,26 +21,57 @@ class _SplashScreenState extends State<SplashScreen> {
   bool _showLoading = false;
   final AuthService _authService = AuthService();
 
+  final List<String> _loadingMessages = [
+    "Waking up the search dogs...",
+    "Looking under the couch cushions...",
+    "Checking the lost and found box...",
+    "Applying magic tracking dust...",
+    "Almost ready to find it...",
+  ];
+  int _currentMessageIndex = 0;
+  bool _timerActive = true;
+
   @override
   void initState() {
     super.initState();
+    _startMessageCycle();
 
-    // Step 1: Wait for 2.5 seconds (let GIF animation play)
+    // Step 1: Wait for 1.5 seconds (let GIF animation loop)
     // Step 2: Show loading indicator
-    // Step 3: Wait another 1.5 seconds, then navigate
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    // Step 3: Wait another 2.5 seconds, then navigate
+    Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted) {
         setState(() {
           _showLoading = true;
         });
 
-        Future.delayed(const Duration(milliseconds: 1500), () {
+        Future.delayed(const Duration(milliseconds: 3000), () {
           if (mounted) {
             _checkAuthAndNavigate();
           }
         });
       }
     });
+  }
+
+  void _startMessageCycle() async {
+    // Wait a bit before showing the first message switch
+    await Future.delayed(const Duration(milliseconds: 1500));
+    while (_timerActive && mounted) {
+      await Future.delayed(const Duration(milliseconds: 2000));
+      if (_timerActive && mounted) {
+        setState(() {
+          _currentMessageIndex =
+              (_currentMessageIndex + 1) % _loadingMessages.length;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timerActive = false;
+    super.dispose();
   }
 
   Future<void> _checkAuthAndNavigate() async {
@@ -109,8 +140,7 @@ class _SplashScreenState extends State<SplashScreen> {
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: Colors.transparent,
         systemNavigationBarDividerColor: Colors.transparent,
-        statusBarIconBrightness:
-            Brightness.light, // Light icons for the dark splash screen!
+        statusBarIconBrightness: Brightness.light,
         systemNavigationBarIconBrightness: Brightness.light,
         systemNavigationBarContrastEnforced: false,
       ),
@@ -119,13 +149,13 @@ class _SplashScreenState extends State<SplashScreen> {
         body: Center(
           child: TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0.0, end: 1.0),
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.elasticOut,
             builder: (context, value, child) {
               return Transform.scale(
-                scale: 0.5 + (value * 0.5), // Scales from 0.5 to 1.0
+                scale: 0.8 + (value * 0.2), // Pop-in effect
                 child: Opacity(
-                  opacity: value, // Fades from 0.0 to 1.0
+                  opacity: value.clamp(0.0, 1.0), // Clamp to prevent out-of-bounds from elastic out
                   child: child,
                 ),
               );
@@ -133,37 +163,55 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // --- Option 1: Using the provided icon as per Splash.tsx ---
-                // Container(
-                //   padding: const EdgeInsets.all(16),
-                //   decoration: const BoxDecoration(
-                //     color: AppColors.mist,
-                //     shape: BoxShape.circle,
-                //   ),
-                //   child: Icon(
-                //     PhosphorIconsBold.magnifyingGlass,
-                //     size: 48,
-                //     color: AppColors.deepLavender,
-                //   ),
-                // ),
-
-                // --- Option 2: Using your GIF (Uncomment if you want to use the GIF instead of the icon) ---
+                // The new GIF
                 Image.asset(
-                  'assets/images/foundit_animated_logo2.gif', // Make sure to add this path in pubspec.yaml
-                  width: 400,
-                  height: 400,
+                  'assets/images/foundit_animated_logo.gif',
+                  width: 300,
+                  height: 300,
+                  fit: BoxFit.contain,
                 ),
 
                 const SizedBox(height: 40),
 
-                // Loading Spinner fading in (Windows 10 style)
+                // Loading Spinner + Messages fading in
                 AnimatedOpacity(
                   opacity: _showLoading ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: const SpinKitWanderingCubes(
-                    color: AppColors.mist,
-                    size: 40.0,
-                    // lineWidth: 3.0,
+                  duration: const Duration(milliseconds: 600),
+                  child: Column(
+                    children: [
+                      const SpinKitFadingCube(
+                        color: AppColors.mist,
+                        size: 35.0,
+                      ),
+                      const SizedBox(height: 30),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 500),
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.0, 0.2),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Text(
+                          _loadingMessages[_currentMessageIndex],
+                          key: ValueKey<int>(_currentMessageIndex),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
