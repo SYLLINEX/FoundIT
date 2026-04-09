@@ -57,7 +57,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
     _itemsSubscription = _databaseService
         .getItemsWithinRadiusStream(
           GeoPoint(position.latitude, position.longitude),
-          radiusInKm: 1.0, // 1km Radius Proximity Search Feature
+          radiusInKm: 10.0, // 10km Radius Proximity Search Feature
         )
         .listen((items) {
           _allItems = items;
@@ -100,7 +100,7 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
         );
       }
 
-      // Automatically fetch items within 1km radius
+      // Automatically fetch items within 10km radius
       _subscribeToNearbyItems(position);
     } catch (e) {
       debugPrint("Error fetching location: $e");
