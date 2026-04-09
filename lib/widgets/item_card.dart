@@ -11,6 +11,7 @@ class ItemCard extends StatelessWidget {
   final String location;
   final String timeText;
   final String reporterName;
+  final double? distanceKm;
   final VoidCallback? onTap;
 
   const ItemCard({
@@ -21,6 +22,7 @@ class ItemCard extends StatelessWidget {
     required this.location,
     required this.timeText,
     this.reporterName = 'Unknown',
+    this.distanceKm,
     this.onTap,
   });
 
@@ -110,7 +112,7 @@ class ItemCard extends StatelessWidget {
                       children: [
                         const Icon(PhosphorIconsRegular.mapPin, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
-                        Expanded(
+                        Flexible(
                           child: Text(
                             location,
                             style: const TextStyle(color: Colors.grey, fontSize: 12),
@@ -118,6 +120,25 @@ class ItemCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (distanceKm != null) ...
+                          [
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.nightfall.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${distanceKm! < 1 ? '${(distanceKm! * 1000).round()} m' : '${distanceKm!.toStringAsFixed(1)} km'}',
+                                style: const TextStyle(
+                                  color: AppColors.nightfall,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                       ],
                     ),
                     Row(

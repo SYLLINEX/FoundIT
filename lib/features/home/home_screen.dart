@@ -10,6 +10,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/expandable_filter_fab.dart';
 import '../../widgets/empty_state_view.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -26,6 +27,27 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
   int _selectedCategoryIndex = 0;
   String _selectedCategory = 'All Items';
+  Position? _userPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserLocation();
+  }
+
+  Future<void> _fetchUserLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium);
+      if (mounted) setState(() => _userPosition = pos);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +124,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final item = items[index];
+                    double? distanceKm;
+                    if (_userPosition != null && item.location != null) {
+                      final meters = Geolocator.distanceBetween(
+                        _userPosition!.latitude,
+                        _userPosition!.longitude,
+                        item.location!.latitude,
+                        item.location!.longitude,
+                      );
+                      distanceKm = meters / 1000;
+                    }
                     return ItemCard(
                       title: item.title,
                       status: item.postType.toUpperCase(),
@@ -113,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       timeText: timeago.format(item.timestamp),
                       imageUrl: item.imageUrl,
                       reporterName: item.reporterName ?? 'Unknown',
+                      distanceKm: distanceKm,
                       onTap: () {
                         Navigator.push(
                           context,

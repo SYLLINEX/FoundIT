@@ -31,7 +31,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
   String _searchQuery = '';
   final NotificationService _notificationService = NotificationService();
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

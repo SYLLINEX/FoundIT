@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
 import '../claims/claim_item_screen.dart';
@@ -12,7 +13,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
-class ItemDetailsScreen extends StatelessWidget {
+class ItemDetailsScreen extends StatefulWidget {
   final ItemModel item;
   final bool isAdminView;
 
@@ -21,6 +22,49 @@ class ItemDetailsScreen extends StatelessWidget {
     required this.item,
     this.isAdminView = false,
   });
+
+  @override
+  State<ItemDetailsScreen> createState() => _ItemDetailsScreenState();
+}
+
+class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
+  Position? _userPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserLocation();
+  }
+
+  Future<void> _fetchUserLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium);
+      if (mounted) setState(() => _userPosition = pos);
+    } catch (_) {}
+  }
+
+  double? get _distanceKm {
+    if (_userPosition == null || widget.item.location == null) return null;
+    final meters = Geolocator.distanceBetween(
+      _userPosition!.latitude,
+      _userPosition!.longitude,
+      widget.item.location!.latitude,
+      widget.item.location!.longitude,
+    );
+    return meters / 1000;
+  }
+
+  String _formatDistanceKm(double km) {
+    if (km < 1) return '${(km * 1000).round()} m away';
+    return '${km.toStringAsFixed(1)} km away';
+  }
 
   bool _canClaim(String status) {
     final normalized = status.toLowerCase();
@@ -46,6 +90,7 @@ class ItemDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F6),
       body: Stack(
@@ -142,6 +187,7 @@ class ItemDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // Info Cards
+                    // Location Info Card
                     _buildInfoCard(
                       icon: PhosphorIconsFill.mapPin,
                       title: 'Location',
@@ -150,6 +196,7 @@ class ItemDetailsScreen extends StatelessWidget {
                               item.specificLocation!.isNotEmpty)
                           ? '${item.specificLocation} (${item.locationName})'
                           : item.locationName,
+                      distanceKm: _distanceKm,
                     ),
                     const SizedBox(height: 12),
                     _buildInfoCard(
@@ -338,7 +385,7 @@ class ItemDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildBottomSheet(BuildContext context, ItemModel item) {
-    if (isAdminView) return const SizedBox();
+    if (widget.isAdminView) return const SizedBox();
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser?.uid == item.userId) return const SizedBox();
@@ -423,6 +470,7 @@ class ItemDetailsScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required String value,
+    double? distanceKm,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -458,6 +506,26 @@ class ItemDetailsScreen extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
+                if (distanceKm != null) ...
+                  [
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.nightfall.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _formatDistanceKm(distanceKm),
+                        style: const TextStyle(
+                          color: AppColors.nightfall,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
               ],
             ),
           ),
@@ -465,7 +533,8 @@ class ItemDetailsScreen extends StatelessWidget {
       ),
     );
   }
-}
+
+} // end _ItemDetailsScreenState
 
 class ItemMapScreen extends StatelessWidget {
   final ItemModel item;
