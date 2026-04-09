@@ -17,7 +17,7 @@ class HomeHeader extends StatefulWidget {
 class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateMixin {
   final currentUser = FirebaseAuth.instance.currentUser;
   final NotificationService _notificationService = NotificationService();
-  bool _isSearchExpanded = false;
+  final ValueNotifier<bool> _isSearchExpanded = ValueNotifier<bool>(false);
   final TextEditingController _searchController = TextEditingController();
 
   late AnimationController _animationController;
@@ -44,6 +44,7 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
   @override
   void dispose() {
     _searchController.dispose();
+    _isSearchExpanded.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -56,11 +57,11 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
       position: _slideAnimation,
       child: Container(
         height: topPadding + 64,
-        padding: EdgeInsets.only(top: topPadding, left: 16, right: 12),
-        decoration: const BoxDecoration(
+        padding: EdgeInsets.only(top: topPadding, left: 24, right: 16),
+        decoration: BoxDecoration(
           color: AppColors.nightfall, // Dark theme map to user mockup
           boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+            BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
@@ -82,7 +83,7 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                   }
 
                   return CircleAvatar(
-                    radius: 20,
+                    radius: 24,
                     backgroundColor: Colors.white24,
                     backgroundImage: profileImg.isNotEmpty ? NetworkImage(profileImg) : null,
                     child: profileImg.isEmpty ? const Icon(PhosphorIconsRegular.user, color: Colors.white, size: 24) : null,
@@ -133,7 +134,8 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                           'Looking for something?',
                           style: TextStyle(
                             color: Colors.white70,
-                            fontSize: 13,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -148,54 +150,72 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
             // Right: Search Icon replacing plus, expanding into field gracefully
             FadeTransition(
               opacity: _fadeIconAnimation,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                width: _isSearchExpanded ? MediaQuery.of(context).size.width - 140 : 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _isSearchExpanded ? Colors.white : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                clipBehavior: Clip.hardEdge,
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isSearchExpanded = !_isSearchExpanded;
-                          if (!_isSearchExpanded) {
-                            _searchController.clear();
-                          }
-                        });
-                      },
-                      child: Container(
-                        height: 44,
-                        width: 44,
-                        color: Colors.transparent,
-                        child: Icon(
-                          _isSearchExpanded ? PhosphorIconsRegular.x : PhosphorIconsRegular.magnifyingGlass,
-                          color: _isSearchExpanded ? AppColors.nightfall : Colors.white70,
-                          size: 22,
+              child: ValueListenableBuilder<bool>(
+                valueListenable: _isSearchExpanded,
+                builder: (context, isExpanded, child) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    width: isExpanded ? 200 : 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isExpanded ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(22),
+                      border: isExpanded ? Border.all(color: Colors.transparent) : null,
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            _isSearchExpanded.value = !isExpanded;
+                            if (isExpanded) {
+                              _searchController.clear();
+                              FocusScope.of(context).unfocus();
+                            }
+                          },
+                          child: Container(
+                            height: 44,
+                            width: 44,
+                            color: Colors.transparent,
+                            child: Icon(
+                              isExpanded ? PhosphorIconsRegular.x : PhosphorIconsLight.magnifyingGlass,
+                              color: isExpanded ? AppColors.nightfall : Colors.white70,
+                              size: 24,
+                            ),
+                          ),
                         ),
-                      ),
+                        Expanded(
+                          child: isExpanded
+                              ? ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: _searchController,
+                                  builder: (context, textValue, child) {
+                                    return TextField(
+                                      controller: _searchController,
+                                      autofocus: true,
+                                      style: const TextStyle(color: AppColors.nightfall, fontSize: 14),
+                                      decoration: InputDecoration(
+                                        hintText: 'Search FoundIT...',
+                                        hintStyle: const TextStyle(color: Colors.black38),
+                                        border: InputBorder.none,
+                                        isDense: true,
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                                        suffixIcon: textValue.text.isNotEmpty
+                                            ? GestureDetector(
+                                                onTap: () => _searchController.clear(),
+                                                child: const Icon(PhosphorIconsRegular.x, color: Colors.grey, size: 16),
+                                              )
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: _isSearchExpanded
-                          ? TextField(
-                              controller: _searchController,
-                              autofocus: true,
-                              style: const TextStyle(color: AppColors.nightfall, fontSize: 14),
-                              decoration: const InputDecoration(
-                                hintText: 'Search FoundIT...',
-                                hintStyle: TextStyle(color: Colors.black38),
-                                border: InputBorder.none,
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
 
@@ -226,13 +246,14 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                       final totalUnread = unreadChats + unreadNotifications;
                       
                       return PopupMenuButton<String>(
-                        offset: const Offset(0, 48),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        offset: const Offset(0, 56),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         color: Colors.white,
+                        elevation: 4,
                         icon: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            const Icon(PhosphorIconsRegular.dotsThreeVertical, color: Colors.white70, size: 26),
+                            const Icon(PhosphorIconsLight.dotsThreeVertical, color: Colors.white70, size: 28),
                             if (totalUnread > 0)
                               Positioned(
                                 top: 0,
@@ -259,24 +280,26 @@ class _HomeHeaderState extends State<HomeHeader> with SingleTickerProviderStateM
                         itemBuilder: (context) => [
                           PopupMenuItem(
                             value: 'messages',
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Messages', style: TextStyle(color: AppColors.nightfall)),
+                                Text('Messages', style: TextStyle(color: Colors.grey.shade800, fontSize: 16)),
                                 if (unreadChats > 0)
-                                  CircleAvatar(radius: 10, backgroundColor: Colors.red, child: Text('$unreadChats', style: const TextStyle(color: Colors.white, fontSize: 10))),
+                                  CircleAvatar(radius: 10, backgroundColor: Colors.red, child: Text('$unreadChats', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
                               ],
                             ),
                           ),
-                          const PopupMenuDivider(),
+                          const PopupMenuDivider(height: 1),
                           PopupMenuItem(
                             value: 'notifications',
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Notifications', style: TextStyle(color: AppColors.nightfall)),
+                                Text('Notifications', style: TextStyle(color: Colors.grey.shade800, fontSize: 16)),
                                 if (unreadNotifications > 0)
-                                  CircleAvatar(radius: 10, backgroundColor: Colors.red, child: Text('$unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 10))),
+                                  CircleAvatar(radius: 10, backgroundColor: Colors.red, child: Text('$unreadNotifications', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
                               ],
                             ),
                           ),

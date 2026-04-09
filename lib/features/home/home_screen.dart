@@ -6,11 +6,12 @@ import '../../services/database_service.dart';
 import '../../models/item_model.dart';
 import '../reports/item_details_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../widgets/found_it_loading_indicator.dart';
+
 import '../../widgets/expandable_filter_fab.dart';
 import '../../widgets/empty_state_view.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shimmer/shimmer.dart';
 
 /// Items within this distance (in km) are shown on the dashboard.
 const double _kNearbyRadiusKm = 10.0;
@@ -107,8 +108,20 @@ class _HomeScreenState extends State<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 16)),
             // ── Location still loading ──────────────────────────────────────
             if (_locationLoading)
-              const SliverFillRemaining(
-                child: Center(child: FoundItLoadingIndicator()),
+              SliverPadding(
+                padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 100),
+                sliver: SliverGrid(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: MediaQuery.of(context).size.width < 380 ? 0.58 : 0.72,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildSkeletonItemCard(),
+                    childCount: 6,
+                  ),
+                ),
               )
             // ── Location permission denied ──────────────────────────────────
             else if (_locationDenied)
@@ -125,9 +138,30 @@ class _HomeScreenState extends State<HomeScreen> {
               StreamBuilder<List<ItemModel>>(
                 stream: _databaseService.getItemsStream(),
                 builder: (context, snapshot) {
+                  // Dynamically calculate aspect ratio for smaller screens
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final aspectRatio = screenWidth < 380 ? 0.58 : 0.72;
+
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SliverFillRemaining(
-                      child: Center(child: FoundItLoadingIndicator()),
+                    return SliverPadding(
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 8,
+                        bottom: 100,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: aspectRatio,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _buildSkeletonItemCard(),
+                          childCount: 6,
+                        ),
+                      ),
                     );
                   }
 
@@ -186,10 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
-
-                  // Dynamically calculate aspect ratio for smaller screens
-                  final screenWidth = MediaQuery.of(context).size.width;
-                  final aspectRatio = screenWidth < 380 ? 0.58 : 0.72;
 
                   return SliverPadding(
                     padding: const EdgeInsets.only(
@@ -265,6 +295,55 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+  Widget _buildSkeletonItemCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, 4),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 6,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(height: 14, width: double.infinity, color: Colors.white),
+                    Container(height: 10, width: 80, color: Colors.white),
+                    Container(height: 10, width: 100, color: Colors.white),
+                    Container(height: 10, width: 90, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -11,7 +11,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'item_details_screen.dart';
 import 'edit_report_screen.dart';
 import '../../widgets/app_confirmation_dialog.dart';
-import '../../widgets/found_it_loading_indicator.dart';
+
 import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
@@ -188,7 +188,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       stream: _databaseService.getUserItemsStream(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 100,
+            ),
+            itemCount: 4, // 4 skeletons to fill the screen
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSkeletonCard(),
+              );
+            },
+          );
         }
         if (snapshot.hasError) {
           return Center(
@@ -257,7 +271,16 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       stream: _databaseService.getUserClaimsStream(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+            itemCount: 4,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSkeletonCard(),
+              );
+            },
+          );
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error loading claims: ${snapshot.error}'));
@@ -307,16 +330,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         future: FirebaseFirestore.instance.collection('items').doc(claim.itemId).get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: const Center(child: Text('Loading item details...')),
-            );
+            return _buildSkeletonCard();
           }
           final itemData = snapshot.data!.data() as Map<String, dynamic>?;
           if (itemData == null) {
@@ -406,6 +420,75 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             ),
           );
         }
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 16,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 60,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(PhosphorIconsRegular.caretRight, color: Colors.white, size: 20),
+          ],
+        ),
       ),
     );
   }
