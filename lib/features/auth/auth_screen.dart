@@ -9,6 +9,7 @@ import 'sign_up_screen.dart';
 import 'verify_email_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../core/utils/app_error_handler.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -68,17 +69,9 @@ class _AuthScreenState extends State<AuthScreen> {
         );
 
         if (isAdmin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
+          await OnboardingScreen.checkAndNavigate(context, const AdminDashboardScreen());
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainWrapper()),
-          );
+          await OnboardingScreen.checkAndNavigate(context, const MainWrapper());
         }
       } catch (e) {
         if (!mounted) return;
@@ -112,17 +105,9 @@ class _AuthScreenState extends State<AuthScreen> {
         final isAdmin = await _authService.isAdminUser(credential.user?.uid);
 
         if (isAdmin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
+          await OnboardingScreen.checkAndNavigate(context, const AdminDashboardScreen());
         } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainWrapper()),
-          );
+          await OnboardingScreen.checkAndNavigate(context, const MainWrapper());
         }
       }
     } catch (e) {

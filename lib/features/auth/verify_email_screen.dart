@@ -10,6 +10,7 @@ import 'auth_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import '../../core/utils/app_error_handler.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -62,13 +63,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
       if (mounted) {
         final isAdmin = await _authService.isAdminUser();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                isAdmin ? const AdminDashboardScreen() : const MainWrapper(),
-          ),
-          (Route<dynamic> route) => false,
+        await OnboardingScreen.checkAndRemoveUntil(
+          context, 
+          isAdmin ? const AdminDashboardScreen() : const MainWrapper()
         );
       }
     }

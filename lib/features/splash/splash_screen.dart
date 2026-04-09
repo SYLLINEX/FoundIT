@@ -8,6 +8,8 @@ import '../admin/admin_dashboard_screen.dart';
 import '../../services/auth_service.dart';
 import '../auth/verify_email_screen.dart';
 
+import '../onboarding/onboarding_screen.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -43,6 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuthAndNavigate() async {
     final user = _authService.currentUser;
+    Widget nextScreen;
 
     if (user != null) {
       try {
@@ -77,19 +80,25 @@ class _SplashScreenState extends State<SplashScreen> {
 
       // User is logged in, check if admin
       if (isAdmin) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
-        );
+        nextScreen = const AdminDashboardScreen();
       } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainWrapper()),
-        );
+        nextScreen = const MainWrapper();
       }
     } else {
       // User is NOT logged in
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
-      );
+      nextScreen = const AuthScreen();
+    }
+
+    if (mounted) {
+      if (user != null && nextScreen is! AuthScreen) {
+        // If they are logged in and skipping auth screen, verify onboarding
+        await OnboardingScreen.checkAndNavigate(context, nextScreen);
+      } else {
+        // If they need to login/signup, don't show onboarding yet
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => nextScreen),
+        );
+      }
     }
   }
 

@@ -160,43 +160,15 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                           Positioned(
                             top: 8,
                             right: 8,
-                            child: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  _showEditSnackbar();
-                                } else if (value == 'delete') {
-                                  _showDeleteConfirmation(context, item);
-                                }
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(PhosphorIconsRegular.pencilSimple, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Edit'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(PhosphorIconsRegular.trash, size: 18, color: Colors.red),
-                                      SizedBox(width: 8),
-                                      Text('Delete', style: TextStyle(color: Colors.red)),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            child: GestureDetector(
+                              onTap: () => _showDeleteConfirmation(context, item),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[800],
                                   shape: BoxShape.circle,
                                 ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(PhosphorIconsRegular.dotsThreeVertical, color: Colors.white, size: 18),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(PhosphorIconsRegular.trash, color: Colors.redAccent, size: 18),
                               ),
                             ),
                           ),
@@ -226,10 +198,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
-  }
-
-  void _showEditSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit feature coming soon')));
   }
 
   String _formatTime(DateTime timestamp) {

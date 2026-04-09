@@ -8,6 +8,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 
 import 'verify_email_screen.dart';
 import '../../core/utils/app_error_handler.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -93,11 +94,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (!mounted) return;
 
       if (credential != null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainWrapper()),
-          (route) => false,
-        );
+        await OnboardingScreen.checkAndRemoveUntil(context, const MainWrapper());
       }
     } catch (e) {
       if (!mounted) return;
