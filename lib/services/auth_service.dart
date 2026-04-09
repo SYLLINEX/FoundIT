@@ -72,8 +72,8 @@ class AuthService {
       }
 
       return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw e.message ?? 'An unknown error occurred';
+    } on FirebaseAuthException {
+      rethrow;
     }
   }
 
@@ -87,8 +87,8 @@ class AuthService {
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      throw e.message ?? 'An unknown error occurred';
+    } on FirebaseAuthException {
+      rethrow;
     }
   }
 
@@ -133,9 +133,7 @@ class AuthService {
           'An account already exists with the same email address but different sign-in credentials.',
         );
       }
-      throw Exception(
-        e.message ?? 'An unknown error occurred during Google Sign-In.',
-      );
+      rethrow;
     } catch (e) {
       // Throw the exact message if it's the custom Exception we threw above
       if (e.toString().contains('Account not found')) {
@@ -193,8 +191,8 @@ class AuthService {
       }
 
       return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Failed to sign up with Google.');
+    } on FirebaseAuthException {
+      rethrow;
     } catch (e) {
       if (e.toString().contains('already exists')) {
         rethrow;

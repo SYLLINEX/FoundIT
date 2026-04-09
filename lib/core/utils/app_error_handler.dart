@@ -13,7 +13,7 @@ class AppErrorHandler {
         case 'user-not-found':
         case 'wrong-password':
         case 'invalid-credential':
-          return 'Invalid email or password.';
+          return 'Please enter the correct email and password.';
         case 'email-already-in-use':
           return 'This email is already registered. Please log in.';
         case 'weak-password':
@@ -22,6 +22,10 @@ class AppErrorHandler {
           return 'No internet connection. Please check your network and try again.';
         case 'too-many-requests':
           return 'Too many attempts. Please try again later.';
+        case 'user-disabled':
+          return 'This account has been disabled. Please contact support.';
+        case 'operation-not-allowed':
+          return 'This sign-in method is not enabled. Please contact support.';
         case 'invalid-email':
           return 'Please enter a valid email address.';
         default:
@@ -63,6 +67,12 @@ class AppErrorHandler {
 
     if (error is TimeoutException) {
       return 'The connection has timed out. Please try again.';
+    }
+
+    if (error is String) {
+      if (!error.contains('Firebase') && !error.contains('Exception') && !error.contains('Error:')) {
+        return error;
+      }
     }
 
     // Check for explicit string message from our own "throw Exception('message')"

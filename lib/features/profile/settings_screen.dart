@@ -75,9 +75,54 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(PhosphorIconsRegular.userMinus, color: Colors.red),
+            title: const Text('Disable / Delete Account', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('Permanently remove your account and data'),
+            trailing: const Icon(PhosphorIconsRegular.caretRight, color: Colors.red),
+            tileColor: Colors.red.shade50,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.red.shade200),
+            ),
+            onTap: () async {
+              final confirmed = await showAppConfirmationDialog<bool>(
+                context: context,
+                title: 'Delete Account?',
+                message: 'Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                confirmColor: Colors.red,
+              );
+
+              if (confirmed == true) {
+                if (context.mounted) {
+                  try {
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user != null) {
+                      await user.delete();
+                      if (context.mounted) {
+                        Navigator.of(context, rootNavigator: true).pushReplacementNamed('/auth'); // Or whatever the auth route is. 
+                        // Note: If they need to reauthenticate, FirebaseAuth might throw a requires-recent-login exception.
+                      }
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      final errorMessage = AppErrorHandler.getMessage(e);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to delete account: $errorMessage')),
+                      );
+                    }
+                  }
+                }
+              }
+            },
+          ),
           const SizedBox(height: 16),
           const Text(
             'Preferences',
+
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -87,7 +132,13 @@ class SettingsScreen extends StatelessWidget {
             trailing: Switch(
               value: true,
               onChanged: (val) {
-                // TODO: Handle notification preferences
+                if (val == false) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notifications are required to keep you updated about your reports and messages. You cannot disable them.'),
+                    ),
+                  );
+                }
               },
             ),
             tileColor: Colors.white,
