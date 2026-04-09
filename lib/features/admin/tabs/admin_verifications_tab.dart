@@ -31,12 +31,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
   String _searchQuery = '';
   final NotificationService _notificationService = NotificationService();
 
-  String get _reportsSectionTitle {
-    if (_selectedFilter == 'Reports') return 'Missing Reports';
-    return 'All Reports';
-  }
-
-  String get _claimsSectionTitle => 'Claim Reports';
 
   @override
   Widget build(BuildContext context) {
@@ -247,21 +241,24 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               );
             }
 
+            final isFiltered = _selectedFilter != 'All';
+
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               children: [
                 if (showReports && filteredReports.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      _reportsSectionTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.adminVerificationInk,
+                  if (isFiltered)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Missing Reports',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.adminVerificationInk,
+                        ),
                       ),
                     ),
-                  ),
                   ...filteredReports.map((doc) {
                     final item = ItemModel.fromMap(
                       doc.id,
@@ -276,17 +273,18 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                     claimDocs.isNotEmpty)
                   const SizedBox(height: 8),
                 if (showClaims && claimDocs.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      _claimsSectionTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.adminVerificationInk,
+                  if (isFiltered)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Claim Reports',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.adminVerificationInk,
+                        ),
                       ),
                     ),
-                  ),
                   ...claimDocs.map(_buildClaimCardFromDoc),
                 ],
               ],
@@ -427,17 +425,30 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => _showReportDetails(item),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.adminVerificationInk,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => _showReportDetails(item),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Review Details',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.adminVerificationMutedInk,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    PhosphorIconsRegular.arrowRight,
+                    size: 13,
+                    color: AppColors.adminVerificationMutedInk,
+                  ),
+                ],
               ),
-              child: const Text('Review Details', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -464,18 +475,18 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          Row(
             children: [
-              Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.adminVerificationInk,
+              Expanded(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.adminVerificationInk,
+                  ),
                 ),
               ),
               const Text(
@@ -500,23 +511,28 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _showClaimDetails(item, claim, claimerName),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.adminVerificationInk,
-                side: const BorderSide(
-                  color: AppColors.adminVerificationBorderSoft,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text(
-                'Review Details',
-                style: TextStyle(fontWeight: FontWeight.w600),
+          Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: () => _showClaimDetails(item, claim, claimerName),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Review Details',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.adminVerificationMutedInk,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    PhosphorIconsRegular.arrowRight,
+                    size: 13,
+                    color: AppColors.adminVerificationMutedInk,
+                  ),
+                ],
               ),
             ),
           ),
