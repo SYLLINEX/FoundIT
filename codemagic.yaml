@@ -11,7 +11,18 @@ workflows:
       - name: Install dependencies
         script: |
           flutter pub get
-          cd ios && pod install
+          # Generate the Podfile in case it was not committed from Windows
+          flutter build ios --config-only || true
+          
+          # Force minimum iOS deployment target to 14.0 to satisfy Firebase
+          cd ios
+          sed -i '' "s/^# platform :ios,.*/platform :ios, '14.0'/" Podfile || true
+          sed -i '' "s/^platform :ios,.*/platform :ios, '14.0'/" Podfile || true
+          
+          # Ensure Xcode project also targets 14.0
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' Runner.xcodeproj/project.pbxproj || true
+
+          pod install --repo-update
       - name: Build iOS (No Codesign)
         script: |
           # We use --release because it's easier to sideload for testing
