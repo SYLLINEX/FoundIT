@@ -158,25 +158,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Upload Section
-            RichText(
-              text: const TextSpan(
-                text: 'Item Image',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF4B5563),
-                ),
-                children: [
-                  TextSpan(
-                    text: ' *',
-                    style: TextStyle(
-                      color: Color(0xFFEF4444),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildLabel('Item Image'),
             const SizedBox(height: 12),
             InkWell(
               onTap: _pickImage,
@@ -327,12 +309,23 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   }
 
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF4B5563),
+    return Text.rich(
+      TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF4B5563),
+        ),
+        children: const [
+          TextSpan(
+            text: ' *',
+            style: TextStyle(
+              color: Color(0xFFEF4444),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

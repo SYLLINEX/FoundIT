@@ -13,6 +13,11 @@ import '../../services/database_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/tflite_service.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../services/ai_service.dart';
 
 class FoundThisItemScreen extends StatefulWidget {
   final ItemModel lostItem;
@@ -35,6 +40,300 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
   XFile? _photo;
   bool _isSubmitting = false;
   bool _isConfirmed = false;
+
+  ItemModel? _selectedFoundReport;
+  double? _similarityPercentage;
+  bool _isCalculatingSimilarity = false;
+  final AIService _aiService = AIService();
+
+  @override
+  void initState() {
+    super.initState();
+    _descController.addListener(() {
+      if (!mounted) return;
+      if (_selectedFoundReport != null) {
+        _recalculateSimilarity();
+      }
+    });
+  }
+
+  Future<void> _selectFoundReport() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please log in first.')));
+      return;
+    }
+
+    final selected = await showModalBottomSheet<ItemModel>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 20),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Select a FOUND Report',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.obsidian,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('items')
+                      .where('user_id', isEqualTo: uid)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: FoundItLoadingIndicator());
+                    }
+
+                    final docs = snapshot.data?.docs ?? [];
+                    final reports = docs
+                        .map(
+                          (doc) => ItemModel.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          ),
+                        )
+                        .where((item) {
+                          if (item.postType.toLowerCase() != 'found') {
+                            return false;
+                          }
+                          final normalized = item.status.toLowerCase();
+                          return normalized != 'resolved' &&
+                              normalized != 'rejected';
+                        })
+                        .toList()
+                      ..sort(
+                        (a, b) => b.timestamp.compareTo(a.timestamp),
+                      );
+
+                    if (reports.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                PhosphorIconsRegular.article,
+                                size: 48,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                'No active FOUND reports found.',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Create a FOUND report first if you want to link one to this report.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: reports.length,
+                      itemBuilder: (context, index) {
+                        final report = reports[index];
+                        final isSelected =
+                            _selectedFoundReport?.itemId == report.itemId;
+
+                        return GestureDetector(
+                          onTap: () => Navigator.pop(context, report),
+                          behavior: HitTestBehavior.opaque,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.indigo.shade50
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.indigo.shade200
+                                    : Colors.grey.shade200,
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                              boxShadow: [
+                                if (!isSelected)
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: report.imageUrl.isNotEmpty
+                                      ? ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          child: CachedNetworkImage(
+                                            imageUrl: report.imageUrl,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Shimmer.fromColors(
+                                              baseColor: Colors.grey[300]!,
+                                              highlightColor: Colors.grey[100]!,
+                                              child: Container(color: Colors.white),
+                                            ),
+                                            errorWidget: (context, url, error) => const Icon(
+                                              PhosphorIconsRegular.imageBroken,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        )
+                                      : const Icon(
+                                          PhosphorIconsRegular.imageBroken,
+                                          color: Colors.grey,
+                                        ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        report.title,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: AppColors.obsidian,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${report.category} • ${report.status}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  isSelected
+                                      ? PhosphorIconsRegular.checkCircle
+                                      : PhosphorIconsRegular.caretRight,
+                                  color: isSelected
+                                      ? Colors.indigo
+                                      : Colors.grey.shade400,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+
+    setState(() {
+      _selectedFoundReport = selected;
+    });
+    await _recalculateSimilarity();
+  }
+
+  Future<void> _recalculateSimilarity() async {
+    final linked = _selectedFoundReport;
+    if (linked == null) {
+      if (!mounted) return;
+      setState(() => _similarityPercentage = null);
+      return;
+    }
+
+    setState(() => _isCalculatingSimilarity = true);
+
+    final similarity = _aiService.compareLostReportToClaim(
+      linkedLostReport: widget.lostItem,
+      claimTargetItem: linked,
+      claimDescription: _descController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _similarityPercentage = similarity;
+      _isCalculatingSimilarity = false;
+    });
+  }
+
+  Future<bool> _confirmLowSimilaritySubmission() async {
+    final result = await showAppConfirmationDialog<bool>(
+      context: context,
+      title: 'Submit Report?',
+      message:
+          'Low AI similarity (< ${AIService.lowSimilarityThreshold.toStringAsFixed(0)}%). You can add more proof photos or details first.',
+      confirmText: 'Submit Anyway',
+      cancelText: 'Review',
+      confirmColor: AppColors.statusPending,
+    );
+
+    return result ?? false;
+  }
 
   @override
   void dispose() {
@@ -83,6 +382,14 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Not logged in');
 
+      if (_similarityPercentage != null && _similarityPercentage! < AIService.lowSimilarityThreshold) {
+        final confirmed = await _confirmLowSimilaritySubmission();
+        if (!confirmed) {
+          setState(() => _isSubmitting = false);
+          return;
+        }
+      }
+
       // Upload photo if attached
       final photoUrl = await _uploadPhoto(user.uid);
 
@@ -107,6 +414,8 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
         }
       }
 
+      final scoreToSave = similarityScore ?? _similarityPercentage;
+
       final claim = ClaimModel(
         claimId: const Uuid().v4(),
         itemId: widget.lostItem.itemId,
@@ -117,7 +426,8 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
         timestamp: DateTime.now(),
         claimType: 'found_tip',
         proofImageUrls: photoUrl != null ? [photoUrl] : [],
-        similarityScore: similarityScore,
+        similarityScore: scoreToSave,
+        linkedLostReportId: _selectedFoundReport?.itemId,
       );
 
       await _db.submitClaim(claim);
@@ -349,12 +659,20 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               const SizedBox(height: 28),
 
               // ── Where did you find it? ───────────────────────────────────
-              const Text(
-                'Where did you find it?',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppColors.nightfall,
+              Text.rich(
+                const TextSpan(
+                  text: 'Where did you find it?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.nightfall,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Color(0xFFEF4444)),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -378,12 +696,20 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               const SizedBox(height: 20),
 
               // ── Additional details ───────────────────────────────────────
-              const Text(
-                'Additional details',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: AppColors.nightfall,
+              Text.rich(
+                const TextSpan(
+                  text: 'Additional details',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.nightfall,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Color(0xFFEF4444)),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 8),
@@ -455,6 +781,143 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                         ),
                       ),
               ),
+              const SizedBox(height: 28),
+
+              // ── Linked Report Section ────────────────────────────────────
+              const Text(
+                'Linked FOUND Report',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.nightfall,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Attach your existing report for AI comparison.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              if (_selectedFoundReport == null)
+                GestureDetector(
+                  onTap: _selectFoundReport,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(PhosphorIconsRegular.link, color: Colors.grey.shade400, size: 32),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap to link a FOUND report',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _selectedFoundReport!.title,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: AppColors.nightfall,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${_selectedFoundReport!.category} • ${_selectedFoundReport!.status}',
+                                    style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _selectedFoundReport = null;
+                                  _similarityPercentage = null;
+                                });
+                              },
+                              icon: const Icon(PhosphorIconsRegular.x, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF2F2F6)),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _isCalculatingSimilarity
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Calculating AI similarity...',
+                                      style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                ],
+                              )
+                            : _similarityPercentage != null
+                                ? Row(
+                                    children: [
+                                      Icon(
+                                        _similarityPercentage! >= 80.0
+                                            ? PhosphorIconsRegular.checkCircle
+                                            : PhosphorIconsRegular.warning,
+                                        color: _similarityPercentage! >= 80.0
+                                            ? AppColors.statusResolved
+                                            : Colors.orange,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'AI Match Score: ${_similarityPercentage!.toStringAsFixed(1)}%',
+                                          style: TextStyle(
+                                            color: _similarityPercentage! >= 80.0
+                                                ? AppColors.statusResolved
+                                                : Colors.orange.shade800,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : const Text(
+                                    'Requires description text for AI score',
+                                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                                  ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 32),
 
               // ── Confirmation Checkbox ────────────────────────────────────

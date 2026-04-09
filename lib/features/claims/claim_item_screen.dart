@@ -673,12 +673,20 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             const SizedBox(height: 28),
 
             // ── Details Input Section ────────────────────────────────────
-            const Text(
-              'Claim Details',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: AppColors.nightfall,
+            Text.rich(
+              const TextSpan(
+                text: 'Claim Details',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.nightfall,
+                ),
+                children: [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Color(0xFFEF4444)),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 4),

@@ -168,15 +168,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _usernameController,
-                      decoration: const InputDecoration(labelText: 'Username'),
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Username',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a username' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneNumController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Phone Number',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a phone number' : null,
@@ -184,7 +206,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _matricNoController,
-                      decoration: const InputDecoration(labelText: 'Matric No'),
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Matric No',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter your Matric No' : null,
                     ),

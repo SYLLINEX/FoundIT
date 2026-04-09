@@ -444,11 +444,17 @@ class _ClaimReviewScreenState extends State<ClaimReviewScreen> {
       if (data == null || !mounted) return;
 
       final linked = ItemModel.fromMap(snap.id, data);
-      final breakdown = _aiService.getSimilarityBreakdown(
-        linkedLostReport: linked,
-        claimTargetItem: widget.targetItem,
-        claimDescription: widget.claim.proofDesc,
-      );
+      final breakdown = widget.claim.isFoundTip
+          ? _aiService.getSimilarityBreakdown(
+              linkedLostReport: widget.targetItem,
+              claimTargetItem: linked,
+              claimDescription: widget.claim.proofDesc,
+            )
+          : _aiService.getSimilarityBreakdown(
+              linkedLostReport: linked,
+              claimTargetItem: widget.targetItem,
+              claimDescription: widget.claim.proofDesc,
+            );
 
       setState(() {
         _linkedReport = linked;
@@ -555,7 +561,7 @@ class _ClaimReviewScreenState extends State<ClaimReviewScreen> {
                             children: [
                               Expanded(
                                 child: _ComparisonPanel(
-                                  heading: 'FOUND Item',
+                                  heading: widget.claim.isFoundTip ? 'LOST Item' : 'FOUND Item',
                                   item: widget.targetItem,
                                   accent: const Color(0xFF2563EB),
                                   onImageTap: _openFullScreen,
@@ -565,7 +571,7 @@ class _ClaimReviewScreenState extends State<ClaimReviewScreen> {
                               Expanded(
                                 child: _linkedReport != null
                                     ? _ComparisonPanel(
-                                        heading: 'LOST Report',
+                                        heading: widget.claim.isFoundTip ? 'Finder\'s Proof / FOUND Item' : 'LOST Report',
                                         item: _linkedReport!,
                                         accent: const Color(0xFFDC2626),
                                         onImageTap: _openFullScreen,

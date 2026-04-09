@@ -488,9 +488,9 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                   ),
                 ),
               ),
-              const Text(
-                'CLAIM',
-                style: TextStyle(
+              Text(
+                claim.isFoundTip ? 'FOUND TIP' : 'CLAIM',
+                style: const TextStyle(
                   color: AppColors.statusPending,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
@@ -501,7 +501,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Claimed by ${claimerName}',
+            claim.isFoundTip ? 'Found by $claimerName' : 'Claimed by $claimerName',
             style: const TextStyle(
               color: AppColors.adminVerificationMutedInk,
               fontSize: 13,
