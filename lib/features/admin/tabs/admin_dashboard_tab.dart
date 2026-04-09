@@ -50,13 +50,23 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     } catch (_) {}
   }
 
+  Future<void> _onRefresh() async {
+    await _fetchUserLocation();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
-      body: CustomScrollView(
-        slivers: [
-          SliverPersistentHeader(
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: const Color(0xFF413F54),
+        backgroundColor: Colors.white,
+        displacement: 60,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPersistentHeader(
             floating: true,
             delegate: _AdminHeaderDelegate(
               minHeight: MediaQuery.of(context).padding.top + 64,
@@ -182,6 +192,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             },
           ),
         ],
+      ),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
