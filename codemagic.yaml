@@ -3,28 +3,27 @@ workflows:
     name: iOS Debug IPA (Unsigned)
     instance_type: mac_mini_m2
     environment:
-      # groups:
-      #   - credentials # Uncomment if you need environment variables
       flutter: stable
       xcode: latest
     scripts:
       - name: Install dependencies
         script: |
           flutter pub get
+          
+          # Fix Xcode project so 'flutter build' detects iOS 14.0 for Podfile generation
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' ios/Runner.xcodeproj/project.pbxproj || true
+
           # Generate the Podfile in case it was not committed from Windows
           flutter build ios --config-only || true
-          
+
           cd ios
           # Very forcefully rewrite Podfile platform definition for iOS 14.0
           echo "platform :ios, '14.0'" > podfile_temp
           grep -v "platform :ios" Podfile >> podfile_temp
           mv podfile_temp Podfile
-          
+
           # Delete any existing lockfile to ensure fresh resolution
           rm -f Podfile.lock
-
-          # Fix project setting for 14.0
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' Runner.xcodeproj/project.pbxproj || true
 
           pod install --repo-update
       - name: Build iOS (No Codesign)
@@ -41,5 +40,3 @@ workflows:
           zip -r -y found_it.ipa Payload
     artifacts:
       - build/ios/iphoneos/*.ipa
-
-  
