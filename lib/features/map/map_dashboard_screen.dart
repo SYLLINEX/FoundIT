@@ -13,6 +13,7 @@ import '../../services/location_service.dart';
 import '../../core/constants/map_style.dart';
 import '../reports/item_details_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/theme/app_colors.dart';
 
 class MapDashboardScreen extends StatefulWidget {
   const MapDashboardScreen({super.key});
@@ -35,7 +36,6 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   List<ItemModel> _allItems = [];
 
   // Filters State
-  String _searchQuery = "";
   bool _showLost = true;
   bool _showFound = true;
   bool _showLabels = false;
@@ -44,11 +44,9 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   void initState() {
     super.initState();
     _getUserLocation();
-
-    // Add listener to rebuild when search text changes
-    _searchController.addListener(() {
-      _applyFiltersAndBuildMarkers();
-    });
+    
+    // We do NOT add searchController listener here to prevent maps lag.
+    // Instead we use ValueListenableBuilder in the UI.
   }
 
   void _subscribeToNearbyItems(Position position) {
@@ -73,11 +71,8 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   }
 
   void _applyFiltersAndBuildMarkers() {
-    if (mounted) {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
-    }
+    // Map markers remain unaffected by the text query to prevent lag on map rebuilding.
+    // The search bar is now purely an overlay auto-suggest.
     final filteredData = _getFilteredItems(_allItems);
     _updateMarkers(filteredData);
   }
@@ -105,6 +100,21 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
     } catch (e) {
       debugPrint("Error fetching location: $e");
     }
+  }
+
+  void _recenterToCurrentLocation() {
+    if (_currentPosition == null || _mapController == null) return;
+    _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          zoom: 16.0,
+        ),
+      ),
+    );
   }
 
   void _onMapCreated(GoogleMapController controller) {
@@ -222,20 +232,21 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
   // --- Filtering Logic ---
   List<ItemModel> _getFilteredItems(List<ItemModel> rawItems) {
     return rawItems.where((item) {
-      // 1. Text Search Filter
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          item.title.toLowerCase().contains(_searchQuery) ||
-          item.description.toLowerCase().contains(_searchQuery);
-
-      // 2. Type Filter (Lost/Found)
+      // Type Filter (Lost/Found) - Map markers no longer filter by text to save performance
       bool matchesType = false;
-      if (item.postType.toLowerCase() == 'lost' && _showLost)
-        matchesType = true;
-      if (item.postType.toLowerCase() == 'found' && _showFound)
-        matchesType = true;
+      if (item.postType.toLowerCase() == 'lost' && _showLost) matchesType = true;
+      if (item.postType.toLowerCase() == 'found' && _showFound) matchesType = true;
+      return matchesType;
+    }).toList();
+  }
 
-      return matchesSearch && matchesType;
+  List<ItemModel> _getSearchResults(String query) {
+    final lowerQuery = query.toLowerCase();
+    // Use the already filtered items so maps and dropdown match filter settings
+    final currentFilters = _getFilteredItems(_allItems);
+    return currentFilters.where((item) {
+      return item.title.toLowerCase().contains(lowerQuery) ||
+             item.description.toLowerCase().contains(lowerQuery);
     }).toList();
   }
 
@@ -269,85 +280,97 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                children: [
-                  // Search Bar
-                  Expanded(
-                    child: Container(
-                      height: 55,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: "Search items...",
-                          hintStyle: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 16,
-                          ),
-                          prefixIcon: const Icon(
-                            PhosphorIconsRegular.magnifyingGlass,
-                            color: Colors.grey,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 17,
-                          ), // centers the text aligning with icon
+              child: ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _searchController,
+                builder: (context, value, child) {
+                  final bool isSearchActive = value.text.isNotEmpty;
+                  return Container(
+                    clipBehavior: Clip.antiAlias, // Ensures internal components are clipped to borders
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Filter Button
-                  _buildIconButton(
-                    PhosphorIconsRegular.funnel,
-                    _showFilterSettingsDialog,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // 2.5 Map Type Toggle Button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 80, right: 20, left: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Map Layer Toggle
-                  _buildIconButton(
-                    _currentMapType == MapType.normal
-                        ? PhosphorIconsRegular.stack
-                        : PhosphorIconsRegular.stack,
-                    () {
-                      setState(() {
-                        _currentMapType = _currentMapType == MapType.normal
-                            ? MapType.satellite
-                            : MapType.normal;
-
-                        if (_currentMapType == MapType.normal) {
-                          _mapController?.setMapStyle(mapStyleJson);
-                        } else {
-                          _mapController?.setMapStyle(null);
-                        }
-                      });
-                    },
-                  ),
-                ],
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Search Bar
+                        SizedBox(
+                          height: 55,
+                          child: TextField(
+                            controller: _searchController,
+                            textAlignVertical: TextAlignVertical.center,
+                            decoration: InputDecoration(
+                              hintText: "Search items...",
+                              hintStyle: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 16,
+                              ),
+                              prefixIcon: const Icon(
+                                PhosphorIconsRegular.magnifyingGlass,
+                                color: Colors.grey,
+                              ),
+                              suffixIcon: isSearchActive
+                                  ? IconButton(
+                                      icon: const Icon(
+                                        PhosphorIconsRegular.x,
+                                        color: Colors.grey,
+                                      ),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        FocusScope.of(context).unfocus();
+                                      },
+                                    )
+                                  : null,
+                              isDense: true,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (isSearchActive) _buildSearchResultsDropdown(value.text),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
         ],
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 100.0),
+        child: _MapSettingsMenuWidget(
+          mapController: _mapController,
+          currentMapType: _currentMapType,
+          onMapTypeChanged: (newType) {
+            setState(() {
+              _currentMapType = newType;
+              if (newType == MapType.normal) {
+                _mapController?.setMapStyle(mapStyleJson);
+              } else {
+                _mapController?.setMapStyle(null);
+              }
+            });
+          },
+          onRecenter: _recenterToCurrentLocation,
+          onFilter: _showFilterSettingsDialog,
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -454,6 +477,79 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildSearchResultsDropdown(String query) {
+    final results = _getSearchResults(query);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.4,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+      ),
+      child: results.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                "No items found matching your search.",
+                style: TextStyle(color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+            )
+          : ListView.separated(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              itemCount: results.length,
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              itemBuilder: (context, index) {
+                final item = results[index];
+                final isLost = item.postType.toLowerCase() == 'lost';
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isLost
+                          ? Colors.red.withOpacity(0.1)
+                          : Colors.green.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isLost
+                          ? PhosphorIconsRegular.magnifyingGlass
+                          : PhosphorIconsRegular.checkCircle,
+                      color: isLost ? Colors.red : Colors.green,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    item.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  onTap: () {
+                    _showItemDetailsSheet(item);
+                    _searchController.clear();
+                    FocusScope.of(context).unfocus();
+                  },
+                );
+              },
+            ),
     );
   }
 
@@ -565,7 +661,9 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isLost ? PhosphorIconsRegular.magnifyingGlass : PhosphorIconsRegular.checkCircle,
+                      isLost
+                          ? PhosphorIconsRegular.magnifyingGlass
+                          : PhosphorIconsRegular.checkCircle,
                       color: typeColor,
                       size: 28,
                     ),
@@ -696,22 +794,221 @@ class _MapDashboardScreenState extends State<MapDashboardScreen> {
       },
     );
   }
+}
 
-  // Helper widget for top bar buttons
-  Widget _buildIconButton(IconData icon, VoidCallback onTap) {
-    return Container(
-      height: 55,
-      width: 55,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
-        ],
+class _MapSettingsMenuWidget extends StatefulWidget {
+  final GoogleMapController? mapController;
+  final MapType currentMapType;
+  final Function(MapType) onMapTypeChanged;
+  final VoidCallback onRecenter;
+  final VoidCallback onFilter;
+
+  const _MapSettingsMenuWidget({
+    required this.mapController,
+    required this.currentMapType,
+    required this.onMapTypeChanged,
+    required this.onRecenter,
+    required this.onFilter,
+  });
+
+  @override
+  State<_MapSettingsMenuWidget> createState() => _MapSettingsMenuWidgetState();
+}
+
+class _MapSettingsMenuWidgetState extends State<_MapSettingsMenuWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    if (_animationController.isCompleted) {
+      _animationController.reverse();
+    } else {
+      _animationController.forward();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TapRegion(
+      groupId: 'map_settings_fab',
+      onTapOutside: (event) {
+        if (_animationController.isCompleted ||
+            _animationController.isAnimating) {
+          _toggleMenu();
+        }
+      },
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          final bool isOpen = _animationController.value > 0.0;
+          return SizedBox(
+            width: isOpen ? 160 : 56,
+            height: isOpen ? 160 : 56,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.bottomRight,
+              children: [
+                if (isOpen)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: _toggleMenu,
+                      behavior: HitTestBehavior.translucent,
+                      child: Container(color: Colors.transparent),
+                    ),
+                  ),
+                if (isOpen) ...[
+                  Positioned(
+                    right: 6, // center 44x44 aligned with 56x56
+                    bottom: 6,
+                    child: _buildAnimatedItem(
+                      index: 0,
+                      angle: 0.0, // Left
+                      icon: PhosphorIconsRegular.funnel,
+                      onTap: widget.onFilter,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: _buildAnimatedItem(
+                      index: 1,
+                      angle: pi / 4, // Top-Left
+                      icon: widget.currentMapType == MapType.normal
+                          ? PhosphorIconsRegular.stack
+                          : PhosphorIconsRegular.stack,
+                      onTap: () {
+                        widget.onMapTypeChanged(
+                          widget.currentMapType == MapType.normal
+                              ? MapType.satellite
+                              : MapType.normal,
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: _buildAnimatedItem(
+                      index: 2,
+                      angle: pi / 2, // Top
+                      icon: PhosphorIconsRegular.crosshair,
+                      onTap: widget.onRecenter,
+                    ),
+                  ),
+                ],
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    onTap: _toggleMenu,
+                    child: Container(
+                      height: 56,
+                      width: 56,
+                      decoration: const BoxDecoration(
+                        color: AppColors.nightfall,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: RotationTransition(
+                          turns: Tween<double>(
+                            begin: 0.0,
+                            end: 0.125,
+                          ).animate(_animationController),
+                          child: Icon(
+                            _animationController.value > 0.5
+                                ? PhosphorIconsRegular.plus
+                                : PhosphorIconsRegular.gear,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.black87),
-        onPressed: onTap,
+    );
+  }
+
+  Widget _buildAnimatedItem({
+    required int index,
+    required double angle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    // slightly staggering the fan out
+    final delayedValue = (_animationController.value * 1.5 - (index * 0.1))
+        .clamp(0.0, 1.0);
+
+    final radius = 80.0;
+    // Moving to top-left relative to bottom-right button
+    final dx = -radius * cos(angle) * delayedValue;
+    final dy = -radius * sin(angle) * delayedValue;
+
+    return Transform.translate(
+      offset: Offset(dx, dy),
+      child: Transform.scale(
+        scale: delayedValue,
+        child: Opacity(
+          opacity: delayedValue,
+          child: _MapControlButton(icon: icon, onTap: onTap, size: 44),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapControlButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final double size;
+
+  const _MapControlButton({
+    required this.icon,
+    required this.onTap,
+    this.size = 52,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 4,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Icon(icon, color: const Color(0xFF333345), size: size * 0.46),
+        ),
       ),
     );
   }
