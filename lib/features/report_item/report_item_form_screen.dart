@@ -29,7 +29,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   List<String> _detectedLabels = [];
   List<double> _scoreVector = [];
 
-  // The 10 categories mirror exactly what the fine-tuned model outputs
+  // The 10 categories mirror exactly what the fine-tuned model outputs + Other
   static const List<String> _categories = [
     'Accessories',
     'Bag / Backpack',
@@ -41,10 +41,18 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     'Stationery',
     'Wallet / Purse',
     'Water Bottle / Tumbler',
+    'Other',
   ];
 
   final _primaryDark = const Color(0xFF3B394D);
   final _bgColor = const Color(0xFFF3F4F6);
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(() => setState(() {}));
+    _descriptionController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -150,12 +158,23 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Upload Section
-            const Text(
-              'Item Image (Optional but recommended)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4B5563),
+            RichText(
+              text: const TextSpan(
+                text: 'Item Image',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4B5563),
+                ),
+                children: [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(
+                      color: Color(0xFFEF4444),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -269,6 +288,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryDark,
               foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey[300],
+              disabledForegroundColor: Colors.grey[500],
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -276,31 +297,25 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
               minimumSize: const Size(double.infinity, 50),
               elevation: 0,
             ),
-            onPressed: () {
-              if (_titleController.text.isEmpty || selectedCategory == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill all required fields'),
-                  ),
-                );
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TagLocationScreen(
-                    reportType: widget.reportType,
-                    title: _titleController.text,
-                    description: _descriptionController.text,
-                    category: selectedCategory!,
-                    date: selectedDate ?? DateTime.now(),
-                    imageFile: _image,
-                    aiLabels: _detectedLabels,
-                    aiScoreVector: _scoreVector,
-                  ),
-                ),
-              );
-            },
+            onPressed: _isFormComplete
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TagLocationScreen(
+                          reportType: widget.reportType,
+                          title: _titleController.text,
+                          description: _descriptionController.text,
+                          category: selectedCategory!,
+                          date: selectedDate!,
+                          imageFile: _image,
+                          aiLabels: _detectedLabels,
+                          aiScoreVector: _scoreVector,
+                        ),
+                      ),
+                    );
+                  }
+                : null,
             child: const Text(
               'Next: Tag Location',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -347,6 +362,13 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
+  bool get _isFormComplete =>
+      _image != null &&
+      _titleController.text.trim().isNotEmpty &&
+      selectedCategory != null &&
+      _descriptionController.text.trim().isNotEmpty &&
+      selectedDate != null;
+
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
       value: selectedCategory != null && _categories.contains(selectedCategory)
@@ -367,9 +389,21 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           vertical: 14,
         ),
       ),
-      items: _categories
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-          .toList(),
+      items: _categories.map((e) {
+        if (e == 'Other') {
+          return DropdownMenuItem(
+            value: e,
+            child: Row(
+              children: [
+                const Icon(PhosphorIconsRegular.dotsThree, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(e, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+        return DropdownMenuItem(value: e, child: Text(e));
+      }).toList(),
       onChanged: (val) {
         setState(() {
           selectedCategory = val;
