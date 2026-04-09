@@ -9,6 +9,7 @@ import '../../services/auth_service.dart';
 import 'auth_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -83,8 +84,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       setState(() => canResendEmail = true);
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = AppErrorHandler.getMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error resending email: \${e.toString()}')),
+        SnackBar(content: Text('Error resending email: $errorMsg')),
       );
     }
   }

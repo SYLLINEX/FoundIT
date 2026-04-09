@@ -16,6 +16,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/utils/app_error_handler.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/ai_service.dart';
 
@@ -446,8 +447,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = AppErrorHandler.getMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Submission failed: $e')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
     } finally {

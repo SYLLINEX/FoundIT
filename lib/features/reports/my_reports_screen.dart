@@ -16,6 +16,7 @@ import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -555,13 +556,22 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 );
 
                 if (confirm == true) {
-                  await _databaseService.deleteItem(item.itemId);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Report deleted successfully'),
-                      ),
-                    );
+                  try {
+                    await _databaseService.deleteItem(item.itemId);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Report deleted successfully'),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      final errorMsg = AppErrorHandler.getMessage(e);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(errorMsg)),
+                      );
+                    }
                   }
                 }
               },

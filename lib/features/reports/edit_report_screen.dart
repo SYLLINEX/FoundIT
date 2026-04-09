@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/item_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class EditReportScreen extends StatefulWidget {
   final ItemModel item;
@@ -89,9 +90,10 @@ class _EditReportScreenState extends State<EditReportScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final errorMessage = AppErrorHandler.getMessage(e);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error updating report: $e')));
+          ).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       }
     }

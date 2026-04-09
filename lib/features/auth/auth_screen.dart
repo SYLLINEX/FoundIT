@@ -8,6 +8,7 @@ import '../admin/admin_dashboard_screen.dart';
 import 'sign_up_screen.dart';
 import 'verify_email_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -82,10 +83,7 @@ class _AuthScreenState extends State<AuthScreen> {
       } catch (e) {
         if (!mounted) return;
 
-        String errorMsg = e.toString();
-        if (errorMsg.startsWith('Exception: ')) {
-          errorMsg = errorMsg.substring('Exception: '.length);
-        }
+        final errorMsg = AppErrorHandler.getMessage(e);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -130,10 +128,7 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      String errorMsg = e.toString();
-      if (errorMsg.startsWith('Exception: ')) {
-        errorMsg = errorMsg.substring('Exception: '.length);
-      }
+      final errorMsg = AppErrorHandler.getMessage(e);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),

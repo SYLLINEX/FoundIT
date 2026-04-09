@@ -13,6 +13,7 @@ import '../../models/item_model.dart';
 import '../home/main_wrapper.dart'; // To Pop back to home
 import 'match_results_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class TagLocationScreen extends StatefulWidget {
   final String reportType;
@@ -291,9 +292,10 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = AppErrorHandler.getMessage(e);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to submit report: $e')));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) {

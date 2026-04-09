@@ -7,6 +7,7 @@ import '../home/main_wrapper.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 
 import 'verify_email_screen.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -66,11 +67,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       } catch (e) {
         if (!mounted) return;
 
-        // Clean error message
-        String errorMsg = e.toString();
-        if (errorMsg.startsWith('Exception: ')) {
-          errorMsg = errorMsg.substring('Exception: '.length);
-        }
+        final errorMsg = AppErrorHandler.getMessage(e);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -104,11 +101,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      // Strip "Exception: " from the message if present
-      String errorMsg = e.toString();
-      if (errorMsg.startsWith('Exception: ')) {
-        errorMsg = errorMsg.substring('Exception: '.length);
-      }
+
+      final errorMsg = AppErrorHandler.getMessage(e);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),

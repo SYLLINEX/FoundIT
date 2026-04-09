@@ -14,8 +14,9 @@ import '../../services/notification_service.dart';
 import '../../services/tflite_service.dart';
 import '../home/main_wrapper.dart';
 import 'package:uuid/uuid.dart';
-import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
+import '../../core/utils/app_error_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -1121,8 +1122,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // close loading
+        final errorMsg = AppErrorHandler.getMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit claim: $e')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
     } finally {

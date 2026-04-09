@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import 'package:path/path.dart' as p;
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel userModel;
@@ -106,9 +107,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = AppErrorHandler.getMessage(e);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) {

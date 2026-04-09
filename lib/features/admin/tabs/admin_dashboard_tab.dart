@@ -11,6 +11,7 @@ import '../../../widgets/expandable_filter_fab.dart';
 import '../widgets/admin_header.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../services/notification_service.dart';
+import '../../../core/utils/app_error_handler.dart';
 
 class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
@@ -274,7 +275,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item deleted and owner notified')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting item: $e')));
+      final errorMessage = AppErrorHandler.getMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 }
