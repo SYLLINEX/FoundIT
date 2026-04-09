@@ -11,6 +11,7 @@ class ChatRoomModel {
   final DateTime? expiresAt;
   final Map<String, dynamic> typingStatus;
   final Map<String, dynamic> unreadCounts;
+  final Map<String, dynamic> resolvedBy;
 
   ChatRoomModel({
     required this.id,
@@ -23,6 +24,7 @@ class ChatRoomModel {
     this.expiresAt,
     this.typingStatus = const {},
     this.unreadCounts = const {},
+    this.resolvedBy = const {},
   });
 
   factory ChatRoomModel.fromMap(String documentId, Map<String, dynamic> data) {
@@ -37,6 +39,7 @@ class ChatRoomModel {
       expiresAt: (data['expires_at'] as Timestamp?)?.toDate(),
       typingStatus: data['typing_status'] ?? {},
       unreadCounts: data['unread_counts'] ?? {},
+      resolvedBy: data['resolved_by'] ?? {},
     );
   }
 
@@ -51,6 +54,7 @@ class ChatRoomModel {
       if (expiresAt != null) 'expires_at': Timestamp.fromDate(expiresAt!),
       'typing_status': typingStatus,
       'unread_counts': unreadCounts,
+      'resolved_by': resolvedBy,
     };
   }
 }
