@@ -10,15 +10,16 @@ workflows:
         script: |
           flutter pub get
           
-          # Fix Xcode project so 'flutter build' detects iOS 14.0 for Podfile generation
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' ios/Runner.xcodeproj/project.pbxproj || true
+          # Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || true
 
-          # Generate the Podfile in case it was not committed from Windows
-          flutter build ios --config-only || true
+          # Generate the Podfile in case it was not committed from Windows. 
+          # Added --no-codesign to prevent noisy certificate warnings in logs.
+          flutter build ios --config-only --no-codesign || true
 
           cd ios
-          # Very forcefully rewrite Podfile platform definition for iOS 14.0
-          echo "platform :ios, '14.0'" > podfile_temp
+          # Very forcefully rewrite Podfile platform definition for iOS 15.0
+          echo "platform :ios, '15.0'" > podfile_temp
           grep -v "platform :ios" Podfile >> podfile_temp
           mv podfile_temp Podfile
 
