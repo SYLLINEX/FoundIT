@@ -21,6 +21,10 @@ workflows:
           
           # Ensure Xcode project also targets 14.0
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' Runner.xcodeproj/project.pbxproj || true
+          
+          # More aggressive Ruby script override to ensure platform 14.0 is set properly
+          ruby -pi -e "gsub(/^[#\s]*platform\s+:ios.*/, %q(platform :ios, '14.0'))" Podfile
+          rm -f Podfile.lock
 
           pod install --repo-update
       - name: Build iOS (No Codesign)
