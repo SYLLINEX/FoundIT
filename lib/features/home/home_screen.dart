@@ -16,6 +16,13 @@ import 'package:shimmer/shimmer.dart';
 /// Items within this distance (in km) are shown on the dashboard.
 const double _kNearbyRadiusKm = 10.0;
 
+class _ItemDistancePair {
+  final ItemModel item;
+  final double? distanceKm;
+  
+  _ItemDistancePair(this.item, this.distanceKm);
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -183,34 +190,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   }
 
                   var items = snapshot.data!;
-
-                  // ── 10 km radius filter ─────────────────────────────────
-                  if (_userPosition != null) {
-                    items = items.where((item) {
-                      if (item.location == null) return false;
-                      final meters = Geolocator.distanceBetween(
+                  
+                  // Map to distance pairs and filter
+                  List<_ItemDistancePair> distancePairs = items.map((item) {
+                    double? distKm;
+                    if (_userPosition != null && item.location != null) {
+                      distKm = Geolocator.distanceBetween(
                         _userPosition!.latitude,
                         _userPosition!.longitude,
                         item.location!.latitude,
                         item.location!.longitude,
-                      );
-                      return meters / 1000 <= _kNearbyRadiusKm;
-                    }).toList();
-                  }
+                      ) / 1000;
+                    }
+                    return _ItemDistancePair(item, distKm);
+                  }).where((pair) {
+                    if (_userPosition != null) {
+                      if (pair.distanceKm == null) return false;
+                      return pair.distanceKm! <= _kNearbyRadiusKm;
+                    }
+                    return true;
+                  }).toList();
 
                   // ── Category filter ─────────────────────────────────────
                   if (_selectedCategory == 'Lost Items') {
-                    items = items
-                        .where((item) => item.postType.toLowerCase() == 'lost')
+                    distancePairs = distancePairs
+                        .where((pair) => pair.item.postType.toLowerCase() == 'lost')
                         .toList();
                   } else if (_selectedCategory == 'Found Items') {
-                    items = items
+                    distancePairs = distancePairs
                         .where(
-                            (item) => item.postType.toLowerCase() == 'found')
+                            (pair) => pair.item.postType.toLowerCase() == 'found')
                         .toList();
                   }
 
-                  if (items.isEmpty) {
+                  if (distancePairs.isEmpty) {
                     return const SliverFillRemaining(
                       child: EmptyStateView(
                         icon: PhosphorIconsRegular.mapTrifold,
@@ -238,18 +251,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final item = items[index];
-                          double? distanceKm;
-                          if (_userPosition != null &&
-                              item.location != null) {
-                            final meters = Geolocator.distanceBetween(
-                              _userPosition!.latitude,
-                              _userPosition!.longitude,
-                              item.location!.latitude,
-                              item.location!.longitude,
-                            );
-                            distanceKm = meters / 1000;
-                          }
+                          final pair = distancePairs[index];
+                          final item = pair.item;
+                          
                           return ItemCard(
                             title: item.title,
                             status: item.postType.toUpperCase(),
@@ -260,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             timeText: timeago.format(item.timestamp),
                             imageUrl: item.imageUrl,
                             reporterName: item.reporterName ?? 'Unknown',
-                            distanceKm: distanceKm,
+                            distanceKm: pair.distanceKm,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -272,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                           );
                         },
-                        childCount: items.length,
+                        childCount: distancePairs.length,
                       ),
                     ),
                   );

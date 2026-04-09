@@ -5,7 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EncryptionService {
-  static String get _appSalt => dotenv.env['ENCRYPTION_SALT'] ?? "FoundIT_Deepmind_Secure_Key_2026";
+  static String get _appSalt => dotenv.env['ENCRYPTION_SALT'] ?? (throw Exception('ENCRYPTION_SALT environment variable is required'));
 
   static encrypt.Key _getKey(String roomId) {
     final bytes = utf8.encode(roomId + _appSalt);
@@ -22,7 +22,7 @@ class EncryptionService {
       final encrypted = encrypter.encrypt(plainText, iv: iv);
       return "${iv.base64}:${encrypted.base64}";
     } catch (e) {
-      return plainText; 
+      throw Exception("Encryption failed"); 
     }
   }
 
@@ -38,13 +38,10 @@ class EncryptionService {
         final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
         return encrypter.decrypt64(parts[1], iv: iv);
       } else {
-        // Legacy fallback
-        final iv = encrypt.IV.fromLength(16);
-        final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
-        return encrypter.decrypt64(encryptedPayload, iv: iv);
+        throw Exception("Legacy decryption without IV is strictly prohibited.");
       }
     } catch (e) {
-      return encryptedPayload; 
+      throw Exception("Decryption failed"); 
     }
   }
 }

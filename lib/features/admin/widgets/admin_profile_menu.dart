@@ -89,7 +89,7 @@ class _AdminProfileMenuState extends State<AdminProfileMenu> {
                                 ),
                               ),
                               Text(
-                                currentUser?.email ?? 'admin@srcu.edu.my',
+                                currentUser?.email ?? 'admin-user',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey,

@@ -42,7 +42,6 @@ class TagLocationScreen extends StatefulWidget {
 }
 
 class _TagLocationScreenState extends State<TagLocationScreen> {
-  GoogleMapController? _mapController;
   LatLng? _selectedLocation;
   Position? _currentPosition;
   bool _isLoading = true;
@@ -357,8 +356,6 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
                             ),
                             myLocationEnabled: true,
                             myLocationButtonEnabled: true,
-                            onMapCreated: (controller) =>
-                                _mapController = controller,
                             onTap: (LatLng location) {
                               setState(() {
                                 _selectedLocation = location;

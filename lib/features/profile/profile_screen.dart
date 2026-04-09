@@ -5,7 +5,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../services/auth_service.dart';
 import '../auth/auth_screen.dart';
 import '../../models/user_model.dart';
-import '../../core/theme/app_colors.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import '../notifications/notifications_screen.dart';

@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
@@ -67,16 +68,27 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
         !_isSubmitting;
   }
 
+  Timer? _debounceTimer;
+
   @override
   void initState() {
     super.initState();
     _tfliteService.initialize();
     _detailsController.addListener(() {
       if (!mounted) return;
-      setState(() {});
+      // Removed unnecessary setState to avoid rebuilding everything. Submit button can check controller or we use ValueListenableBuilder.
+      // Wait, _canSubmit uses _detailsController.text.trim().isNotEmpty
+      
       if (_selectedLostReport != null) {
-        _recalculateSimilarity();
+        if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _recalculateSimilarity();
+          }
+        });
       }
+
+      setState(() {}); // They needed setState for _canSubmit. Will just debounce similarity instead of both.
     });
 
     if (widget.initialLostReportId != null &&
@@ -104,6 +116,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _tfliteService.dispose();
     _detailsController.dispose();
     super.dispose();
@@ -1273,27 +1286,6 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
           ),
         ),
         const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title, String subtitle) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.obsidian,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: const TextStyle(color: Color(0xFF7B7A8D), fontSize: 13),
-        ),
       ],
     );
   }

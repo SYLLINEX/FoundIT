@@ -7,7 +7,6 @@ import '../../../models/item_model.dart';
 import '../../../models/claim_model.dart';
 import '../../../services/notification_service.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
-import '../../../services/ai_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../widgets/app_confirmation_dialog.dart';
@@ -98,83 +97,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     );
   }
 
-  Widget _buildReportsList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('items').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
-        }
-
-        final pendingDocs = (snapshot.data?.docs ?? []).where((doc) {
-          final status =
-              (doc.data() as Map<String, dynamic>)['status']
-                  ?.toString()
-                  .toLowerCase() ??
-              '';
-          return status == 'pending for approval' || status == 'pending';
-        }).toList();
-
-        if (pendingDocs.isEmpty) {
-          return const EmptyStateView(
-            icon: PhosphorIconsRegular.checkCircle,
-            title: 'No pending reports',
-            message: 'All reports have been reviewed.',
-          );
-        }
-
-        final docs = pendingDocs.where((doc) {
-          final item = ItemModel.fromMap(
-            doc.id,
-            doc.data() as Map<String, dynamic>,
-          );
-          return item.title.toLowerCase().contains(_searchQuery.toLowerCase());
-        }).toList();
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final item = ItemModel.fromMap(
-              docs[index].id,
-              docs[index].data() as Map<String, dynamic>,
-            );
-            return _buildReportCard(item);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildClaimsList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('claims')
-          .where('status', isEqualTo: 'Pending')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const EmptyStateView(
-            icon: PhosphorIconsRegular.checkCircle,
-            title: 'No pending claims',
-            message: 'All claims have been reviewed.',
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          itemCount: snapshot.data!.docs.length,
-          itemBuilder: (context, index) {
-            return _buildClaimCardFromDoc(snapshot.data!.docs[index]);
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildAllList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('items').snapshots(),
@@ -194,11 +116,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           return status == 'pending for approval' || status == 'pending';
         }).toList();
 
-        final filteredReports = pendingReportDocs.where((doc) {
-          final item = ItemModel.fromMap(
-            doc.id,
-            doc.data() as Map<String, dynamic>,
-          );
+        final parsedReports = pendingReportDocs.map((doc) => 
+          ItemModel.fromMap(doc.id, doc.data() as Map<String, dynamic>)
+        ).toList();
+
+        final filteredReports = parsedReports.where((item) {
           return item.title.toLowerCase().contains(_searchQuery.toLowerCase());
         }).toList();
 
@@ -258,11 +180,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                         ),
                       ),
                     ),
-                  ...filteredReports.map((doc) {
-                    final item = ItemModel.fromMap(
-                      doc.id,
-                      doc.data() as Map<String, dynamic>,
-                    );
+                  ...filteredReports.map((item) {
                     return _buildReportCard(item);
                   }),
                 ],
@@ -571,40 +489,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     if (confirmed == true) {
       await _rejectReport(item);
     }
-  }
-
-  Future<bool> _confirmApproveClaim(ClaimModel claim) async {
-    final confirmed = await showAppConfirmationDialog<bool>(
-      context: context,
-      title: 'Approve Claim?',
-      message: 'The item will be reserved for this claimant.',
-      confirmText: 'Approve',
-      cancelText: 'Cancel',
-      confirmColor: AppColors.statusResolved,
-    );
-
-    if (confirmed == true) {
-      await _approveClaim(claim);
-      return true;
-    }
-    return false;
-  }
-
-  Future<bool> _confirmRejectClaim(ClaimModel claim) async {
-    final confirmed = await showAppConfirmationDialog<bool>(
-      context: context,
-      title: 'Reject Claim?',
-      message: 'This claim will be removed from review.',
-      confirmText: 'Reject',
-      cancelText: 'Cancel',
-      confirmColor: AppColors.error,
-    );
-
-    if (confirmed == true) {
-      await _rejectClaim(claim);
-      return true;
-    }
-    return false;
   }
 
   Future<void> _approveReport(ItemModel item) async {
