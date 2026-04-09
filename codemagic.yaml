@@ -29,6 +29,13 @@ workflows:
           pod install --repo-update
       - name: Build iOS (No Codesign)
         script: |
+          # Inject a dummy Development Team to bypass Flutter's strict team validation
+          # and explicitly disable code signing to bypass Xcode's signing checks.
+          echo "DEVELOPMENT_TEAM = V8424N534K" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_ALLOWED = NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_REQUIRED = NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGN_IDENTITY = \"\"" >> ios/Flutter/Release.xcconfig
+
           # We use --release because it's easier to sideload for testing
           flutter build ios --release --no-codesign
       - name: Manual IPA Packaging
