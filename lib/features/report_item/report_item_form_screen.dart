@@ -383,7 +383,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       onTap: () async {
         final date = await showDatePicker(
           context: context,
-          initialDate: DateTime.now(),
+          initialDate: selectedDate ?? DateTime.now(),
           firstDate: DateTime(2020),
           lastDate: DateTime.now(),
         );
@@ -401,11 +401,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate == null
-                  ? 'Select date'
-                  : '${selectedDate!.toLocal()}'.split(' ')[0],
+              selectedDate != null 
+                  ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                  : 'Select Date',
               style: TextStyle(
-                color: selectedDate == null ? Colors.grey[400] : Colors.black87,
+                color: selectedDate != null ? Colors.black87 : Colors.grey[400],
                 fontSize: 16,
               ),
             ),

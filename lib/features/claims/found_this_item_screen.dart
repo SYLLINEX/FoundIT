@@ -34,6 +34,7 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
 
   XFile? _photo;
   bool _isSubmitting = false;
+  bool _isConfirmed = false;
 
   @override
   void dispose() {
@@ -456,11 +457,47 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               ),
               const SizedBox(height: 32),
 
+              // ── Confirmation Checkbox ────────────────────────────────────
+              GestureDetector(
+                onTap: () => setState(() => _isConfirmed = !_isConfirmed),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _isConfirmed ? Colors.blue.shade50 : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isConfirmed ? Colors.blue.shade200 : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isConfirmed ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.circle,
+                        color: _isConfirmed ? Colors.blue : Colors.grey.shade400,
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Text(
+                          'I confirm that I found this item and the details are accurate.',
+                          style: TextStyle(
+                            color: AppColors.nightfall,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
               // ── Submit button ────────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submit,
+                  onPressed: (_isSubmitting || !_isConfirmed) ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.statusFound,
                     padding: const EdgeInsets.symmetric(vertical: 18),

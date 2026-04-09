@@ -130,7 +130,8 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       status: 'Pending for Approval',
       aiLabels: widget.aiLabels,
       aiScoreVector: widget.aiScoreVector,
-      timestamp: DateTime.now(),
+      timestamp: DateTime.now(), // Ignored in comparison
+      eventDate: widget.date, // Add user's selected date here
     );
 
     List<Map<String, dynamic>> finalMatches = [];
@@ -226,7 +227,8 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         status: 'Pending for Approval',
         aiLabels: widget.aiLabels,
         aiScoreVector: widget.aiScoreVector,
-        timestamp: DateTime.now(),
+        timestamp: DateTime.now(), // Server handles this via toMap()
+        eventDate: widget.date, // Actual date provided by the UI
       );
 
       final createdItemId = await _databaseService.addItem(item);

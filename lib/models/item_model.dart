@@ -14,6 +14,7 @@ class ItemModel {
   final List<String> aiLabels;
   final List<double> aiScoreVector; // 10-dim probability vector from fine-tuned model
   final DateTime timestamp;
+  final DateTime? eventDate; // Actual date lost or found
   final String? specificLocation;
   final String? reporterName;
 
@@ -31,6 +32,7 @@ class ItemModel {
     required this.aiLabels,
     this.aiScoreVector = const [],
     required this.timestamp,
+    this.eventDate,
     this.specificLocation,
     this.reporterName,
   });
@@ -57,6 +59,7 @@ class ItemModel {
         (data['ai_score_vector'] as List<dynamic>? ?? []).map((e) => (e as num).toDouble()),
       ),
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      eventDate: data['event_date'] != null ? (data['event_date'] as Timestamp).toDate() : null,
       specificLocation: data['specific_location'],
       reporterName: data['reporter_name'],
     );
@@ -79,6 +82,7 @@ class ItemModel {
       aiLabels: aiLabels,
       aiScoreVector: scoreVector,
       timestamp: timestamp,
+      eventDate: eventDate,
       specificLocation: specificLocation,
       reporterName: reporterName,
     );
@@ -98,6 +102,9 @@ class ItemModel {
       'ai_labels': aiLabels,
       'ai_score_vector': aiScoreVector,
       'timestamp': FieldValue.serverTimestamp(),
+      if (eventDate != null) 'event_date': Timestamp.fromDate(eventDate!),
+      if (specificLocation != null) 'specific_location': specificLocation,
+      if (reporterName != null) 'reporter_name': reporterName,
       'specific_location': specificLocation,
       'reporter_name': reporterName,
     };
