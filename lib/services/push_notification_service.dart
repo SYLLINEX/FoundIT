@@ -62,7 +62,7 @@ class PushNotificationService {
     const iosSettings = DarwinInitializationSettings();
 
     await _localNotifications.initialize(
-      const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      settings: const InitializationSettings(android: androidSettings, iOS: iosSettings),
     );
 
     await _localNotifications
@@ -123,10 +123,10 @@ class PushNotificationService {
       if (notification == null) return;
 
       await _localNotifications.show(
-        notification.hashCode,
-        notification.title ?? 'FoundIT',
-        notification.body ?? '',
-        NotificationDetails(
+        id: notification.hashCode,
+        title: notification.title ?? 'FoundIT',
+        body: notification.body ?? '',
+        notificationDetails: NotificationDetails(
           android: AndroidNotificationDetails(
             _channel.id,
             _channel.name,
