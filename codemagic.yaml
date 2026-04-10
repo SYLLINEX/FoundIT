@@ -8,7 +8,15 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          echo $FIREBASE_OPTIONS | base64 --decode > lib/firebase_options.dart
+          # Add a safety check to fail early if the variable is missing
+          if [ -z "$FIREBASE_OPTIONS" ]; then
+            echo "Error: FIREBASE_OPTIONS environment variable is empty or missing in Codemagic UI!"
+            exit 1
+          fi
+          
+          # Added quotes around the variable to prevent base64 corruption
+          echo "$FIREBASE_OPTIONS" | base64 --decode > lib/firebase_options.dart
+          
           flutter pub get
           
           # Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
