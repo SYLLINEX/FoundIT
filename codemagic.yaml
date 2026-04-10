@@ -8,52 +8,47 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          # Add a safety check to fail early if the variable is missing
-          if [ -z "$FIREBASE_OPTIONS" ]; then
-            echo "Error: FIREBASE_OPTIONS environment variable is empty or missing in Codemagic UI!"
+          # 1. Verify firebase_options.dart exists in the repository
+          if [ ! -f "lib/firebase_options.dart" ]; then
+            echo "❌ ERROR: lib/firebase_options.dart is missing!"
+            echo "Please remove it from your .gitignore and commit it to your repository."
             exit 1
           fi
           
-          # Added quotes around the variable to prevent base64 corruption
-          echo "$FIREBASE_OPTIONS" | base64 --decode > lib/firebase_options.dart
-          
           flutter pub get
           
-          # Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
+          # 2. Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || true
 
-          # Generate the Podfile in case it was not committed from Windows. 
-          # Added --no-codesign to prevent noisy certificate warnings in logs.
+          # 3. Generate the Podfile in case it was not committed from Windows. 
           flutter build ios --config-only --no-codesign || true
 
           cd ios
-          # Very forcefully rewrite Podfile platform definition for iOS 15.0
+          # 4. Very forcefully rewrite Podfile platform definition for iOS 15.0
           echo "platform :ios, '15.0'" > podfile_temp
           grep -v "platform :ios" Podfile >> podfile_temp
           mv podfile_temp Podfile
 
-          # Delete any existing lockfile to ensure fresh resolution
+          # 5. Delete any existing lockfile to ensure fresh CocoaPods resolution
           rm -f Podfile.lock
 
           pod install --repo-update
       - name: Build iOS (No Codesign)
         script: |
-          # Inject a dummy Development Team to bypass Flutter's strict team validation
-          # and explicitly disable code signing to bypass Xcode's signing checks.
+          # 6. Inject a dummy Development Team to bypass Flutter's strict team validation
           echo "DEVELOPMENT_TEAM = V8424N534K" >> ios/Flutter/Release.xcconfig
           echo "CODE_SIGNING_ALLOWED = NO" >> ios/Flutter/Release.xcconfig
           echo "CODE_SIGNING_REQUIRED = NO" >> ios/Flutter/Release.xcconfig
           echo "CODE_SIGN_IDENTITY = \"\"" >> ios/Flutter/Release.xcconfig
 
-          # We use --release because it's easier to sideload for testing
+          # 7. Build the Unsigned App
           flutter build ios --release --no-codesign
       - name: Manual IPA Packaging
         script: |
-          # Xcode creates a .app folder; we must wrap it in 'Payload' to make it an .ipa
+          # 8. Package the .app into a standard .ipa payload
           mkdir -p build/ios/iphoneos/Payload
           cd build/ios/iphoneos
           mv Runner.app Payload/
-          # We must use -y to preserve symlinks inside iOS frameworks, otherwise the app is corrupted
           zip -r -y found_it.ipa Payload
     artifacts:
       - build/ios/iphoneos/*.ipa
