@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Found It</string>
+	<string>FoundIT</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -59,3 +59,5 @@
         <string>This app needs access to your photo library to select photos for reports.</string>
         <key>NSMicrophoneUsageDescription</key>
         <string>This app needs access to the microphone for video recording.</string>
+</dict>
+</plist>
