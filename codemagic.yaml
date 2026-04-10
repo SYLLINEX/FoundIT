@@ -52,6 +52,10 @@ workflows:
           echo "CODE_SIGNING_REQUIRED = NO" >> ios/Flutter/Release.xcconfig
           echo "CODE_SIGN_IDENTITY = \"\"" >> ios/Flutter/Release.xcconfig
 
+          # 6b. Prevent Xcode from stripping TFLite native symbols in release builds
+          echo "STRIP_STYLE = non-global" >> ios/Flutter/Release.xcconfig
+          echo "STRIP_SWIFT_SYMBOLS = NO" >> ios/Flutter/Release.xcconfig
+
           # 7. Build the Unsigned App
           flutter build ios --release --no-codesign
       - name: Manual IPA Packaging
