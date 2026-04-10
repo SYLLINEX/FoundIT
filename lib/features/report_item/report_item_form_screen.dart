@@ -73,7 +73,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
 
     if (source == null) return;
-    final pickedFile = await _picker.pickImage(source: source);
+    final pickedFile = await _picker.pickImage(
+      source: source,
+      imageQuality: 80, // Forces JPEG conversion on iOS, fixing TFLite decoder errors with HEIC
+    );
 
     if (pickedFile != null) {
       setState(() {
