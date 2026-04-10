@@ -21,8 +21,9 @@ workflows:
           echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY_IOS" > .env
           echo "ENCRYPTION_SALT=$ENCRYPTION_SALT" >> .env
           
-          # Inject directly to AppDelegate to bypass runtime parsing issues
-          sed -i '' "s/INJECT_MAPS_API_KEY_HERE/$GOOGLE_MAPS_API_KEY_IOS/g" ios/Runner/AppDelegate.swift
+          # Inject directly to xcconfig files so Info.plist picks up the key at build time
+          sed -i '' "s/INJECT_MAPS_API_KEY_HERE/$GOOGLE_MAPS_API_KEY_IOS/g" ios/Flutter/Debug.xcconfig
+          sed -i '' "s/INJECT_MAPS_API_KEY_HERE/$GOOGLE_MAPS_API_KEY_IOS/g" ios/Flutter/Release.xcconfig
           echo "✅ .env file successfully created and key injected."
           
           flutter pub get
