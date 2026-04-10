@@ -62,7 +62,7 @@ class PushNotificationService {
     const iosSettings = DarwinInitializationSettings();
 
     await _localNotifications.initialize(
-      settings: const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
     );
 
     await _localNotifications
@@ -123,10 +123,10 @@ class PushNotificationService {
       if (notification == null) return;
 
       await _localNotifications.show(
-        id: notification.hashCode,
-        title: notification.title ?? 'FoundIT',
-        body: notification.body ?? '',
-        notificationDetails: NotificationDetails(
+        notification.hashCode,
+        notification.title ?? 'FoundIT',
+        notification.body ?? '',
+        NotificationDetails(
           android: AndroidNotificationDetails(
             _channel.id,
             _channel.name,
@@ -142,17 +142,25 @@ class PushNotificationService {
     });
   }
 
-  Future<void> _saveToken(String userId, String token) {
-    return FirebaseFirestore.instance.collection('users').doc(userId).set({
-      'fcm_tokens': FieldValue.arrayUnion([token]),
-      'updated_at': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  Future<void> _saveToken(String userId, String token) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'fcm_tokens': FieldValue.arrayUnion([token]),
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving token: $e');
+    }
   }
 
-  Future<void> _removeToken(String userId, String token) {
-    return FirebaseFirestore.instance.collection('users').doc(userId).set({
-      'fcm_tokens': FieldValue.arrayRemove([token]),
-      'updated_at': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  Future<void> _removeToken(String userId, String token) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'fcm_tokens': FieldValue.arrayRemove([token]),
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error removing token: $e');
+    }
   }
 }
