@@ -23,7 +23,9 @@ func getEnvVar(name: String) -> String {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     let mapsApiKey = getEnvVar(name: "GOOGLE_MAPS_API_KEY")
-    GMSServices.provideAPIKey(mapsApiKey)
+    if !mapsApiKey.isEmpty {
+        GMSServices.provideAPIKey(mapsApiKey)
+    }
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

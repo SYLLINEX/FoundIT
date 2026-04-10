@@ -38,11 +38,8 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await PushNotificationService.instance.init();
-
-  _applyEdgeToEdgeSystemUi();
-
-  runApp(const FoundItApp());
+  // Fire and forget to prevent hanging on iOS without APNs entitlements during sideloading.
+  PushNotificationService.instance.init();
 }
 
 class FoundItApp extends StatefulWidget {
