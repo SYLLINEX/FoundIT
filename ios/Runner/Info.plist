@@ -53,6 +53,9 @@
         <string>This app needs access to location when open.</string>
         <key>NSLocationAlwaysUsageDescription</key>
         <string>This app needs access to location when in the background.</string>
-</dict>
-</plist>
-
+        <key>NSCameraUsageDescription</key>
+        <string>This app needs access to the camera to take photos for reports.</string>
+        <key>NSPhotoLibraryUsageDescription</key>
+        <string>This app needs access to your photo library to select photos for reports.</string>
+        <key>NSMicrophoneUsageDescription</key>
+        <string>This app needs access to the microphone for video recording.</string>
