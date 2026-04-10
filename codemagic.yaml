@@ -15,6 +15,15 @@ workflows:
             exit 1
           fi
           
+          # Recreate the .env file to fix the "No file or variants found for asset: .env" error
+          if [ -n "$ENV_BASE64" ]; then
+            echo "$ENV_BASE64" | base64 --decode > .env
+            echo "✅ .env file successfully created from environment variable."
+          else
+            echo "⚠️ WARNING: ENV_BASE64 is not set! Creating an empty .env file so the build doesn't crash."
+            touch .env
+          fi
+          
           flutter pub get
           
           # 2. Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
