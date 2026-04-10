@@ -103,11 +103,9 @@ class PushNotificationService {
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       final currentToken = await _messaging.getToken();
 
-      if (_previousUserId != null &&
-          _previousUserId != user?.uid &&
-          currentToken != null) {
-        await _removeToken(_previousUserId!, currentToken);
-      }
+      // We no longer attempt to _removeToken here when `user` becomes null
+      // because Firestore will reject unauthenticated writes.
+      // Instead, we handle token removal directly in `AuthService.signOut()`.
 
       if (user != null && currentToken != null) {
         await _saveToken(user.uid, currentToken);

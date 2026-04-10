@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -68,7 +70,7 @@ class AuthService {
               'phone_num': phone,
               'profile_img': '',
               'created_at': FieldValue.serverTimestamp(),
-            });
+            }, SetOptions(merge: true));
       }
 
       return userCredential;
@@ -187,7 +189,7 @@ class AuthService {
               'phone_num': '',
               'profile_img': userCredential.user!.photoURL ?? '',
               'created_at': FieldValue.serverTimestamp(),
-            });
+            }, SetOptions(merge: true));
       }
 
       return userCredential;
@@ -203,6 +205,22 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    // Remove the FCM token from the user's document BEFORE signing out of Firebase.
+    // Otherwise, Firestore will block the request because the user is no longer authenticated.
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'fcm_tokens': FieldValue.arrayRemove([token]),
+          }, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error removing FCM token during sign out: $e');
+    }
+
     await _googleSignIn.signOut();
     await _auth.signOut();
   }

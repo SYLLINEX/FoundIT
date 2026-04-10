@@ -40,6 +40,10 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   // Fire and forget to prevent hanging on iOS without APNs entitlements during sideloading.
   PushNotificationService.instance.init();
+
+  _applyEdgeToEdgeSystemUi();
+  
+  runApp(const FoundItApp());
 }
 
 class FoundItApp extends StatefulWidget {
