@@ -18,7 +18,7 @@ workflows:
           fi
           
           # Recreate the .env file from Codemagic environment variables
-          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY" > .env
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY_IOS" > .env
           echo "ENCRYPTION_SALT=$ENCRYPTION_SALT" >> .env
           echo "✅ .env file successfully created from credentials group."
           
