@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           
                           return ItemCard(
                             title: item.title,
-                            status: item.postType.toUpperCase(),
+                            status: item.status.toLowerCase() == 'reserved' ? 'RESERVED' : item.postType.toUpperCase(),
                             location: (item.specificLocation != null &&
                                     item.specificLocation!.isNotEmpty)
                                 ? item.specificLocation!

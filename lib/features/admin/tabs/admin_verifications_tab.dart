@@ -12,10 +12,12 @@ import 'package:shimmer/shimmer.dart';
 import '../../../widgets/app_confirmation_dialog.dart';
 import '../widgets/admin_header.dart';
 import '../screens/found_tip_details_screen.dart';
+import '../screens/report_review_screen.dart';
 import '../screens/claim_review_screen.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../widgets/expandable_filter_fab.dart';
 import '../../../widgets/empty_state_view.dart';
+
 class AdminVerificationsTab extends StatefulWidget {
   const AdminVerificationsTab({super.key});
 
@@ -37,47 +39,52 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       body: Column(
         children: [
           AdminHeader(
-          title: 'Verifications',
-          onNotificationTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-          },
-        ),
-        // Header
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search Bar
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) =>
-                          setState(() => _searchQuery = value),
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        prefixIcon: const Icon(
-                          PhosphorIconsRegular.magnifyingGlass,
-                          color: Colors.grey,
+            title: 'Verifications',
+            onNotificationTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
+          ),
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search Bar
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(
+                            PhosphorIconsRegular.magnifyingGlass,
+                            color: Colors.grey,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
                         ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        // List Area
-        Expanded(child: _buildAllList()),
+          // List Area
+          Expanded(child: _buildAllList()),
         ],
       ),
       floatingActionButton: Padding(
@@ -116,9 +123,12 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           return status == 'pending for approval' || status == 'pending';
         }).toList();
 
-        final parsedReports = pendingReportDocs.map((doc) => 
-          ItemModel.fromMap(doc.id, doc.data() as Map<String, dynamic>)
-        ).toList();
+        final parsedReports = pendingReportDocs
+            .map(
+              (doc) =>
+                  ItemModel.fromMap(doc.id, doc.data() as Map<String, dynamic>),
+            )
+            .toList();
 
         final filteredReports = parsedReports.where((item) {
           return item.title.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -165,7 +175,12 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
             final isFiltered = _selectedFilter != 'All';
 
             return ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 10,
+                bottom: 140,
+              ),
               children: [
                 if (showReports && filteredReports.isNotEmpty) ...[
                   if (isFiltered)
@@ -256,120 +271,122 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     );
   }
 
-
-
   Widget _buildReportCard(ItemModel item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.adminVerificationBorderSoft),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.adminVerificationInk,
-                ),
-              ),
-              Text(
-                _formatTime(item.timestamp),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(item.userId)
+          .get(),
+      builder: (context, userSnap) {
+        String reporterName = 'User';
+        if (userSnap.hasData && userSnap.data?.data() != null) {
+          final userData = userSnap.data!.data() as Map<String, dynamic>;
+          reporterName = userData['username'] ?? 'User';
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.adminVerificationBorderSoft),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Reported by ',
-            style: const TextStyle(
-              color: AppColors.adminVerificationMutedInk,
-              fontSize: 13,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 12),
-          Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _confirmRejectReport(item),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: const BorderSide(color: AppColors.adminVerificationBorderSoft),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Reject', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _confirmApproveReport(item),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.statusOpen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Approve', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => _showReportDetails(item),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              Row(
                 children: [
-                  Text(
-                    'Review Details',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.adminVerificationMutedInk,
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.adminVerificationInk,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    PhosphorIconsRegular.arrowRight,
-                    size: 13,
-                    color: AppColors.adminVerificationMutedInk,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: item.postType.toLowerCase() == 'lost'
+                          ? const Color(0xFFEF4444).withValues(
+                              alpha: 0.1,
+                            ) // Red for Lost
+                          : const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.1), // Green for Found
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.postType.toLowerCase() == 'lost'
+                          ? 'LOST REPORT'
+                          : 'FOUND REPORT',
+                      style: TextStyle(
+                        color: item.postType.toLowerCase() == 'lost'
+                            ? const Color(0xFFEF4444)
+                            : const Color(0xFF10B981),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 6),
+              Text(
+                'Reported by $reporterName',
+                style: const TextStyle(
+                  color: AppColors.adminVerificationMutedInk,
+                  fontSize: 13,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () => _showReportDetails(item),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Review Details',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.adminVerificationMutedInk,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        PhosphorIconsRegular.arrowRight,
+                        size: 13,
+                        color: AppColors.adminVerificationMutedInk,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -406,20 +423,35 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                   ),
                 ),
               ),
-              Text(
-                claim.isFoundTip ? 'FOUND TIP' : 'CLAIM',
-                style: const TextStyle(
-                  color: AppColors.statusPending,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      (claim.isFoundTip
+                              ? const Color(0xFF8B5CF6)
+                              : const Color(0xFF3B82F6))
+                          .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  claim.isFoundTip ? 'FOUND TIP' : 'CLAIM',
+                  style: TextStyle(
+                    color: claim.isFoundTip
+                        ? const Color(0xFF8B5CF6)
+                        : const Color(0xFF3B82F6),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
-            claim.isFoundTip ? 'Found by $claimerName' : 'Claimed by $claimerName',
+            claim.isFoundTip
+                ? 'Found by $claimerName'
+                : 'Claimed by $claimerName',
             style: const TextStyle(
               color: AppColors.adminVerificationMutedInk,
               fontSize: 13,
@@ -457,9 +489,6 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       ),
     );
   }
-
-
-
 
   Future<void> _confirmApproveReport(ItemModel item) async {
     final confirmed = await showAppConfirmationDialog<bool>(
@@ -552,14 +581,27 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
           'reserved_at': FieldValue.serverTimestamp(),
         });
 
+    final linkedLostId = claim.linkedLostReportId;
+    if (linkedLostId != null && linkedLostId.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('items')
+          .doc(linkedLostId)
+          .update({
+            'status': 'Reserved',
+            'reserved_by': claim.claimantId,
+            'reserved_at': FieldValue.serverTimestamp(),
+          });
+    }
+
     // Chat room expires in 3 days
     final expiresAt = DateTime.now().add(const Duration(days: 3));
 
     if (claim.isFoundTip) {
       // ── FOUND TIP: finder reported finding a lost item ──────────────────
       // claimantId = the finder   |   ownerId = original lost-item reporter
-      final chatRoomRef =
-          FirebaseFirestore.instance.collection('chat_rooms').doc();
+      final chatRoomRef = FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .doc();
       await chatRoomRef.set({
         'claim_id': claim.claimId,
         'item_id': claim.itemId,
@@ -625,8 +667,9 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         );
       }
 
-      final chatRoomRef =
-          FirebaseFirestore.instance.collection('chat_rooms').doc();
+      final chatRoomRef = FirebaseFirestore.instance
+          .collection('chat_rooms')
+          .doc();
       await chatRoomRef.set({
         'claim_id': claim.claimId,
         'item_id': claim.itemId,
@@ -635,14 +678,8 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         'last_updated': FieldValue.serverTimestamp(),
         'status': 'active',
         'expires_at': Timestamp.fromDate(expiresAt),
-        'typing_status': {
-          item.userId: false,
-          claim.claimantId: false,
-        },
-        'unread_counts': {
-          item.userId: 0,
-          claim.claimantId: 0,
-        },
+        'typing_status': {item.userId: false, claim.claimantId: false},
+        'unread_counts': {item.userId: 0, claim.claimantId: 0},
       });
 
       await _notificationService.createNotification(
@@ -667,11 +704,11 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Claim approved.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Claim approved.')));
     }
   }
-
 
   Future<void> _rejectClaim(ClaimModel claim) async {
     await FirebaseFirestore.instance
@@ -729,205 +766,15 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
   }
 
   void _showReportDetails(ItemModel item) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag Handle Indicator
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  height: 4,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
-              // Scrollable Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Box
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: AppColors.adminVerificationSurfaceSoft,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.adminVerificationBorderSoft,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.adminVerificationInk,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _formatTime(item.timestamp),
-                              style: const TextStyle(
-                                color: AppColors.adminVerificationMutedInk,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Hero Image
-                      if (item.imageUrl.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: CachedNetworkImage(
-                            imageUrl: item.imageUrl,
-                            height: 220,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: Container(color: Colors.white),
-                            ),
-                            errorWidget: (_, __, ___) =>
-                                _buildImagePlaceholder(),
-                          ),
-                        )
-                      else
-                        _buildImagePlaceholder(),
-                      const SizedBox(height: 24),
-
-                      // Refined two-column details
-                      _detailRow('Type', item.postType),
-                      _detailRow('Category', item.category),
-                      _detailRow('Status', item.status),
-                      _detailRow(
-                        'Location',
-                        item.specificLocation?.isNotEmpty == true
-                            ? '${item.specificLocation} (${item.locationName})'
-                            : item.locationName,
-                      ),
-                      const SizedBox(height: 8),
-
-                      // Description Section
-                      const Text(
-                        'Description',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.adminVerificationInk,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.description,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          height: 1.5,
-                          color: Color(0xFF4A4A5A),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Sticky Bottom Action Bar
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  24,
-                  16,
-                  24,
-                  MediaQuery.of(context).padding.bottom + 16,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(
-                    top: BorderSide(
-                      color: AppColors.adminVerificationBorderSoft,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.adminVerificationInk,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(
-                            color: AppColors.adminVerificationBorderSoft,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Close',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    if (item.location != null) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _openReportMap(item);
-                          },
-                          icon: const Icon(PhosphorIconsRegular.mapTrifold, size: 18),
-                          label: const Text(
-                            'View Map',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.adminVerificationInk,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportReviewScreen(
+          targetItem: item,
+          onApprove: () => _approveReport(item),
+          onReject: () => _rejectReport(item),
+        ),
+      ),
     );
   }
 
@@ -943,11 +790,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            PhosphorIconsRegular.imageBroken,
-            size: 32,
-            color: Colors.grey,
-          ),
+          Icon(PhosphorIconsRegular.imageBroken, size: 32, color: Colors.grey),
           SizedBox(height: 8),
           Text(
             'No image available',
@@ -1033,16 +876,3 @@ class _AdminReportMapScreen extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

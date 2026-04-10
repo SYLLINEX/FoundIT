@@ -38,7 +38,7 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
   final NotificationService _notificationService = NotificationService();
   final TFLiteService _tfliteService = TFLiteService();
 
-  XFile? _photo;
+  List<XFile> _photos = [];
   bool _isSubmitting = false;
   bool _isConfirmed = false;
 
@@ -343,23 +343,35 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
     super.dispose();
   }
 
-  Future<void> _pickPhoto() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
+  Future<void> _pickPhotos() async {
+    final picked = await _picker.pickMultiImage(
       imageQuality: 70,
     );
-    if (picked != null) setState(() => _photo = picked);
+    if (picked.isNotEmpty) {
+      setState(() => _photos.addAll(picked));
+    }
   }
 
-  Future<String?> _uploadPhoto(String userId) async {
-    if (_photo == null) return null;
-    final ref = FirebaseStorage.instance
-        .ref()
-        .child('found_tips')
-        .child(userId)
-        .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-    await ref.putFile(File(_photo!.path));
-    return await ref.getDownloadURL();
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
+
+  Future<List<String>> _uploadPhotos(String userId) async {
+    if (_photos.isEmpty) return [];
+    List<String> urls = [];
+    for (var photo in _photos) {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('found_tips')
+          .child(userId)
+          .child('${DateTime.now().millisecondsSinceEpoch}_${const Uuid().v4().substring(0, 8)}.jpg');
+      await ref.putFile(File(photo.path));
+      final url = await ref.getDownloadURL();
+      urls.add(url);
+    }
+    return urls;
   }
 
   double _cosineSimilarity(List<double> a, List<double> b) {
@@ -377,6 +389,13 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_photos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload at least one photo proof.')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -391,17 +410,17 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
         }
       }
 
-      // Upload photo if attached
-      final photoUrl = await _uploadPhoto(user.uid);
+      // Upload photos
+      final photoUrls = await _uploadPhotos(user.uid);
 
       double? similarityScore;
-      if (_photo != null) {
-        final uploadedVec = await _tfliteService.getScoreVector(File(_photo!.path));
+      if (_photos.isNotEmpty) {
+        final uploadedVec = await _tfliteService.getScoreVector(File(_photos.first.path));
         if (uploadedVec.isNotEmpty && widget.lostItem.aiScoreVector.length == uploadedVec.length) {
           similarityScore = _cosineSimilarity(widget.lostItem.aiScoreVector, uploadedVec);
         } else {
           // Fallback label matching
-          final labels = await _tfliteService.getTopLabels(File(_photo!.path));
+          final labels = await _tfliteService.getTopLabels(File(_photos.first.path));
           final detectedLabels = labels.toSet();
           if (widget.lostItem.aiLabels.isEmpty || detectedLabels.isEmpty) {
             similarityScore = 0.0;
@@ -426,7 +445,7 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
         status: 'Pending',
         timestamp: DateTime.now(),
         claimType: 'found_tip',
-        proofImageUrls: photoUrl != null ? [photoUrl] : [],
+        proofImageUrls: photoUrls,
         similarityScore: scoreToSave,
         linkedLostReportId: _selectedFoundReport?.itemId,
       );
@@ -737,9 +756,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Photo (optional) ─────────────────────────────────────────
+              // ── Photo (required) ─────────────────────────────────────────
               const Text(
-                'Photo proof (optional)',
+                'Photo proof (required)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -747,47 +766,96 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickPhoto,
-                child: _photo != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(_photo!.path),
-                          height: 160,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+              if (_photos.isNotEmpty)
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _photos.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == _photos.length) {
+                      return GestureDetector(
+                        onTap: _pickPhotos,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: Colors.grey.shade300,
+                                style: BorderStyle.solid),
+                          ),
+                          child: Icon(PhosphorIconsRegular.plus,
+                              color: Colors.grey.shade400, size: 32),
                         ),
-                      )
-                    : Container(
-                        height: 120,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: Colors.grey.shade300,
-                              style: BorderStyle.solid),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(PhosphorIconsRegular.image,
-                                color: Colors.grey.shade400, size: 32),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Tap to upload a photo',
-                              style: TextStyle(color: Colors.grey.shade400),
+                      );
+                    }
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(_photos[index].path),
+                              fit: BoxFit.cover,
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-              ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _removePhoto(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close,
+                                  color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              else
+                GestureDetector(
+                  onTap: _pickPhotos,
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: Colors.grey.shade300,
+                          style: BorderStyle.solid),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(PhosphorIconsRegular.image,
+                            color: Colors.grey.shade400, size: 32),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tap to upload photos',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 28),
 
               // ── Linked Report Section ────────────────────────────────────
               const Text(
-                'Linked FOUND Report',
+                'Link to your FOUND report (optional)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -998,3 +1066,4 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
     );
   }
 }
+

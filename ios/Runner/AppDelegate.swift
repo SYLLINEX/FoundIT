@@ -29,10 +29,17 @@ func getEnvVar(name: String) -> String {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    let mapsApiKey = getEnvVar(name: "GOOGLE_MAPS_API_KEY")
+    var mapsApiKey = "INJECT_MAPS_API_KEY_HERE"
+    
+    // If Codemagic didn't inject the key natively, fallback to reading .env
+    if mapsApiKey == "INJECT_MAPS_API_KEY_HERE" {
+        mapsApiKey = getEnvVar(name: "GOOGLE_MAPS_API_KEY")
+    }
+    
     if !mapsApiKey.isEmpty {
         GMSServices.provideAPIKey(mapsApiKey)
     }
+    
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

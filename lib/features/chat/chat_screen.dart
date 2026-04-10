@@ -244,6 +244,22 @@ class _ChatScreenState extends State<ChatScreen> {
           .doc(widget.room.itemId)
           .update({'status': 'Resolved'});
 
+      // If this was a claim with a linked lost report, update that original item as resolved too.
+      final claimId = snap.data()?['claim_id'] as String?;
+      if (claimId != null) {
+        final claimDoc = await FirebaseFirestore.instance.collection('claims').doc(claimId).get();
+        if (claimDoc.exists) {
+          final claimData = claimDoc.data()!;
+          final linkedLostReportId = claimData['linked_lost_report_id'] as String? ?? claimData['resolved_lost_report_id'] as String?;
+          if (linkedLostReportId != null) {
+             await FirebaseFirestore.instance
+                 .collection('items')
+                 .doc(linkedLostReportId)
+                 .update({'status': 'Resolved'});
+          }
+        }
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
