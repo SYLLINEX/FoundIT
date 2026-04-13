@@ -1,40 +1,39 @@
-<div align = "center">
-   <img src="assets/images/foundit_logo.png" width="200">
+<div align="center">
+   <img src="assets/images/foundit_logo.png" width="200" alt="FoundIT Logo">
 </div>
 
 # FoundIT
 
 Reuniting people with what matters most.
 
-FoundIT is an intelligent mobile ecosystem designed to bridge the gap between lost items and their owners. By combining Real-time Geospatial Mapping, On-device AI, and End-to-End Encrypted Messaging, we provide a secure and seamless recovery experience.
+FoundIT is an intelligent mobile ecosystem designed specifically to bridge the gap between lost items and their owners within university and local community environments. By combining Real-time Geospatial Mapping, advanced AI Similarity Scoring, and Secure Lifecycle Messaging, we provide a reliable, moderated, and seamless recovery experience.
 
 ## Screenshots
 
-*(Add screenshots here)*
+<div align="center">
+  <img src="assets/images/main_dashboard.jpeg" width="23%" alt="Main Dashboard">
+  <img src="assets/images/maps.jpeg" width="23%" alt="Map Proximity Search">
+  <img src="assets/images/ai.jpeg" width="23%" alt="AI Image Matching">
+  <img src="assets/images/chatroom.jpeg" width="23%" alt="Secure Chat Lifecycle">
+</div>
 
 ## Core Innovation
 
-### On-Device AI Intelligence
+### 🧠 Advanced AI & Image Processing
+FoundIT integrates specialized AI models to streamline reporting and prevent fraudulent claims.
+- **Smart Categorization**: Uploaded images are analyzed to suggest item categories (e.g., "Electronics", "Wallet", "Keys"), dramatically speeding up the reporting process.
+- **AI Similarity Scoring**: When a finder submits an "I Found This Item!" claim, the system runs a similarity comparison between the newly uploaded proof picture and the originally reported lost item image, assisting Admins in verification.
 
-Unlike traditional platforms, FoundIT uses a localized TensorFlow Lite (MobileNet V2) model.
-
-- **Privacy First:** Images are analyzed on-device; category metadata is extracted before the image even hits the cloud.
-- **Smart Tagging:** Automatically suggests item categories (e.g., "Electronics", "Wallet", "Keys") to speed up the reporting process.
-
-### Privacy & Security (E2EE)
-
-Communication is the most sensitive part of item recovery.
-
-- **End-to-End Encryption:** We use AES-256 symmetric encryption.
-- **Zero-Knowledge:** Chat payloads are encrypted locally. Even as database admins, we cannot read the coordination details between users.
+### 📍 Intelligent Geospatial Mapping
+- **Proximity Filtering**: Maps and dashboards automatically filter items based on a localized 10km radius from the user's current location, keeping search results highly relevant.
+- **Dynamic Exploration**: Pull-to-refresh mechanics and category filtering provide a real-time, interactive exploration of the geographical area.
 
 ## Key Features
 
-- **Seamless Auth:** Google SSO and Email/Password via Firebase.
-- **Smart Mapping:** Interactive Google Maps integration with radius-based searching using `geoflutterfire_plus`.
-- **Rich Messaging:** Real-time Firestore chats with replies, reactions, and swipe-to-reply.
-- **Instant Alerts:** Push notifications for nearby matches and claim updates via FCM.
-- **Moderation Suite:** Dedicated Admin Dashboard for dispute resolution and content filtering.
+- **Robust Authentication**: Supports Google SSO, standard Email/Password, and requires Student Matric Numbers to maintain a trusted campus/community environment.
+- **Role-Based Admin Dashboard**: Dedicated administrative view to verify "Found Tips", process claims, and ensure platform safety before unlocking communication between users.
+- **Secure Chat Lifecycles**: Approved claims generate direct chat rooms. These chats enforce multi-party resolution (both users must mark as resolved) and feature a strict 3-day retention policy after completion.
+- **Unified Error Handling**: Comprehensive standardized error logging and user-friendly Snackbar displays across all workflows to ensure app stability.
 
 ## Tech Stack
 
@@ -42,9 +41,9 @@ Communication is the most sensitive part of item recovery.
 | --- | --- |
 | **Frontend** | Flutter, Google Fonts, Flutter Spinkit |
 | **Backend** | Firebase (Auth, Firestore, Storage) |
-| **Intelligence** | TensorFlow Lite (MobileNet V2) |
-| **Security** | PointyCastle (AES), Firestore Security Rules |
-| **Maps** | Google Maps API, GeoFlutterFire+ |
+| **Intelligence** | AI Similarity Scoring & Categorization |
+| **Architecture** | Feature-Driven Modular Architecture |
+| **Maps & Location** | Google Maps API, GeoLocator & GeoFlutterFire+ |
 
 ## Project Architecture
 
@@ -52,18 +51,19 @@ We follow a Feature-Driven Modular Architecture for maximum scalability.
 
 ```text
 lib/
-├── core/               # Global constants, themes, and shared utilities
+├── core/               # Global constants, themes, and shared utilities (e.g., AppErrorHandler)
 ├── features/           # UI-centric slices of the app
-│   ├── auth/           # Onboarding & Authentication
-│   ├── map/            # Geospatial discovery & Map logic
-│   ├── chat/           # E2E Encrypted messaging system
-│   └── report_item/    # AI-integrated submission forms
+│   ├── auth/           # Onboarding, Registration & Authentication
+│   ├── map/            # Geospatial discovery, clustering & Map logic
+│   ├── chat/           # Secure messaging system and resolution lifecycle
+│   ├── profile/        # User settings, reports, and claims tracking
+│   └── report_item/    # AI-supported forms & submissions
 ├── models/             # Type-safe data structures
 ├── services/           # The "Engine Room" (API & Logic)
-│   ├── ai_service.dart      # AI Orchestration
-│   ├── encryption_service.dart # Cryptographic logic
-│   └── tflite_service.dart  # Low-level ML processing
-└── widgets/            # Reusable UI components
+│   ├── ai_service.dart       # AI Orchestration & Similarity Scoring
+│   ├── location_service.dart # Geospatial metric calculations
+│   └── database_service.dart # Firestore transactions
+└── widgets/            # Reusable UI components & shimmers
 ```
 
 ## Installation & Setup
@@ -76,25 +76,25 @@ lib/
 
 ### Steps
 
-**Clone the Repo**
+**1. Clone the Repo**
 
 ```bash
-git clone https://github.com/yourusername/foundit.git
-cd foundit
+git clone https://github.com/SYLLINEX/FoundIT.git
+cd found_it
 ```
 
-**Install Dependencies**
+**2. Install Dependencies**
 
 ```bash
 flutter pub get
 ```
 
-**Configure Firebase**
+**3. Configure Firebase**
 
 - Add your `google-services.json` (Android) and `GoogleService-Info.plist` (iOS).
 - Run `flutterfire configure`.
 
-**Environment Variables**
+**4. Environment Variables**
 
 Create a `.env` file in the root directory:
 
@@ -102,7 +102,7 @@ Create a `.env` file in the root directory:
 MAPS_API_KEY=your_key_here
 ```
 
-**Launch**
+**5. Launch**
 
 ```bash
 flutter run
@@ -110,7 +110,7 @@ flutter run
 
 ## Contribution
 
-FoundIT is an open-source initiative. If you'd like to improve the AI model or security protocols:
+FoundIT is an open-source initiative. If you'd like to improve the AI model or app logic:
 
 1. Fork the Project.
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
