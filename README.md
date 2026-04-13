@@ -19,12 +19,12 @@ FoundIT is an intelligent mobile ecosystem designed specifically to bridge the g
 
 ## Core Innovation
 
-### 🧠 Advanced AI & Image Processing
+###  Advanced AI & Image Processing
 FoundIT integrates specialized AI models to streamline reporting and prevent fraudulent claims.
 - **Smart Categorization**: Uploaded images are analyzed to suggest item categories (e.g., "Electronics", "Wallet", "Keys"), dramatically speeding up the reporting process.
 - **AI Similarity Scoring**: When a finder submits an "I Found This Item!" claim, the system runs a similarity comparison between the newly uploaded proof picture and the originally reported lost item image, assisting Admins in verification.
 
-### 📍 Intelligent Geospatial Mapping
+###  Intelligent Geospatial Mapping
 - **Proximity Filtering**: Maps and dashboards automatically filter items based on a localized 10km radius from the user's current location, keeping search results highly relevant.
 - **Dynamic Exploration**: Pull-to-refresh mechanics and category filtering provide a real-time, interactive exploration of the geographical area.
 
