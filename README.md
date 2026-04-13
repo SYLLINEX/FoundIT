@@ -41,7 +41,7 @@ FoundIT integrates specialized AI models to streamline reporting and prevent fra
 | --- | --- |
 | **Frontend** | Flutter, Google Fonts, Flutter Spinkit |
 | **Backend** | Firebase (Auth, Firestore, Storage) |
-| **Intelligence** | AI Similarity Scoring & Categorization |
+| **Intelligence** | TensorFlow Lite (MobileNetV3) |
 | **Architecture** | Feature-Driven Modular Architecture |
 | **Maps & Location** | Google Maps API, GeoLocator & GeoFlutterFire+ |
 
