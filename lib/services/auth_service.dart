@@ -19,24 +19,20 @@ class AuthService {
     if (resolvedUid == null || resolvedUid.isEmpty) return false;
 
     try {
+      // Delay briefly to allow auth token propagation after initial sign in
+      await Future.delayed(const Duration(milliseconds: 350));
+      
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(resolvedUid)
-          .get(const GetOptions(source: Source.server));
+          .get();
 
       if (!userDoc.exists) return false;
       final data = userDoc.data() ?? {};
       return (data['isAdmin'] ?? false) == true ||
           (data['role']?.toString().toLowerCase() == 'admin');
     } catch (_) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(resolvedUid)
-          .get();
-      if (!userDoc.exists) return false;
-      final data = userDoc.data() ?? {};
-      return (data['isAdmin'] ?? false) == true ||
-          (data['role']?.toString().toLowerCase() == 'admin');
+      return false;
     }
   }
 

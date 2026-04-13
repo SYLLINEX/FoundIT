@@ -73,11 +73,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         return;
       }
-      final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium);
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.medium,
+            timeLimit: const Duration(seconds: 4));
+      } catch (_) {
+        pos = await Geolocator.getLastKnownPosition();
+      }
+      
       if (mounted) {
         setState(() {
-          _userPosition = pos;
+          if (pos != null) _userPosition = pos;
           _locationDenied = false;
           _locationLoading = false;
         });

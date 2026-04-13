@@ -11,6 +11,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import '../../core/utils/app_error_handler.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../onboarding/setup_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -91,11 +92,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         timer?.cancel();
         resendTimer?.cancel();
 
-        final isAdmin = await _authService.isAdminUser();
         if (!mounted) return;
         await OnboardingScreen.checkAndRemoveUntil(
           context, 
-          isAdmin ? const AdminDashboardScreen() : const MainWrapper()
+          const SetupScreen()
         );
       }
     } catch (e) {
@@ -112,14 +112,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           timer?.cancel();
           resendTimer?.cancel();
           
-          _authService.isAdminUser().then((isAdmin) {
-             if (mounted) {
-                OnboardingScreen.checkAndRemoveUntil(
-                  context, 
-                  isAdmin ? const AdminDashboardScreen() : const MainWrapper()
-                );
-             }
-          });
+          if (mounted) {
+             OnboardingScreen.checkAndRemoveUntil(
+               context, 
+               const SetupScreen()
+             );
+          }
         }
       }
     }

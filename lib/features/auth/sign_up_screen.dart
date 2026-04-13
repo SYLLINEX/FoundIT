@@ -9,6 +9,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import 'verify_email_screen.dart';
 import '../../core/utils/app_error_handler.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../onboarding/setup_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -94,7 +95,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (!mounted) return;
 
       if (credential != null) {
-        await OnboardingScreen.checkAndRemoveUntil(context, const MainWrapper());
+        await OnboardingScreen.checkAndRemoveUntil(context, const SetupScreen());
       }
     } catch (e) {
       if (!mounted) return;
