@@ -607,7 +607,7 @@ class _MapSettingsMenuWidgetState extends State<_MapSettingsMenuWidget>
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final delayedValue = (_animationController.value * 4 - index).clamp(0.0, 1.0) as double;
+    final delayedValue = (_animationController.value * 4 - index).clamp(0.0, 1.0);
     return Transform.translate(
       offset: Offset(dx * delayedValue, 0),
       child: Opacity(

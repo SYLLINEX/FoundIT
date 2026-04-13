@@ -8,6 +8,11 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     
+    match /admins/{adminId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Restrict making someone an admin manually via admin dashboard
+    }
+    
     match /items/{itemId} {
       // Authenticated users can read all items
       allow read: if request.auth != null;
@@ -33,6 +38,18 @@ service cloud.firestore {
         (request.auth.uid == resource.data.claimant_id || 
          request.auth.uid == resource.data.owner_id || 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+    }
+    
+    match /chat_rooms/{roomId} {
+      allow read, write: if request.auth != null;
+      
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+    
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null;
     }
   }
 }

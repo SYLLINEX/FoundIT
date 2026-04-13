@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../models/item_model.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
 import '../../../widgets/item_card.dart';
@@ -10,6 +11,7 @@ import '../../../widgets/expandable_filter_fab.dart';
 import '../widgets/admin_header.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../services/notification_service.dart';
+import '../../../core/utils/app_error_handler.dart';
 
 class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
@@ -26,14 +28,45 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   ];
   int _selectedCategoryIndex = 0;
   String _selectedCategory = 'All Items';
+  Position? _userPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserLocation();
+  }
+
+  Future<void> _fetchUserLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium);
+      if (mounted) setState(() => _userPosition = pos);
+    } catch (_) {}
+  }
+
+  Future<void> _onRefresh() async {
+    await _fetchUserLocation();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
-      body: CustomScrollView(
-        slivers: [
-          SliverPersistentHeader(
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        color: const Color(0xFF413F54),
+        backgroundColor: Colors.white,
+        displacement: 60,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPersistentHeader(
             floating: true,
             delegate: _AdminHeaderDelegate(
               minHeight: MediaQuery.of(context).padding.top + 64,
@@ -98,6 +131,16 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final item = items[index];
+                      double? distanceKm;
+                      if (_userPosition != null && item.location != null) {
+                        final meters = Geolocator.distanceBetween(
+                          _userPosition!.latitude,
+                          _userPosition!.longitude,
+                          item.location!.latitude,
+                          item.location!.longitude,
+                        );
+                        distanceKm = meters / 1000;
+                      }
                       return Stack(
                         children: [
                           GestureDetector(
@@ -121,48 +164,21 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                                   : item.locationName,
                               timeText: _formatTime(item.timestamp),
                               reporterName: item.reporterName ?? 'Unknown',
+                              distanceKm: distanceKm,
                             ),
                           ),
                           Positioned(
                             top: 8,
                             right: 8,
-                            child: PopupMenuButton<String>(
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  _showEditSnackbar();
-                                } else if (value == 'delete') {
-                                  _showDeleteConfirmation(context, item);
-                                }
-                              },
-                              itemBuilder: (BuildContext context) => [
-                                const PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      Icon(PhosphorIconsRegular.pencilSimple, size: 18),
-                                      SizedBox(width: 8),
-                                      Text('Edit'),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      Icon(PhosphorIconsRegular.trash, size: 18, color: Colors.red),
-                                      SizedBox(width: 8),
-                                      Text('Delete', style: TextStyle(color: Colors.red)),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            child: GestureDetector(
+                              onTap: () => _showDeleteConfirmation(context, item),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[800],
                                   shape: BoxShape.circle,
                                 ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(PhosphorIconsRegular.dotsThreeVertical, color: Colors.white, size: 18),
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(PhosphorIconsRegular.trash, color: Colors.redAccent, size: 18),
                               ),
                             ),
                           ),
@@ -176,6 +192,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
             },
           ),
         ],
+      ),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),
@@ -192,10 +209,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
-  }
-
-  void _showEditSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edit feature coming soon')));
   }
 
   String _formatTime(DateTime timestamp) {
@@ -241,7 +254,8 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Item deleted and owner notified')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting item: $e')));
+      final errorMessage = AppErrorHandler.getMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
   }
 }

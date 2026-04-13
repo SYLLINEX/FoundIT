@@ -9,6 +9,9 @@ import '../../services/auth_service.dart';
 import 'auth_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
+import '../../core/utils/app_error_handler.dart';
+import '../onboarding/onboarding_screen.dart';
+import '../onboarding/setup_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   final String email;
@@ -21,8 +24,10 @@ class VerifyEmailScreen extends StatefulWidget {
 
 class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   Timer? timer;
+  Timer? resendTimer;
   bool isEmailVerified = false;
   bool canResendEmail = false;
+  int resendCooldown = 60;
   final AuthService _authService = AuthService();
 
   @override
@@ -38,37 +43,82 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
         const Duration(seconds: 3),
         (_) => checkEmailVerified(),
       );
+
+      // Enable the resend button after a short delay (e.g., 60 seconds)
+      _startResendCooldown();
     }
+  }
+
+  void _startResendCooldown() {
+    setState(() {
+      canResendEmail = false;
+      resendCooldown = 60;
+    });
+
+    resendTimer?.cancel();
+    resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (resendCooldown > 0) {
+            resendCooldown--;
+          } else {
+            canResendEmail = true;
+            timer.cancel();
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     timer?.cancel();
+    resendTimer?.cancel();
     super.dispose();
   }
 
   Future<void> checkEmailVerified() async {
-    // Calling reload() to refresh user state
-    await FirebaseAuth.instance.currentUser?.reload();
+    try {
+      // Calling reload() to refresh user state
+      await FirebaseAuth.instance.currentUser?.reload();
 
-    setState(() {
-      isEmailVerified =
-          FirebaseAuth.instance.currentUser?.emailVerified ?? false;
-    });
+      if (!mounted) return;
+      setState(() {
+        isEmailVerified =
+            FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+      });
 
-    if (isEmailVerified) {
-      timer?.cancel();
+      if (isEmailVerified) {
+        timer?.cancel();
+        resendTimer?.cancel();
 
-      if (mounted) {
-        final isAdmin = await _authService.isAdminUser();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                isAdmin ? const AdminDashboardScreen() : const MainWrapper(),
-          ),
-          (Route<dynamic> route) => false,
+        if (!mounted) return;
+        await OnboardingScreen.checkAndRemoveUntil(
+          context, 
+          const SetupScreen()
         );
+      }
+    } catch (e) {
+      // Print the exact error so we can debug why reload is failing if it is
+      debugPrint("Error checking email verification: $e");
+      
+      // Let's ensure the UI updates with the latest known state even if reload() fails
+      if (mounted) {
+        setState(() {
+          isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
+        });
+        
+        if (isEmailVerified) {
+          timer?.cancel();
+          resendTimer?.cancel();
+          
+          if (mounted) {
+             OnboardingScreen.checkAndRemoveUntil(
+               context, 
+               const SetupScreen()
+             );
+          }
+        }
       }
     }
   }
@@ -78,13 +128,20 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       final user = FirebaseAuth.instance.currentUser;
       await user?.sendEmailVerification();
 
-      setState(() => canResendEmail = false);
-      await Future.delayed(const Duration(seconds: 15));
-      setState(() => canResendEmail = true);
-    } catch (e) {
+      _startResendCooldown();
+      
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error resending email: \${e.toString()}')),
+        const SnackBar(
+          content: Text('Verification email sent! Check your inbox.'),
+          backgroundColor: AppColors.statusFound,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final errorMsg = AppErrorHandler.getMessage(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error resending email: $errorMsg')),
       );
     }
   }
@@ -124,92 +181,86 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Icon(
-                PhosphorIconsLight.envelopeOpen,
-                size: 80,
-                color: AppColors.deepLavender,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Check your Email',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return RefreshIndicator(
+            onRefresh: checkEmailVerified,
+            color: AppColors.deepLavender,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                height: constraints.maxHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                const Spacer(),
+                Icon(
+                  PhosphorIconsLight.envelopeOpen,
+                  size: 80,
                   color: AppColors.deepLavender,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'We have sent a verification link to:\n${widget.email}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: AppColors.dusk),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Click the link to verify your account. This page will automatically update once verified.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.dusk,
+                const SizedBox(height: 32),
+                const Text(
+                  'Check your Email',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.deepLavender,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 48),
-              if (!isEmailVerified) ...[
-                const Center(
-                  child: FoundItLoadingIndicator(color: AppColors.deepLavender),
+                const SizedBox(height: 16),
+                Text(
+                  'We have sent a verification link to:\n${widget.email}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: AppColors.dusk),
                 ),
                 const SizedBox(height: 24),
+                const Text(
+                  'Pull down to refresh status if the page doesn\'t automatically update.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.dusk,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                if (!isEmailVerified) ...[
+                  const Center(
+                    child: FoundItLoadingIndicator(color: AppColors.deepLavender),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+                TextButton(
+                  onPressed: canResendEmail ? sendVerificationEmail : null,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.deepLavender,
+                  ),
+                  child: Text(
+                    canResendEmail 
+                        ? 'Resend Verification Link' 
+                        : 'Resend Verification Link (${resendCooldown}s)',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: canResendEmail
+                          ? AppColors.deepLavender
+                          : Colors.grey,
+                    ),
+                  ),
+                ),
+                const Spacer(flex: 2),
               ],
-              TextButton(
-                onPressed: canResendEmail ? sendVerificationEmail : null,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.deepLavender,
-                ),
-                child: Text(
-                  'Resend Verification Link',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: canResendEmail
-                        ? AppColors.deepLavender
-                        : Colors.grey,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _confirmAndLogout,
-                icon: Icon(PhosphorIconsRegular.signOut, color: AppColors.error),
-                label: const Text(
-                  'Back to Login / Logout',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.error,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.error),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+      
+    }));
+    
   }
 }

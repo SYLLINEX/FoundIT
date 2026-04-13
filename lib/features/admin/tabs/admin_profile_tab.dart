@@ -6,10 +6,14 @@ import '../../../services/auth_service.dart';
 import '../../auth/auth_screen.dart';
 import '../../notifications/notifications_screen.dart';
 import '../../../widgets/found_it_loading_indicator.dart';
+import '../../../widgets/app_confirmation_dialog.dart';
 import '../../../models/user_model.dart';
 import '../../profile/edit_profile_screen.dart';
 import '../../profile/settings_screen.dart';
 import '../../chat/chat_list_screen.dart';
+import '../../profile/help_support_screen.dart';
+import '../../profile/terms_of_service_screen.dart';
+import '../../profile/about_app_screen.dart';
 
 class AdminProfileTab extends StatelessWidget {
   const AdminProfileTab({super.key});
@@ -236,7 +240,12 @@ class AdminProfileTab extends StatelessWidget {
                       title: 'Help & Support',
                       subtitle: 'FAQ & Contact us',
                       onTap: () {
-                        // Placeholder
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HelpSupportScreen(),
+                          ),
+                        );
                       },
                     ),
                     const Divider(
@@ -250,7 +259,31 @@ class AdminProfileTab extends StatelessWidget {
                       title: 'Terms of Service',
                       subtitle: 'Rules & Guidelines',
                       onTap: () {
-                        // Placeholder
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TermsOfServiceScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  // Group 3: About
+                  _buildMenuCard([
+                    _buildMenuItem(
+                      icon: PhosphorIconsFill.info,
+                      title: 'About FoundIT',
+                      subtitle: 'App info & architecture',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AboutAppScreen(),
+                          ),
+                        );
                       },
                     ),
                   ]),
@@ -262,6 +295,15 @@ class AdminProfileTab extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: ElevatedButton(
                       onPressed: () async {
+                        final confirm = await showAppConfirmationDialog<bool>(
+                          context: context,
+                          title: 'Log Out',
+                          message: 'Are you sure you want to log out from your account?',
+                          confirmText: 'Log Out',
+                          confirmColor: Colors.red,
+                        );
+                        if (confirm != true) return;
+
                         await AuthService().signOut();
                         if (!context.mounted) return;
                         Navigator.of(

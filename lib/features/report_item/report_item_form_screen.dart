@@ -27,9 +27,32 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   final TFLiteService _tfliteService = TFLiteService();
   bool _isAnalyzing = false;
   List<String> _detectedLabels = [];
+  List<double> _scoreVector = [];
 
-  final _primaryDark = const Color(0xFF3B394D); // Deep purple/gray from design
-  final _bgColor = const Color(0xFFF3F4F6); // Light gray from design
+  // The 10 categories mirror exactly what the fine-tuned model outputs + Other
+  static const List<String> _categories = [
+    'Accessories',
+    'Bag / Backpack',
+    'Earphones / Earbuds',
+    'ID / Card',
+    'Keys',
+    'Laptop / Tablet',
+    'Mobile Phone',
+    'Stationery',
+    'Wallet / Purse',
+    'Water Bottle / Tumbler',
+    'Other',
+  ];
+
+  final _primaryDark = const Color(0xFF3B394D);
+  final _bgColor = const Color(0xFFF3F4F6);
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(() => setState(() {}));
+    _descriptionController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -50,7 +73,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
 
     if (source == null) return;
-    final pickedFile = await _picker.pickImage(source: source);
+    final pickedFile = await _picker.pickImage(
+      source: source,
+      imageQuality: 80, // Forces JPEG conversion on iOS, fixing TFLite decoder errors with HEIC
+    );
 
     if (pickedFile != null) {
       setState(() {
@@ -59,38 +85,24 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       });
 
       try {
-        final topLabels = await _tfliteService.getTopLabels(_image!, count: 5);
+        // Run both in parallel — top labels + score vector
+        final results = await Future.wait([
+          _tfliteService.getTopLabels(_image!, count: 5),
+          _tfliteService.getScoreVector(_image!),
+        ]);
+
+        final topLabels   = results[0] as List<String>;
+        final scoreVector = results[1] as List<double>;
+
         if (topLabels.isNotEmpty) {
           setState(() {
             _detectedLabels = topLabels;
+            _scoreVector    = scoreVector;
             final String primaryLabel = topLabels.first;
-            _titleController.text =
-                primaryLabel; // Auto-fill title with AI label
-            // Try to map to category, fallback to 'Other'
-            final l = primaryLabel.toLowerCase();
-            if (l.contains('phone') ||
-                l.contains('laptop') ||
-                l.contains('watch') ||
-                l.contains('mouse') ||
-                l.contains('keyboard') ||
-                l.contains('computer')) {
-              selectedCategory = 'Electronics';
-            } else if (l.contains('wallet') ||
-                l.contains('card') ||
-                l.contains('id') ||
-                l.contains('purse')) {
-              selectedCategory = 'Wallet/ID';
-            } else if (l.contains('key')) {
-              selectedCategory = 'Keys';
-            } else if (l.contains('shirt') ||
-                l.contains('shoe') ||
-                l.contains('bag') ||
-                l.contains('jacket') ||
-                l.contains('glasses') ||
-                l.contains('backpack')) {
-              selectedCategory = 'Clothing';
-            } else {
-              selectedCategory = 'Other';
+
+            // Direct match — model labels == dropdown options
+            if (_categories.contains(primaryLabel)) {
+              selectedCategory = primaryLabel;
             }
           });
         }
@@ -98,9 +110,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         debugPrint('TFLite Error: $e');
       } finally {
         if (mounted) {
-          setState(() {
-            _isAnalyzing = false;
-          });
+          setState(() => _isAnalyzing = false);
         }
       }
     }
@@ -151,14 +161,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image Upload Section
-            const Text(
-              'Item Image (Optional but recommended)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF4B5563),
-              ),
-            ),
+            _buildLabel('Item Image'),
             const SizedBox(height: 12),
             InkWell(
               onTap: _pickImage,
@@ -270,6 +273,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryDark,
               foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey[300],
+              disabledForegroundColor: Colors.grey[500],
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -277,30 +282,25 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
               minimumSize: const Size(double.infinity, 50),
               elevation: 0,
             ),
-            onPressed: () {
-              if (_titleController.text.isEmpty || selectedCategory == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill all required fields'),
-                  ),
-                );
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TagLocationScreen(
-                    reportType: widget.reportType,
-                    title: _titleController.text,
-                    description: _descriptionController.text,
-                    category: selectedCategory!,
-                    date: selectedDate ?? DateTime.now(),
-                    imageFile: _image,
-                    aiLabels: _detectedLabels,
-                  ),
-                ),
-              );
-            },
+            onPressed: _isFormComplete
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TagLocationScreen(
+                          reportType: widget.reportType,
+                          title: _titleController.text,
+                          description: _descriptionController.text,
+                          category: selectedCategory!,
+                          date: selectedDate!,
+                          imageFile: _image,
+                          aiLabels: _detectedLabels,
+                          aiScoreVector: _scoreVector,
+                        ),
+                      ),
+                    );
+                  }
+                : null,
             child: const Text(
               'Next: Tag Location',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -312,12 +312,23 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   }
 
   Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: Color(0xFF4B5563),
+    return Text.rich(
+      TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF4B5563),
+        ),
+        children: const [
+          TextSpan(
+            text: ' *',
+            style: TextStyle(
+              color: Color(0xFFEF4444),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -347,17 +358,16 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
+  bool get _isFormComplete =>
+      _image != null &&
+      _titleController.text.trim().isNotEmpty &&
+      selectedCategory != null &&
+      _descriptionController.text.trim().isNotEmpty &&
+      selectedDate != null;
+
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue:
-          selectedCategory != null &&
-              [
-                'Electronics',
-                'Wallet/ID',
-                'Keys',
-                'Clothing',
-                'Other',
-              ].contains(selectedCategory)
+      value: selectedCategory != null && _categories.contains(selectedCategory)
           ? selectedCategory
           : null,
       icon: const Icon(PhosphorIconsRegular.caretDown, color: Colors.grey),
@@ -375,13 +385,21 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           vertical: 14,
         ),
       ),
-      items: [
-        'Electronics',
-        'Wallet/ID',
-        'Keys',
-        'Clothing',
-        'Other',
-      ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      items: _categories.map((e) {
+        if (e == 'Other') {
+          return DropdownMenuItem(
+            value: e,
+            child: Row(
+              children: [
+                const Icon(PhosphorIconsRegular.dotsThree, size: 16, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(e, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+          );
+        }
+        return DropdownMenuItem(value: e, child: Text(e));
+      }).toList(),
       onChanged: (val) {
         setState(() {
           selectedCategory = val;
@@ -395,7 +413,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       onTap: () async {
         final date = await showDatePicker(
           context: context,
-          initialDate: DateTime.now(),
+          initialDate: selectedDate ?? DateTime.now(),
           firstDate: DateTime(2020),
           lastDate: DateTime.now(),
         );
@@ -413,11 +431,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate == null
-                  ? 'Select date'
-                  : '${selectedDate!.toLocal()}'.split(' ')[0],
+              selectedDate != null 
+                  ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+                  : 'Select Date',
               style: TextStyle(
-                color: selectedDate == null ? Colors.grey[400] : Colors.black87,
+                color: selectedDate != null ? Colors.black87 : Colors.grey[400],
                 fontSize: 16,
               ),
             ),

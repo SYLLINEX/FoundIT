@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import 'package:path/path.dart' as p;
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel userModel;
@@ -106,9 +107,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final errorMessage = AppErrorHandler.getMessage(e);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error updating profile: $e')));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) {
@@ -168,15 +170,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _usernameController,
-                      decoration: const InputDecoration(labelText: 'Username'),
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Username',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a username' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _phoneNumController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Phone Number',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a phone number' : null,
@@ -184,7 +208,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _matricNoController,
-                      decoration: const InputDecoration(labelText: 'Matric No'),
+                      decoration: InputDecoration(
+                        label: Text.rich(
+                          const TextSpan(
+                            text: 'Matric No',
+                            children: [
+                              TextSpan(
+                                text: ' *',
+                                style: TextStyle(color: Color(0xFFEF4444)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter your Matric No' : null,
                     ),

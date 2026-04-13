@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
-import 'package:flutter/foundation.dart' as foundation;
 import 'dart:async';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/theme/app_colors.dart';
@@ -49,6 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
   
   late StreamSubscription _roomSub;
   late Stream<QuerySnapshot> _messagesStream;
+
+  // Tracks the full resolved_by map from Firestore (userId -> true/false)
+  final ValueNotifier<Map<String, dynamic>> _resolvedBy = ValueNotifier({});
   final ValueNotifier<bool> _isClosed = ValueNotifier(false);
   final ValueNotifier<bool> _isOtherTyping = ValueNotifier(false);
   
@@ -83,6 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _isClosed.value = data['status'] == 'closed';
         final typingMap = data['typing_status'] as Map<String, dynamic>? ?? {};
         _isOtherTyping.value = typingMap[widget.otherUserId] == true;
+        _resolvedBy.value = Map<String, dynamic>.from(data['resolved_by'] ?? {});
       }
     });
   }
@@ -210,21 +213,70 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _markAsResolved() async {
+    final uid = _authService.currentUser?.uid;
+    if (uid == null) return;
+
     final roomRef = FirebaseFirestore.instance.collection('chat_rooms').doc(widget.room.id);
+
+    // Mark this user as resolved
     await roomRef.update({
-      'status': 'closed',
-      'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
+      'resolved_by.$uid': true,
     });
-    
-    await FirebaseFirestore.instance.collection('items').doc(widget.room.itemId).update({
-      'status': 'Resolved'
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item marked as resolved! Chat will auto-expire in 3 days.'))
-      );
-      Navigator.pop(context);
+
+    // Check if both participants have now resolved
+    final snap = await roomRef.get();
+    final resolvedByMap = Map<String, dynamic>.from(
+      (snap.data()?['resolved_by'] as Map<String, dynamic>?) ?? {},
+    );
+
+    final bothResolved = widget.room.participants
+        .every((pid) => resolvedByMap[pid] == true);
+
+    if (bothResolved) {
+      // Both parties confirmed — close the room and start the 3-day countdown
+      await roomRef.update({
+        'status': 'closed',
+        'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
+      });
+
+      await FirebaseFirestore.instance
+          .collection('items')
+          .doc(widget.room.itemId)
+          .update({'status': 'Resolved'});
+
+      // If this was a claim with a linked lost report, update that original item as resolved too.
+      final claimId = snap.data()?['claim_id'] as String?;
+      if (claimId != null) {
+        final claimDoc = await FirebaseFirestore.instance.collection('claims').doc(claimId).get();
+        if (claimDoc.exists) {
+          final claimData = claimDoc.data()!;
+          final linkedLostReportId = claimData['linked_lost_report_id'] as String? ?? claimData['resolved_lost_report_id'] as String?;
+          if (linkedLostReportId != null) {
+             await FirebaseFirestore.instance
+                 .collection('items')
+                 .doc(linkedLostReportId)
+                 .update({'status': 'Resolved'});
+          }
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Both parties confirmed! Item resolved. Chat will auto-delete in 3 days.'),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      // Waiting for the other party
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Marked as resolved. Waiting for the other party to confirm.'),
+          ),
+        );
+      }
     }
   }
 
@@ -387,51 +439,116 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           ValueListenableBuilder<bool>(
             valueListenable: _isClosed,
-            builder: (context, closed, child) {
+            builder: (context, closed, _) {
               if (closed) return const SizedBox.shrink();
-              return TextButton.icon(
-                onPressed: () {
-                  showAppConfirmationDialog<bool>(
-                    context: context,
-                    title: 'Mark as Returned?',
-                    message: 'This will close the chat room, mark the item as Resolved, and set this chat to auto-delete in 3 days. Are you sure?',
-                    confirmText: 'Confirm',
-                    cancelText: 'Cancel',
-                    confirmColor: Colors.green,
-                  ).then((confirmed) {
-                    if (confirmed == true) {
-                      _markAsResolved();
-                    }
-                  });
+              return ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: _resolvedBy,
+                builder: (context, resolvedByMap, _) {
+                  final uid = _authService.currentUser?.uid ?? '';
+                  // Hide button once this user has already resolved
+                  if (resolvedByMap[uid] == true) return const SizedBox.shrink();
+                  return TextButton.icon(
+                    onPressed: () {
+                      showAppConfirmationDialog<bool>(
+                        context: context,
+                        title: 'Mark as Resolved?',
+                        message: 'Once both parties confirm, the item will be marked Resolved and this chat will auto-delete in 3 days.',
+                        confirmText: 'Confirm',
+                        cancelText: 'Cancel',
+                        confirmColor: Colors.green,
+                      ).then((confirmed) {
+                        if (confirmed == true) _markAsResolved();
+                      });
+                    },
+                    icon: const Icon(PhosphorIconsRegular.checkCircle, color: Colors.green),
+                    label: const Text('Resolve', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  );
                 },
-                icon: const Icon(PhosphorIconsRegular.checkCircle, color: Colors.green),
-                label: const Text('Resolve', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
               );
-            }
-          )
+            },
+          ),
         ],
       ),
       body: Column(
         children: [
+          // Status banner — shows resolve state dynamically
           ValueListenableBuilder<bool>(
             valueListenable: _isClosed,
-            builder: (context, closed, child) {
-              if (!closed) return const SizedBox.shrink();
-              return Container(
-                width: double.infinity,
-                color: Colors.green.shade50,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                child: const Row(
-                  children: [
-                     Icon(PhosphorIconsRegular.checkCircle, color: Colors.green, size: 20),
-                     SizedBox(width: 8),
-                     Expanded(
-                       child: Text('Case Resolved. This chat will auto-delete in 3 days.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 13)),
-                     ),
-                  ],
-                ),
+            builder: (context, closed, _) {
+              return ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: _resolvedBy,
+                builder: (context, resolvedByMap, _) {
+                  final uid = _authService.currentUser?.uid ?? '';
+                  final iHaveResolved = resolvedByMap[uid] == true;
+                  final otherHasResolved = resolvedByMap[widget.otherUserId] == true;
+
+                  if (closed) {
+                    // Both confirmed — fully resolved
+                    return Container(
+                      width: double.infinity,
+                      color: Colors.green.shade50,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      child: const Row(
+                        children: [
+                          Icon(PhosphorIconsRegular.checkCircle, color: Colors.green, size: 20),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Case Resolved. This chat will auto-delete in 3 days.',
+                              style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (iHaveResolved && !otherHasResolved) {
+                    // I've resolved — waiting for the other party
+                    return Container(
+                      width: double.infinity,
+                      color: Colors.orange.shade50,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      child: Row(
+                        children: [
+                          Icon(PhosphorIconsRegular.clock, color: Colors.orange.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "You've marked this as resolved. Waiting for ${widget.otherUserName} to confirm.",
+                              style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!iHaveResolved && otherHasResolved) {
+                    // Other party has resolved — nudge me
+                    return Container(
+                      width: double.infinity,
+                      color: Colors.blue.shade50,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      child: Row(
+                        children: [
+                          Icon(PhosphorIconsRegular.info, color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${widget.otherUserName} has marked this as resolved. Press Resolve to confirm.',
+                              style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
               );
-            }
+            },
           ),
 
           Expanded(

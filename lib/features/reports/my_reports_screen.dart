@@ -11,11 +11,12 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'item_details_screen.dart';
 import 'edit_report_screen.dart';
 import '../../widgets/app_confirmation_dialog.dart';
-import '../../widgets/found_it_loading_indicator.dart';
+
 import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../widgets/empty_state_view.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class MyReportsScreen extends StatefulWidget {
   const MyReportsScreen({super.key});
@@ -188,7 +189,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       stream: _databaseService.getUserItemsStream(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: 100,
+            ),
+            itemCount: 4, // 4 skeletons to fill the screen
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSkeletonCard(),
+              );
+            },
+          );
         }
         if (snapshot.hasError) {
           return Center(
@@ -257,7 +272,16 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
       stream: _databaseService.getUserClaimsStream(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: FoundItLoadingIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 100),
+            itemCount: 4,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildSkeletonCard(),
+              );
+            },
+          );
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error loading claims: ${snapshot.error}'));
@@ -307,16 +331,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
         future: FirebaseFirestore.instance.collection('items').doc(claim.itemId).get(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
-              child: const Center(child: Text('Loading item details...')),
-            );
+            return _buildSkeletonCard();
           }
           final itemData = snapshot.data!.data() as Map<String, dynamic>?;
           if (itemData == null) {
@@ -399,6 +414,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                       style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Icon(PhosphorIconsRegular.caretRight, color: Colors.grey[400], size: 20),
                 ],
               ),
             ),
@@ -408,39 +425,93 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     );
   }
 
+  Widget _buildSkeletonCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 16,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 60,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(PhosphorIconsRegular.caretRight, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReportItem(ItemModel item) {
     // Determine status styling
     final status = item.status.toUpperCase();
     Color statusColor;
     Color statusBgColor;
-    IconData leadingIcon;
-    Color iconColor;
-    Color iconBgColor;
 
     if (status == 'RESOLVED' || status == 'CLAIMED') {
       statusColor = Colors.green[700]!;
       statusBgColor = Colors.green[100]!;
-      leadingIcon = PhosphorIconsRegular.checkCircle;
-      iconColor = Colors.green;
-      iconBgColor = Colors.green[50]!;
     } else if (status == 'PENDING' || status == 'PENDING FOR APPROVAL') {
       statusColor = Colors.orange[700]!;
       statusBgColor = Colors.orange[100]!;
-      leadingIcon = PhosphorIconsRegular.spinner; 
-      iconColor = Colors.orange;
-      iconBgColor = Colors.orange[50]!;
     } else if (status == 'MATCHED') {
       statusColor = Colors.purple[700]!;
       statusBgColor = Colors.purple[100]!;
-      leadingIcon = PhosphorIconsRegular.handshake;
-      iconColor = Colors.purple;
-      iconBgColor = Colors.purple[50]!;
     } else {
       statusColor = Colors.blue[700]!;
       statusBgColor = Colors.blue[100]!;
-      leadingIcon = PhosphorIconsRegular.warningCircle;
-      iconColor = Colors.blue;
-      iconBgColor = Colors.blue[50]!;
     }
 
     final formattedDate = DateFormat('MMM dd, yyyy').format(item.timestamp);
@@ -485,13 +556,22 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                 );
 
                 if (confirm == true) {
-                  await _databaseService.deleteItem(item.itemId);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Report deleted successfully'),
-                      ),
-                    );
+                  try {
+                    await _databaseService.deleteItem(item.itemId);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Report deleted successfully'),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      final errorMsg = AppErrorHandler.getMessage(e);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(errorMsg)),
+                      );
+                    }
                   }
                 }
               },
@@ -531,10 +611,24 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: iconBgColor,
+                    color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(leadingIcon, color: iconColor),
+                  child: item.imageUrl.isNotEmpty
+                     ? ClipRRect(
+                         borderRadius: BorderRadius.circular(12),
+                         child: CachedNetworkImage(
+                           imageUrl: item.imageUrl,
+                           fit: BoxFit.cover,
+                           placeholder: (context, url) => Shimmer.fromColors(
+                             baseColor: Colors.grey[300]!,
+                             highlightColor: Colors.grey[100]!,
+                             child: Container(color: Colors.white),
+                           ),
+                           errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.image, color: Colors.grey),
+                         ),
+                       )
+                     : const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -547,6 +641,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(

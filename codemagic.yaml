@@ -1,0 +1,69 @@
+workflows:
+  ios-debug-ipa:
+    name: iOS Debug IPA (Unsigned)
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - secret
+      flutter: stable
+      xcode: latest
+    scripts:
+      - name: Install dependencies
+        script: |
+          # 1. Verify firebase_options.dart exists in the repository
+          if [ ! -f "lib/firebase_options.dart" ]; then
+            echo "❌ ERROR: lib/firebase_options.dart is missing!"
+            echo "Please remove it from your .gitignore and commit it to your repository."
+            exit 1
+          fi
+          
+          # Recreate the .env file from Codemagic environment variables
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY_IOS" > .env
+          echo "ENCRYPTION_SALT=$ENCRYPTION_SALT" >> .env
+          
+          # Inject directly to xcconfig files so Info.plist picks up the key at build time
+          sed -i '' "s/INJECT_MAPS_API_KEY_HERE/$GOOGLE_MAPS_API_KEY_IOS/g" ios/Flutter/Debug.xcconfig
+          sed -i '' "s/INJECT_MAPS_API_KEY_HERE/$GOOGLE_MAPS_API_KEY_IOS/g" ios/Flutter/Release.xcconfig
+          echo "✅ .env file successfully created and key injected."
+          
+          flutter pub get
+          
+          # 2. Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || true
+
+          # 3. Generate the Podfile in case it was not committed from Windows. 
+          flutter build ios --config-only --no-codesign || true
+
+          cd ios
+          # 4. Very forcefully rewrite Podfile platform definition for iOS 15.0
+          echo "platform :ios, '15.0'" > podfile_temp
+          grep -v "platform :ios" Podfile >> podfile_temp
+          mv podfile_temp Podfile
+
+          # 5. Delete any existing lockfile to ensure fresh CocoaPods resolution
+          rm -f Podfile.lock
+
+          pod install --repo-update
+      - name: Build iOS (No Codesign)
+        script: |
+          # 6. Inject a dummy Development Team to bypass Flutter's strict team validation
+          echo "DEVELOPMENT_TEAM = V8424N534K" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_ALLOWED = NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_REQUIRED = NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGN_IDENTITY = \"\"" >> ios/Flutter/Release.xcconfig
+
+          # 6b. Prevent Xcode from stripping TFLite native symbols in release builds
+          echo "STRIP_STYLE = non-global" >> ios/Flutter/Release.xcconfig
+          echo "STRIP_SWIFT_SYMBOLS = NO" >> ios/Flutter/Release.xcconfig
+
+          # 7. Build the Unsigned App
+          flutter build ios --release --no-codesign
+      - name: Manual IPA Packaging
+        script: |
+          # 8. Package the .app into a standard .ipa payload
+          mkdir -p build/ios/iphoneos/Payload
+          cd build/ios/iphoneos
+          mv Runner.app Payload/
+          zip -r -y found_it.ipa Payload
+    artifacts:
+      - build/ios/iphoneos/*.ipa

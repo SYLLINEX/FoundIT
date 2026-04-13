@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'dart:io';
 import '../../core/theme/app_colors.dart';
 import '../../models/item_model.dart';
@@ -14,8 +15,9 @@ import '../../services/notification_service.dart';
 import '../../services/tflite_service.dart';
 import '../home/main_wrapper.dart';
 import 'package:uuid/uuid.dart';
-import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../widgets/app_confirmation_dialog.dart';
+import '../../core/utils/app_error_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -66,16 +68,27 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
         !_isSubmitting;
   }
 
+  Timer? _debounceTimer;
+
   @override
   void initState() {
     super.initState();
     _tfliteService.initialize();
     _detailsController.addListener(() {
       if (!mounted) return;
-      setState(() {});
+      // Removed unnecessary setState to avoid rebuilding everything. Submit button can check controller or we use ValueListenableBuilder.
+      // Wait, _canSubmit uses _detailsController.text.trim().isNotEmpty
+      
       if (_selectedLostReport != null) {
-        _recalculateSimilarity();
+        if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+        _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            _recalculateSimilarity();
+          }
+        });
       }
+
+      setState(() {}); // They needed setState for _canSubmit. Will just debounce similarity instead of both.
     });
 
     if (widget.initialLostReportId != null &&
@@ -103,6 +116,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _tfliteService.dispose();
     _detailsController.dispose();
     super.dispose();
@@ -174,13 +188,15 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
       return;
     }
 
-    Set<String> allDetectedLabels = {};
+    // Gather score vectors from all submitted item photos.
+    // Average them to get a representative embedding for this claim.
+    List<List<double>> allVectors = [];
     for (var file in _itemImages) {
-      final labels = await _tfliteService.getTopLabels(File(file.path));
-      allDetectedLabels.addAll(labels);
+      final vec = await _tfliteService.getScoreVector(File(file.path));
+      if (vec.isNotEmpty) allVectors.add(vec);
     }
 
-    if (widget.item.aiLabels.isEmpty || allDetectedLabels.isEmpty) {
+    if (allVectors.isEmpty) {
       setState(() {
         _photoSimilarityPercentage = 0.0;
         _isAnalyzingPhotos = false;
@@ -188,16 +204,59 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
       return;
     }
 
-    int matchCount = widget.item.aiLabels.where((label) => 
-        allDetectedLabels.any((detected) => detected.toLowerCase() == label.toLowerCase())
-    ).length;
-    
-    double score = (matchCount / widget.item.aiLabels.length) * 100;
+    // Average the vectors element-wise.
+    final int vecLen = allVectors.first.length;
+    final List<double> avgVector = List.filled(vecLen, 0.0);
+    for (final vec in allVectors) {
+      for (int i = 0; i < vecLen; i++) {
+        avgVector[i] += vec[i];
+      }
+    }
+    for (int i = 0; i < vecLen; i++) {
+      avgVector[i] /= allVectors.length;
+    }
+
+    // Compute cosine similarity directly between stored vector and photo vector.
+    // Do NOT use compareLostReportToClaim() here — that includes text/location
+    // which would inflate the score since we're comparing the item to itself.
+    double score;
+    if (widget.item.aiScoreVector.isNotEmpty &&
+        widget.item.aiScoreVector.length == avgVector.length) {
+      score = _cosineSimilarity(widget.item.aiScoreVector, avgVector);
+    } else {
+      // Fallback: label Jaccard
+      final Set<String> detectedLabels = {};
+      for (var file in _itemImages) {
+        final labels = await _tfliteService.getTopLabels(File(file.path));
+        detectedLabels.addAll(labels);
+      }
+      if (widget.item.aiLabels.isEmpty || detectedLabels.isEmpty) {
+        score = 0.0;
+      } else {
+        final lowerItem = widget.item.aiLabels.map((e) => e.toLowerCase().trim()).toSet();
+        final lowerDetected = detectedLabels.map((e) => e.toLowerCase().trim()).toSet();
+        final intersection = lowerItem.intersection(lowerDetected).length;
+        final union = lowerItem.union(lowerDetected).length;
+        score = union == 0 ? 0.0 : (intersection / union) * 100;
+      }
+    }
 
     setState(() {
-      _photoSimilarityPercentage = score;
+      _photoSimilarityPercentage = score.clamp(0.0, 100.0);
       _isAnalyzingPhotos = false;
     });
+  }
+
+  double _cosineSimilarity(List<double> a, List<double> b) {
+    if (a.isEmpty || b.isEmpty || a.length != b.length) return 0.0;
+    double dot = 0, magA = 0, magB = 0;
+    for (int i = 0; i < a.length; i++) {
+      dot  += a[i] * b[i];
+      magA += a[i] * a[i];
+      magB += b[i] * b[i];
+    }
+    if (magA == 0 || magB == 0) return 0.0;
+    return ((dot / (magA * magB)) * 100).clamp(0.0, 100.0);
   }
 
   Future<List<String>> _uploadProofImages(String userId) async {
@@ -502,82 +561,187 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
         leading: IconButton(
+          icon: const Icon(PhosphorIconsRegular.caretLeft,
+              color: AppColors.nightfall),
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(PhosphorIconsRegular.caretLeft, color: AppColors.obsidian, size: 20),
+        ),
+        title: const Text(
+          'Verify Ownership',
+          style: TextStyle(
+            color: AppColors.nightfall,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            const Text(
-              'Verify Ownership',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: AppColors.obsidian,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Share key details, link a LOST report, and add optional photos to strengthen your verification.',
-              style: TextStyle(
-                color: Color(0xFF6B6A7C),
-                height: 1.5,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Details Input Section
-            _buildSectionTitle('Claim Details', 'Describe details only the owner would know.'),
-            const SizedBox(height: 12),
+            // ── Reference card ──────────────────────────────────────────
             Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  if (widget.item.imageUrl.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: CachedNetworkImage(
+                        imageUrl: widget.item.imageUrl,
+                        width: 64,
+                        height: 64,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Shimmer.fromColors(
+                          baseColor: Colors.grey[300]!,
+                          highlightColor: Colors.grey[100]!,
+                          child: Container(color: Colors.white),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          width: 64,
+                          height: 64,
+                          color: AppColors.mist,
+                          child: const Icon(PhosphorIconsRegular.imageBroken),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusFound.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'FOUND',
+                            style: TextStyle(
+                              color: AppColors.statusFound,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.item.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.nightfall,
+                          ),
+                        ),
+                        Text(
+                          widget.item.category,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _detailsController,
-                maxLines: 5,
-                decoration: InputDecoration(
-                  hintText: 'Example: ID card inside, sticker near zip, small scratch on corner.',
-                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.all(20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
+            ),
+            const SizedBox(height: 24),
+
+            // ── Info banner ──────────────────────────────────────────────
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(PhosphorIconsRegular.info,
+                      color: Colors.blue.shade400, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Your claim will be reviewed. Once approved, you can chat with the finder to arrange the return.',
+                      style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 13,
+                          height: 1.4),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Colors.indigo, width: 1.5),
-                  ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Linked Report Section
-            _buildSectionTitle('Linked LOST Report', 'Attach your existing report for AI comparison.'),
-            const SizedBox(height: 12),
+            // ── Details Input Section ────────────────────────────────────
+            Text.rich(
+              const TextSpan(
+                text: 'Claim Details',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.nightfall,
+                ),
+                children: [
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: Color(0xFFEF4444)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Describe details only the owner would know.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _detailsController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Example: ID card inside, sticker near zip, small scratch on corner.',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // ── Linked Report Section ────────────────────────────────────
+            const Text(
+              'Linked LOST Report',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AppColors.nightfall,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Attach your existing report for AI comparison.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
             if (_selectedLostReport == null)
               GestureDetector(
                 onTap: _selectLostReport,
@@ -586,16 +750,16 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.indigo.shade100, style: BorderStyle.solid),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
                   ),
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(PhosphorIconsRegular.link, color: Colors.indigo, size: 28),
-                      SizedBox(height: 8),
+                      Icon(PhosphorIconsRegular.link, color: Colors.grey.shade400, size: 32),
+                      const SizedBox(height: 8),
                       Text(
                         'Tap to link a LOST report',
-                        style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: Colors.grey.shade400),
                       ),
                     ],
                   ),
@@ -605,14 +769,8 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Column(
                   children: [
@@ -627,15 +785,15 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                 Text(
                                   _selectedLostReport!.title,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    color: AppColors.obsidian,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppColors.nightfall,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${_selectedLostReport!.category} • ${_selectedLostReport!.status}',
-                                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                                 ),
                               ],
                             ),
@@ -683,7 +841,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                           ? '--%'
                                           : '${_similarityPercentage!.toStringAsFixed(0)}%',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.bold,
                                         color: _isSimilarityLow ? Colors.orange.shade700 : Colors.green.shade600,
                                       ),
                                     ),
@@ -715,13 +873,32 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   ],
                 ),
               ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Photos Section
+            // ── Photos Section ───────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: _buildSectionTitle('Supporting Photos', 'Add images of the item or ownership proof.')),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Supporting Photos',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppColors.nightfall,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Add images of the item or ownership proof.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
                 if (_allImages.isNotEmpty)
                   TextButton(
                     onPressed: _showImagePickerOptions,
@@ -738,24 +915,24 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
                   ),
-                  child: const Column(
+                  child: Column(
                     children: [
-                      Icon(PhosphorIconsRegular.imageSquare, color: Colors.grey, size: 32),
-                      SizedBox(height: 8),
+                      Icon(PhosphorIconsRegular.image, color: Colors.grey.shade400, size: 32),
+                      const SizedBox(height: 8),
                       Text(
                         'Tap to upload photos',
-                        style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: Colors.grey.shade400),
                       ),
                     ],
                   ),
                 ),
               )
             else ...[
-              _buildImageList(_itemImages, true),
-              _buildImageList(_proofImages, false),
+              if (_itemImages.isNotEmpty) _buildImageList(_itemImages, true),
+              if (_proofImages.isNotEmpty) _buildImageList(_proofImages, false),
             ],
 
             if (_itemImages.isNotEmpty) ...[
@@ -772,7 +949,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _isPhotoSimilarityLow ? Colors.orange.shade200 : Colors.green.shade200),
                     ),
                     child: Column(
@@ -781,9 +958,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Photo Match Score', style: TextStyle(fontWeight: FontWeight.w600)),
+                            const Text('Photo Match Score', style: TextStyle(fontWeight: FontWeight.bold)),
                             Text('${_photoSimilarityPercentage?.toStringAsFixed(0) ?? 0}%',
-                                style: TextStyle(fontWeight: FontWeight.w800, color: _isPhotoSimilarityLow ? Colors.orange.shade700 : Colors.green.shade600)
+                                style: TextStyle(fontWeight: FontWeight.bold, color: _isPhotoSimilarityLow ? Colors.orange.shade700 : Colors.green.shade600)
                             ),
                           ],
                         ),
@@ -797,31 +974,31 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             ],
             const SizedBox(height: 32),
 
-            // Confirmation Checkbox
+            // ── Confirmation Checkbox ────────────────────────────────────
             GestureDetector(
               onTap: () => setState(() => _isConfirmed = !_isConfirmed),
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isConfirmed ? Colors.indigo.shade50 : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: _isConfirmed ? Colors.blue.shade50 : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _isConfirmed ? Colors.indigo.shade200 : Colors.grey.shade200,
+                    color: _isConfirmed ? Colors.blue.shade200 : Colors.grey.shade200,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _isConfirmed ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.circle,
-                      color: _isConfirmed ? Colors.indigo : Colors.grey.shade400,
+                      color: _isConfirmed ? Colors.blue : Colors.grey.shade400,
                     ),
                     const SizedBox(width: 16),
                     const Expanded(
                       child: Text(
                         'I confirm this claim is truthful and I am the rightful owner.',
                         style: TextStyle(
-                          color: AppColors.obsidian,
+                          color: AppColors.nightfall,
                           fontSize: 13,
                           height: 1.4,
                         ),
@@ -831,153 +1008,219 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 24),
+
+            // ── Submit button ────────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _canSubmit ? _submitClaim : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.nightfall,
+                  disabledBackgroundColor: AppColors.nightfall.withOpacity(0.3),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: _isSubmitting 
+                    ? const FoundItLoadingIndicator()
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(PhosphorIconsRegular.paperPlaneTilt,
+                              color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Submit Claim',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
-      bottomSheet: Container(
-        padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).padding.bottom + 16),
-        decoration: BoxDecoration(
+    );
+  }
+
+  Future<void> _submitClaim() async {
+    final uid = _authService.currentUser?.uid;
+
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in first.')),
+      );
+      return;
+    }
+
+    if (_selectedLostReport != null) {
+      await _recalculateSimilarity();
+    }
+
+    if (_isSimilarityLow) {
+      final shouldProceed =
+          await _confirmLowSimilaritySubmission();
+      if (!shouldProceed) {
+        return;
+      }
+    }
+
+    if (mounted) {
+      setState(() => _isSubmitting = true);
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) =>
+          const Center(child: FoundItLoadingIndicator()),
+    );
+
+    try {
+      // Upload proof images if any were selected
+      List<String> proofImageUrls = [];
+      if (_allImages.isNotEmpty) {
+        proofImageUrls = await _uploadProofImages(uid);
+      }
+
+      final claim = ClaimModel(
+        claimId: const Uuid().v4(),
+        itemId: widget.item.itemId,
+        claimantId: uid,
+        ownerId: widget.item.userId,
+        status: 'Pending',
+        proofDesc: _detailsController.text.trim(),
+        timestamp: DateTime.now(),
+        linkedLostReportId: _selectedLostReport?.itemId,
+        similarityScore: _similarityPercentage,
+      );
+
+      // Add proof images to claim if available
+      if (proofImageUrls.isNotEmpty) {
+        claim.proofImageUrls = proofImageUrls;
+      }
+
+      await _dbService.submitClaim(claim);
+
+      await _notificationService.createNotification(
+        userId: widget.item.userId,
+        title: 'Someone found your report',
+        body:
+            'A user submitted a claim for "${widget.item.title}". Review will follow.',
+        type: 'report_found',
+        relatedItemId: widget.item.itemId,
+        data: {'claim_id': claim.claimId},
+      );
+
+      await _notificationService.notifyAdmins(
+        title: 'New claim pending review',
+        body:
+            'A claim for "${widget.item.title}" was submitted and needs verification.',
+        type: 'admin_alert',
+        relatedItemId: widget.item.itemId,
+        data: {'claim_id': claim.claimId},
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        _showSuccessSheet();
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        final errorMsg = AppErrorHandler.getMessage(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showSuccessSheet() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: ElevatedButton(
-          onPressed: _canSubmit
-              ? () async {
-                  final uid = _authService.currentUser?.uid;
-
-                  if (uid == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please log in first.')),
-                    );
-                    return;
-                  }
-
-                  if (_selectedLostReport != null) {
-                    await _recalculateSimilarity();
-                  }
-
-                  if (_isSimilarityLow) {
-                    final shouldProceed =
-                        await _confirmLowSimilaritySubmission();
-                    if (!shouldProceed) {
-                      return;
-                    }
-                  }
-
-                  if (mounted) {
-                    setState(() => _isSubmitting = true);
-                  }
-
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) =>
-                        const Center(child: FoundItLoadingIndicator()),
-                  );
-
-                  try {
-                    // Upload proof images if any were selected
-                    List<String> proofImageUrls = [];
-                    if (_allImages.isNotEmpty) {
-                      proofImageUrls = await _uploadProofImages(uid);
-                    }
-
-                    final claim = ClaimModel(
-                      claimId: const Uuid().v4(),
-                      itemId: widget.item.itemId,
-                      claimantId: uid,
-                      ownerId: widget.item.userId,
-                      status: 'Pending',
-                      proofDesc: _detailsController.text.trim(),
-                      timestamp: DateTime.now(),
-                      linkedLostReportId: _selectedLostReport?.itemId,
-                      similarityScore: _similarityPercentage,
-                    );
-
-                    // Add proof images to claim if available
-                    if (proofImageUrls.isNotEmpty) {
-                      claim.proofImageUrls = proofImageUrls;
-                    }
-
-                    await _dbService.submitClaim(claim);
-
-                    await _notificationService.createNotification(
-                      userId: widget.item.userId,
-                      title: 'Someone found your report',
-                      body:
-                          'A user submitted a claim for "${widget.item.title}". Review will follow.',
-                      type: 'report_found',
-                      relatedItemId: widget.item.itemId,
-                      data: {'claim_id': claim.claimId},
-                    );
-
-                    await _notificationService.notifyAdmins(
-                      title: 'New claim pending review',
-                      body:
-                          'A claim for "${widget.item.title}" was submitted and needs verification.',
-                      type: 'admin_alert',
-                      relatedItemId: widget.item.itemId,
-                      data: {'claim_id': claim.claimId},
-                    );
-
-                    if (mounted) {
-                      Navigator.pop(context); // close loading
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MainWrapper(),
-                        ),
-                        (route) => false,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Claim submitted successfully!'),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (mounted) {
-                      Navigator.pop(context); // close loading
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to submit claim: $e')),
-                      );
-                    }
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isSubmitting = false);
-                    }
-                  }
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.nightfall,
-            disabledBackgroundColor: AppColors.nightfall.withOpacity(0.3),
-            minimumSize: const Size(double.infinity, 56),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.statusFound.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                PhosphorIconsRegular.checkCircle,
+                color: AppColors.statusFound,
+                size: 48,
+              ),
             ),
-          ),
-          child: _isSubmitting 
-              ? const SizedBox(
-                  width: 24, 
-                  height: 24, 
-                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                )
-              : const Text(
-                  'Submit Claim',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            const Text(
+              'Claim Submitted!',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.nightfall,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Your ownership claim is under review by an admin.\n\n'
+              'If approved, you will be notified and a chat will open '
+              'so you can arrange the return with the finder.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, height: 1.5),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MainWrapper(),
+                    ),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.statusFound,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
+                child: const Text(
+                  'Back to Home',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1043,27 +1286,6 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
           ),
         ),
         const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title, String subtitle) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.obsidian,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: const TextStyle(color: Color(0xFF7B7A8D), fontSize: 13),
-        ),
       ],
     );
   }

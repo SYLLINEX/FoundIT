@@ -7,267 +7,172 @@ class TFLiteService {
   Interpreter? _interpreter;
   List<String>? _labels;
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // MODEL CONFIGURATION
+  // ─────────────────────────────────────────────────────────────────────────
+  // ✅ Phase 3 complete — now using fine-tuned MobileNetV3 (93% val accuracy)
+  static const String _modelPath = 'assets/foundit_mobilenetv3.tflite';
+  static const String _labelsPath = 'assets/foundit_labels.txt';
+  static const int _inputSize = 224;
+  static const double _confidenceThreshold = 0.55;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PUBLIC API
+  // ─────────────────────────────────────────────────────────────────────────
+
   Future<void> initialize() async {
-    _interpreter = await Interpreter.fromAsset('assets/mobilenet_v2.tflite');
-
-    // Load labels
-    final labelData = await rootBundle.loadString('assets/labels.txt');
-    _labels = labelData.split('\n');
-  }
-
-  Future<String> classifyItem(File imageFile) async {
-    if (_interpreter == null || _labels == null) {
-      await initialize();
-    }
-
-    final imageBytes = await imageFile.readAsBytes();
-    img.Image? decodedImage = img.decodeImage(imageBytes);
-
-    if (decodedImage == null) return "Unknown Item";
-
-    // Center-crop to square before resizing to maintain aspect ratio
-    int size = decodedImage.width < decodedImage.height
-        ? decodedImage.width
-        : decodedImage.height;
-    int x = (decodedImage.width - size) ~/ 2;
-    int y = (decodedImage.height - size) ~/ 2;
-    img.Image croppedImage = img.copyCrop(
-      decodedImage,
-      x: x,
-      y: y,
-      width: size,
-      height: size,
-    );
-    img.Image resizedImage = img.copyResize(
-      croppedImage,
-      width: 224,
-      height: 224,
-    );
-
-    final inputTensor = _interpreter!.getInputTensor(0);
-    final isFloat = inputTensor.type == TensorType.float32;
-
-    var input = isFloat
-        ? List.generate(
-            1,
-            (i) => List.generate(
-              224,
-              (y) => List.generate(224, (x) => List.filled(3, 0.0)),
-            ),
-          )
-        : List.generate(
-            1,
-            (i) => List.generate(
-              224,
-              (y) => List.generate(224, (x) => List.filled(3, 0)),
-            ),
-          );
-
-    for (int y = 0; y < 224; y++) {
-      for (int x = 0; x < 224; x++) {
-        final pixel = resizedImage.getPixel(x, y);
-        if (isFloat) {
-          input[0][y][x][0] = (pixel.r / 127.5) - 1.0;
-          input[0][y][x][1] = (pixel.g / 127.5) - 1.0;
-          input[0][y][x][2] = (pixel.b / 127.5) - 1.0;
-        } else {
-          input[0][y][x][0] = pixel.r.toInt();
-          input[0][y][x][1] = pixel.g.toInt();
-          input[0][y][x][2] = pixel.b.toInt();
-        }
-      }
-    }
-
-    final outputTensor = _interpreter!.getOutputTensor(0);
-    final outputShape = outputTensor.shape;
-    final outLength = outputShape.isNotEmpty && outputShape.length > 1
-        ? outputShape[1]
-        : 1001;
-
-    var output = outputTensor.type == TensorType.float32
-        ? List.generate(1, (i) => List.filled(outLength, 0.0))
-        : List.generate(1, (i) => List.filled(outLength, 0));
-
-    _interpreter!.run(input, output);
-
-    int highestIndex = 0;
-    double highestConfidence = 0.0;
-
-    final results = output[0];
-    for (int i = 0; i < results.length; i++) {
-      double conf = outputTensor.type == TensorType.float32
-          ? (results[i] as double)
-          : ((results[i] as int) / 255.0);
-
-      if (conf > highestConfidence) {
-        highestConfidence = conf;
-        highestIndex = i;
-      }
-    }
-
-    if (highestConfidence > 0.80) {
-      if (highestIndex < _labels!.length) {
-        String rawLabel = _labels![highestIndex].trim().toLowerCase();
-        // Strict Student Categories Only!
-        String? mappedLabel = _mapToStudentItem(rawLabel);
-        if (mappedLabel != null) return mappedLabel;
-      }
-    }
-
-    return "Unknown Item";
-  }
-
-  Future<List<String>> getTopLabels(File imageFile, {int count = 5}) async {
-    if (_interpreter == null || _labels == null) {
-      await initialize();
-    }
-
-    final imageBytes = await imageFile.readAsBytes();
-    img.Image? decodedImage = img.decodeImage(imageBytes);
-    if (decodedImage == null) return [];
-
-    int size = decodedImage.width < decodedImage.height
-        ? decodedImage.width
-        : decodedImage.height;
-    int x = (decodedImage.width - size) ~/ 2;
-    int y = (decodedImage.height - size) ~/ 2;
-    img.Image croppedImage = img.copyCrop(
-      decodedImage,
-      x: x,
-      y: y,
-      width: size,
-      height: size,
-    );
-    img.Image resizedImage = img.copyResize(
-      croppedImage,
-      width: 224,
-      height: 224,
-    );
-
-    final inputTensor = _interpreter!.getInputTensor(0);
-    final isFloat = inputTensor.type == TensorType.float32;
-
-    var input = isFloat
-        ? List.generate(
-            1,
-            (i) => List.generate(
-              224,
-              (y) => List.generate(224, (x) => List.filled(3, 0.0)),
-            ),
-          )
-        : List.generate(
-            1,
-            (i) => List.generate(
-              224,
-              (y) => List.generate(224, (x) => List.filled(3, 0)),
-            ),
-          );
-
-    for (int y = 0; y < 224; y++) {
-      for (int x = 0; x < 224; x++) {
-        final pixel = resizedImage.getPixel(x, y);
-        if (isFloat) {
-          input[0][y][x][0] = (pixel.r / 127.5) - 1.0;
-          input[0][y][x][1] = (pixel.g / 127.5) - 1.0;
-          input[0][y][x][2] = (pixel.b / 127.5) - 1.0;
-        } else {
-          input[0][y][x][0] = pixel.r.toInt();
-          input[0][y][x][1] = pixel.g.toInt();
-          input[0][y][x][2] = pixel.b.toInt();
-        }
-      }
-    }
-
-    final outputTensor = _interpreter!.getOutputTensor(0);
-    final outputShape = outputTensor.shape;
-    final outLength = outputShape.isNotEmpty && outputShape.length > 1
-        ? outputShape[1]
-        : 1001;
-
-    var output = outputTensor.type == TensorType.float32
-        ? List.generate(1, (i) => List.filled(outLength, 0.0))
-        : List.generate(1, (i) => List.filled(outLength, 0));
-
-    _interpreter!.run(input, output);
-
-    final results = output[0];
-
-    List<MapEntry<int, double>> confidences = [];
-    for (int i = 0; i < results.length; i++) {
-      double conf = outputTensor.type == TensorType.float32
-          ? (results[i] as double)
-          : ((results[i] as int) / 255.0);
-      confidences.add(MapEntry(i, conf));
-    }
-
-    confidences.sort((a, b) => b.value.compareTo(a.value));
-
-    List<String> topLabels = [];
-    print('--- TFLite Suggested Matches Testing ---');
-    for (int i = 0; i < count && i < confidences.length; i++) {
-      if (confidences[i].key < _labels!.length) {
-        print(
-          '- ${_labels![confidences[i].key].trim()}: ${(confidences[i].value * 100).toStringAsFixed(2)}%',
-        );
-      }
-    }
-    print('----------------------------------------');
-
-    for (int i = 0; i < count && i < confidences.length; i++) {
-      if (confidences[i].value >= 0.80 &&
-          confidences[i].key < _labels!.length) {
-        String rawLabel = _labels![confidences[i].key].trim().toLowerCase();
-        String? mappedLabel = _mapToStudentItem(rawLabel);
-        if (mappedLabel != null && !topLabels.contains(mappedLabel)) {
-          topLabels.add(mappedLabel);
-        }
-      }
-    }
-    return topLabels;
-  }
-
-  // --- STUDENT ITEM MAPPING LOGIC ---
-  String? _mapToStudentItem(String rawLabel) {
-    // 1. Direct Keyword Matches
-    final Map<String, String> studentItems = {
-      'cellular telephone': 'Mobile Phone',
-      'computer keyboard': 'Keyboard',
-      'mouse': 'Computer Mouse',
-      'laptop': 'Laptop',
-      'notebook': 'Laptop',
-      'backpack': 'Backpack',
-      'wallet': 'Wallet',
-      'purse': 'Bag / Purse',
-      'water bottle': 'Water Bottle',
-      'water jug': 'Water Bottle',
-      'sunglasses': 'Accessories',
-      'fountain pen': 'Stationery',
-      'ballpoint': 'Stationery',
-      'binder': 'File / Folder',
-    };
-
-    if (studentItems.containsKey(rawLabel)) {
-      return studentItems[rawLabel];
-    }
-
-    // 2. Loose Keyword Grouping
-    if (rawLabel.contains('phone') || rawLabel.contains('ipod'))
-      return 'Mobile Phone';
-    if (rawLabel.contains('computer') || rawLabel.contains('laptop'))
-      return 'Laptop / PC';
-    if (rawLabel.contains('bag') || rawLabel.contains('pack'))
-      return 'Backpack / Bag';
-    if (rawLabel.contains('shoe') || rawLabel.contains('sneaker'))
-      return 'Shoes / Wearables';
-    if (rawLabel.contains('remote')) return 'Electronic Device';
-    if (rawLabel.contains('bottle') || rawLabel.contains('cup'))
-      return 'Bottle / Cup';
-
-    // Strict Enforcement: Reject any generic ImageNet label not mapped above
-    return null;
+    _interpreter = await Interpreter.fromAsset(_modelPath);
+    final labelData = await rootBundle.loadString(_labelsPath);
+    _labels = labelData
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
   }
 
   void dispose() {
     _interpreter?.close();
+    _interpreter = null;
+  }
+
+  /// Classifies an image and returns the top category name.
+  /// Returns "Unknown Item" if confidence is below threshold.
+  Future<String> classifyItem(File imageFile) async {
+    if (_interpreter == null || _labels == null) await initialize();
+
+    final results = await _runInference(imageFile);
+    if (results.isEmpty) return 'Unknown Item';
+
+    final best = results.first;
+    if (best.value >= _confidenceThreshold) {
+      return _resolveLabel(best.key) ?? 'Unknown Item';
+    }
+    return 'Unknown Item';
+  }
+
+  /// Returns the raw 10-dimensional probability vector from the model output.
+  /// This score vector is stored in Firestore and used for cosine similarity
+  /// comparison between reports — enabling true visual matching.
+  /// Returns an empty list if inference fails.
+  Future<List<double>> getScoreVector(File imageFile) async {
+    if (_interpreter == null || _labels == null) await initialize();
+
+    final input = await _preprocessImage(imageFile);
+    if (input == null) return [];
+
+    final outputTensor = _interpreter!.getOutputTensor(0);
+    final outLength = outputTensor.shape.length > 1
+        ? outputTensor.shape[1]
+        : _labels!.length;
+
+    final output = List.generate(1, (_) => List.filled(outLength, 0.0));
+    _interpreter!.run(input, output);
+
+    return output[0]
+        .take(_labels!.length)
+        .map((e) => (e as num).toDouble())
+        .toList();
+  }
+
+  /// Returns a list of category names whose confidence meets the threshold.
+  /// Useful for populating multiple AI-suggested tags on an item report.
+  Future<List<String>> getTopLabels(File imageFile, {int count = 5}) async {
+    if (_interpreter == null || _labels == null) await initialize();
+
+    final results = await _runInference(imageFile);
+
+    // Debug logging
+    print('─── TFLite Top $count Predictions ─────────────────');
+    for (final entry in results.take(count)) {
+      print('  ${entry.key}: ${(entry.value * 100).toStringAsFixed(1)}%');
+    }
+    print('────────────────────────────────────────────────────');
+
+    return results
+        .where((e) => e.value >= _confidenceThreshold)
+        .take(count)
+        .map((e) => _resolveLabel(e.key))
+        .where((label) => label != null)
+        .cast<String>()
+        .toSet() // deduplicate
+        .toList();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PRIVATE HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Runs the model on the image and returns results sorted by confidence.
+  Future<List<MapEntry<String, double>>> _runInference(File imageFile) async {
+    final input = await _preprocessImage(imageFile);
+    if (input == null) return [];
+
+    final outputTensor = _interpreter!.getOutputTensor(0);
+    final outLength = outputTensor.shape.length > 1
+        ? outputTensor.shape[1]
+        : _labels!.length;
+
+    final output = List.generate(1, (_) => List.filled(outLength, 0.0));
+    _interpreter!.run(input, output);
+
+    final scores = output[0];
+    final labelCount = _labels!.length;
+
+    final entries = List.generate(
+      outLength < labelCount ? outLength : labelCount,
+      (i) => MapEntry(_labels![i], (scores[i] as num).toDouble()),
+    );
+
+    entries.sort((a, b) => b.value.compareTo(a.value));
+    return entries;
+  }
+
+  /// Center-crops and resizes the image, then passes raw [0–255] float values.
+  /// NOTE: The TFLite model was exported with include_preprocessing=True, so
+  /// normalization to [-1, 1] is handled internally — do NOT pre-normalize here.
+  Future<List<List<List<List<double>>>>?> _preprocessImage(
+      File imageFile) async {
+    final imageBytes = await imageFile.readAsBytes();
+    img.Image? decoded = img.decodeImage(imageBytes);
+    if (decoded == null) return null;
+
+    // Center crop to square
+    final size = decoded.width < decoded.height ? decoded.width : decoded.height;
+    final x = (decoded.width - size) ~/ 2;
+    final y = (decoded.height - size) ~/ 2;
+    final cropped =
+        img.copyCrop(decoded, x: x, y: y, width: size, height: size);
+    final resized =
+        img.copyResize(cropped, width: _inputSize, height: _inputSize);
+
+    // Pass raw pixel values [0, 255] — model normalizes internally
+    return List.generate(
+      1,
+      (_) => List.generate(
+        _inputSize,
+        (row) => List.generate(
+          _inputSize,
+          (col) {
+            final pixel = resized.getPixel(col, row);
+            return [
+              pixel.r.toDouble(),
+              pixel.g.toDouble(),
+              pixel.b.toDouble(),
+            ];
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LABEL RESOLUTION
+  // Fine-tuned model already outputs our 10 domain-specific display labels
+  // directly — no mapping needed.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  String? _resolveLabel(String rawLabel) {
+    final label = rawLabel.trim();
+    return label.isNotEmpty ? label : null;
   }
 }

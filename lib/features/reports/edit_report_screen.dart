@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/item_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/app_error_handler.dart';
 
 class EditReportScreen extends StatefulWidget {
   final ItemModel item;
@@ -89,9 +90,10 @@ class _EditReportScreenState extends State<EditReportScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final errorMessage = AppErrorHandler.getMessage(e);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Error updating report: $e')));
+          ).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       }
     }
@@ -114,9 +116,19 @@ class _EditReportScreenState extends State<EditReportScreen> {
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text.rich(
+                    const TextSpan(
+                      text: 'Title',
+                      children: [
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(color: Color(0xFFEF4444)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter a title'
@@ -126,9 +138,19 @@ class _EditReportScreenState extends State<EditReportScreen> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text.rich(
+                    const TextSpan(
+                      text: 'Description',
+                      children: [
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(color: Color(0xFFEF4444)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) => value == null || value.isEmpty
                     ? 'Please enter a description'
@@ -145,9 +167,19 @@ class _EditReportScreenState extends State<EditReportScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text.rich(
+                    const TextSpan(
+                      text: 'Category',
+                      children: [
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(color: Color(0xFFEF4444)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 items: _categories.map((category) {
                   return DropdownMenuItem(
@@ -164,9 +196,19 @@ class _EditReportScreenState extends State<EditReportScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  label: Text.rich(
+                    const TextSpan(
+                      text: 'Status',
+                      children: [
+                        TextSpan(
+                          text: ' *',
+                          style: TextStyle(color: Color(0xFFEF4444)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 items: _statuses.map((status) {
                   return DropdownMenuItem(value: status, child: Text(status));

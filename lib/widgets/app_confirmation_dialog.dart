@@ -340,5 +340,7 @@ Future<String?> showAppInputDialog({
     ),
   );
 
+  controller.dispose();
+
   return result;
 }

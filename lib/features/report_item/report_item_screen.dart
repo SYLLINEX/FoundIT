@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:google_fonts/google_fonts.dart'; // Assuming google_fonts is available, let's use default bold if not
 import 'report_item_form_screen.dart';
 
 class ReportItemScreen extends StatelessWidget {

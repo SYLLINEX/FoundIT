@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -17,24 +19,20 @@ class AuthService {
     if (resolvedUid == null || resolvedUid.isEmpty) return false;
 
     try {
+      // Delay briefly to allow auth token propagation after initial sign in
+      await Future.delayed(const Duration(milliseconds: 350));
+      
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(resolvedUid)
-          .get(const GetOptions(source: Source.server));
+          .get();
 
       if (!userDoc.exists) return false;
       final data = userDoc.data() ?? {};
       return (data['isAdmin'] ?? false) == true ||
           (data['role']?.toString().toLowerCase() == 'admin');
     } catch (_) {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(resolvedUid)
-          .get();
-      if (!userDoc.exists) return false;
-      final data = userDoc.data() ?? {};
-      return (data['isAdmin'] ?? false) == true ||
-          (data['role']?.toString().toLowerCase() == 'admin');
+      return false;
     }
   }
 
@@ -68,12 +66,12 @@ class AuthService {
               'phone_num': phone,
               'profile_img': '',
               'created_at': FieldValue.serverTimestamp(),
-            });
+            }, SetOptions(merge: true));
       }
 
       return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw e.message ?? 'An unknown error occurred';
+    } on FirebaseAuthException {
+      rethrow;
     }
   }
 
@@ -87,8 +85,8 @@ class AuthService {
         email: email,
         password: password,
       );
-    } on FirebaseAuthException catch (e) {
-      throw e.message ?? 'An unknown error occurred';
+    } on FirebaseAuthException {
+      rethrow;
     }
   }
 
@@ -133,9 +131,7 @@ class AuthService {
           'An account already exists with the same email address but different sign-in credentials.',
         );
       }
-      throw Exception(
-        e.message ?? 'An unknown error occurred during Google Sign-In.',
-      );
+      rethrow;
     } catch (e) {
       // Throw the exact message if it's the custom Exception we threw above
       if (e.toString().contains('Account not found')) {
@@ -189,12 +185,12 @@ class AuthService {
               'phone_num': '',
               'profile_img': userCredential.user!.photoURL ?? '',
               'created_at': FieldValue.serverTimestamp(),
-            });
+            }, SetOptions(merge: true));
       }
 
       return userCredential;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Failed to sign up with Google.');
+    } on FirebaseAuthException {
+      rethrow;
     } catch (e) {
       if (e.toString().contains('already exists')) {
         rethrow;
@@ -205,6 +201,22 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    // Remove the FCM token from the user's document BEFORE signing out of Firebase.
+    // Otherwise, Firestore will block the request because the user is no longer authenticated.
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'fcm_tokens': FieldValue.arrayRemove([token]),
+          }, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error removing FCM token during sign out: $e');
+    }
+
     await _googleSignIn.signOut();
     await _auth.signOut();
   }

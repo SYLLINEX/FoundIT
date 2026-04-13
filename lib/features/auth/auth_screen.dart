@@ -7,7 +7,11 @@ import '../home/main_wrapper.dart';
 import '../admin/admin_dashboard_screen.dart';
 import 'sign_up_screen.dart';
 import 'verify_email_screen.dart';
+import 'forgot_password_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/utils/app_error_handler.dart';
+import '../onboarding/onboarding_screen.dart';
+import '../onboarding/setup_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -61,31 +65,11 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
 
-        // Check if user is admin
-        final isAdmin = await _authService.isAdminUser(
-          userCredential?.user?.uid,
-        );
-
-        if (isAdmin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainWrapper()),
-          );
-        }
+        await OnboardingScreen.checkAndNavigate(context, const SetupScreen());
       } catch (e) {
         if (!mounted) return;
 
-        String errorMsg = e.toString();
-        if (errorMsg.startsWith('Exception: ')) {
-          errorMsg = errorMsg.substring('Exception: '.length);
-        }
+        final errorMsg = AppErrorHandler.getMessage(e);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -111,29 +95,12 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
 
       if (credential != null) {
-        final isAdmin = await _authService.isAdminUser(credential.user?.uid);
-
-        if (isAdmin) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AdminDashboardScreen(),
-            ),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainWrapper()),
-          );
-        }
+        await OnboardingScreen.checkAndNavigate(context, const SetupScreen());
       }
     } catch (e) {
       if (!mounted) return;
 
-      String errorMsg = e.toString();
-      if (errorMsg.startsWith('Exception: ')) {
-        errorMsg = errorMsg.substring('Exception: '.length);
-      }
+      final errorMsg = AppErrorHandler.getMessage(e);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -305,7 +272,12 @@ class _AuthScreenState extends State<AuthScreen> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          // TODO: Implement forgot password
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordScreen(),
+                            ),
+                          );
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.deepLavender,

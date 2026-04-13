@@ -11,6 +11,9 @@ class ClaimModel {
   List<String>? proofImageUrls;
   String? linkedLostReportId;
   double? similarityScore;
+  /// 'claim'     — user claims ownership of a FOUND item (existing flow)
+  /// 'found_tip' — user reports finding a LOST item (new flow)
+  final String claimType;
 
   ClaimModel({
     required this.claimId,
@@ -23,7 +26,10 @@ class ClaimModel {
     this.proofImageUrls,
     this.linkedLostReportId,
     this.similarityScore,
+    this.claimType = 'claim',
   });
+
+  bool get isFoundTip => claimType == 'found_tip';
 
   factory ClaimModel.fromMap(String id, Map<String, dynamic> data) {
     return ClaimModel(
@@ -37,6 +43,7 @@ class ClaimModel {
       proofImageUrls: List<String>.from(data['proof_image_urls'] ?? []),
       linkedLostReportId: data['linked_lost_report_id'],
       similarityScore: (data['similarity_score'] as num?)?.toDouble(),
+      claimType: data['claim_type'] ?? 'claim',
     );
   }
 
@@ -51,6 +58,7 @@ class ClaimModel {
       'proof_image_urls': proofImageUrls ?? [],
       'linked_lost_report_id': linkedLostReportId,
       'similarity_score': similarityScore,
+      'claim_type': claimType,
     };
   }
-}
+}

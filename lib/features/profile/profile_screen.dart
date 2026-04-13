@@ -5,13 +5,15 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../services/auth_service.dart';
 import '../auth/auth_screen.dart';
 import '../../models/user_model.dart';
-import '../../core/theme/app_colors.dart';
 import 'edit_profile_screen.dart';
 import 'settings_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import '../../widgets/app_confirmation_dialog.dart';
+import 'help_support_screen.dart';
+import 'terms_of_service_screen.dart';
+import 'about_app_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -253,7 +255,12 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Help & Support',
                     subtitle: 'FAQ & Contact us',
                     onTap: () {
-                      // Placeholder
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpSupportScreen(),
+                        ),
+                      );
                     },
                   ),
                   const Divider(
@@ -267,7 +274,31 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Terms of Service',
                     subtitle: 'Rules & Guidelines',
                     onTap: () {
-                      // Placeholder
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TermsOfServiceScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ]),
+
+                const SizedBox(height: 16),
+
+                // Group 3: About
+                _buildMenuCard([
+                  _buildMenuItem(
+                    icon: PhosphorIconsFill.info,
+                    title: 'About FoundIT',
+                    subtitle: 'App info & architecture',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutAppScreen(),
+                        ),
+                      );
                     },
                   ),
                 ]),
