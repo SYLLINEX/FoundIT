@@ -136,7 +136,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: _primaryDark,
         elevation: 0,
@@ -185,9 +185,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
               child: Container(
                 height: 150,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[300]!, width: 2),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.5), width: 2),
                   image: _image != null
                       ? DecorationImage(
                           image: FileImage(_image!),
@@ -202,13 +202,13 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _bgColor,
+                              color: Theme.of(context).cardColor,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               PhosphorIconsRegular.uploadSimple,
                               size: 24,
-                              color: Color(0xFF4B5563),
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -308,13 +308,13 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 10,
@@ -327,7 +327,6 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryDark,
               foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey[300],
               disabledForegroundColor: Colors.grey[500],
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -400,9 +399,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         filled: true,
-        fillColor: const Color(0xFFE2E4EA),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -439,9 +438,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       icon: const Icon(PhosphorIconsRegular.caretDown, color: Colors.grey),
       decoration: InputDecoration(
         hintText: 'Select a category',
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         filled: true,
-        fillColor: const Color(0xFFE2E4EA),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -478,7 +477,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFE2E4EA),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

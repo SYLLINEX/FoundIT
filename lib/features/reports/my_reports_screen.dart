@@ -15,6 +15,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import '../../widgets/expandable_filter_fab.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 import '../../widgets/empty_state_view.dart';
 import '../../core/utils/app_error_handler.dart';
 
@@ -38,7 +39,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     final userId = _authService.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: _viewType == 'Reports'
           ? Padding(
               padding: const EdgeInsets.only(bottom: 100.0), // Clear the bottom nav bar
@@ -339,7 +340,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(child: Text('Item not found')),
@@ -360,10 +361,18 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+                  width: 1.0,
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: Row(
@@ -381,10 +390,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                            child: CachedNetworkImage(
                              imageUrl: item.imageUrl,
                              fit: BoxFit.cover,
-                             placeholder: (context, url) => Shimmer.fromColors(
-                               baseColor: Colors.grey[300]!,
-                               highlightColor: Colors.grey[100]!,
-                               child: Container(color: Colors.white),
+                             placeholder: (context, url) => ThemeAwareShimmer(                               child: Container(color: Colors.white),
                              ),
                              errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                            ),
@@ -429,20 +435,21 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        child: Row(
+      child: ThemeAwareShimmer(        child: Row(
           children: [
             Container(
               width: 48,
@@ -595,12 +602,16 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+                width: 1.0,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -620,10 +631,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                          child: CachedNetworkImage(
                            imageUrl: item.imageUrl,
                            fit: BoxFit.cover,
-                           placeholder: (context, url) => Shimmer.fromColors(
-                             baseColor: Colors.grey[300]!,
-                             highlightColor: Colors.grey[100]!,
-                             child: Container(color: Colors.white),
+                           placeholder: (context, url) => ThemeAwareShimmer(                             child: Container(color: Colors.white),
                            ),
                            errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.image, color: Colors.grey),
                          ),

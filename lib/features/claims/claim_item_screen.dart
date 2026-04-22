@@ -20,6 +20,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import '../../core/utils/app_error_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 
 import '../../utils/image_helper.dart';
 
@@ -453,10 +454,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                                           child: CachedNetworkImage(
                                             imageUrl: report.imageUrl,
                                             fit: BoxFit.cover,
-                                            placeholder: (context, url) => Shimmer.fromColors(
-                                              baseColor: Colors.grey[300]!,
-                                              highlightColor: Colors.grey[100]!,
-                                              child: Container(color: Colors.white),
+                                            placeholder: (context, url) => ThemeAwareShimmer(                                              child: Container(color: Colors.white),
                                             ),
                                             errorWidget: (context, url, error) => const Icon(
                                               PhosphorIconsRegular.imageBroken,
@@ -567,19 +565,19 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretLeft,
-              color: AppColors.nightfall),
+          icon: Icon(PhosphorIconsRegular.caretLeft,
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Verify Ownership',
           style: TextStyle(
-            color: AppColors.nightfall,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -593,9 +591,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
@@ -607,10 +605,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                         width: 64,
                         height: 64,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(color: Colors.white),
+                        placeholder: (context, url) => ThemeAwareShimmer(                          child: Container(color: Colors.white),
                         ),
                         errorWidget: (_, __, ___) => Container(
                           width: 64,
@@ -694,14 +689,14 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
 
             // ── Details Input Section ────────────────────────────────────
             Text.rich(
-              const TextSpan(
+              TextSpan(
                 text: 'Claim Details',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: AppColors.nightfall,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                children: [
+                children: const [
                   TextSpan(
                     text: ' *',
                     style: TextStyle(color: Color(0xFFEF4444)),
@@ -712,7 +707,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             const SizedBox(height: 4),
             Text(
               'Describe details only the owner would know.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55), fontSize: 13),
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -720,9 +715,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
               maxLines: 5,
               decoration: InputDecoration(
                 hintText: 'Example: ID card inside, sticker near zip, small scratch on corner.',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -734,18 +729,18 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             const SizedBox(height: 28),
 
             // ── Linked Report Section ────────────────────────────────────
-            const Text(
+            Text(
               'Linked LOST Report',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
-                color: AppColors.nightfall,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'Attach your existing report for AI comparison.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55), fontSize: 13),
             ),
             const SizedBox(height: 8),
             if (_selectedLostReport == null)
@@ -755,9 +750,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.4), style: BorderStyle.solid),
                   ),
                   child: Column(
                     children: [
@@ -774,9 +769,9 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             else
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.3)),
                 ),
                 child: Column(
                   children: [
@@ -790,10 +785,10 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                               children: [
                                 Text(
                                   _selectedLostReport!.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 15,
-                                    color: AppColors.nightfall,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -885,7 +880,7 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -894,13 +889,16 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
-                          color: AppColors.nightfall,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Add images of the item or ownership proof.',
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55),
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -920,17 +918,23 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                      style: BorderStyle.solid,
+                    ),
                   ),
                   child: Column(
                     children: [
-                      Icon(PhosphorIconsRegular.image, color: Colors.grey.shade400, size: 32),
+                      Icon(PhosphorIconsRegular.image,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35), size: 32),
                       const SizedBox(height: 8),
                       Text(
                         'Tap to upload photos',
-                        style: TextStyle(color: Colors.grey.shade400),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                        ),
                       ),
                     ],
                   ),
@@ -954,9 +958,13 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
                 : Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _isPhotoSimilarityLow ? Colors.orange.shade200 : Colors.green.shade200),
+                      border: Border.all(
+                        color: _isPhotoSimilarityLow
+                            ? Colors.orange.shade200
+                            : Colors.green.shade200,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,24 +995,30 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isConfirmed ? Colors.blue.shade50 : Colors.white,
+                  color: _isConfirmed
+                      ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2)
+                      : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: _isConfirmed ? Colors.blue.shade200 : Colors.grey.shade200,
+                    color: _isConfirmed
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                        : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _isConfirmed ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.circle,
-                      color: _isConfirmed ? Colors.blue : Colors.grey.shade400,
+                      color: _isConfirmed
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                     ),
                     const SizedBox(width: 16),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'I confirm this claim is truthful and I am the rightful owner.',
                         style: TextStyle(
-                          color: AppColors.nightfall,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 13,
                           height: 1.4,
                         ),

@@ -12,6 +12,7 @@ import '../../widgets/empty_state_view.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 
 /// Items within this distance (in km) are shown on the dashboard.
 const double _kNearbyRadiusKm = 10.0;
@@ -102,11 +103,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mist,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         color: AppColors.deepLavender,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         displacement: 60,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(), // needed for pull-to-refresh on short lists
@@ -309,9 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
   Widget _buildSkeletonItemCard() {
+    final cardColor = Theme.of(context).cardColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -321,18 +323,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+      child: ThemeAwareShimmer(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               flex: 6,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
               ),
             ),
@@ -344,10 +344,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(height: 14, width: double.infinity, color: Colors.white),
-                    Container(height: 10, width: 80, color: Colors.white),
-                    Container(height: 10, width: 100, color: Colors.white),
-                    Container(height: 10, width: 90, color: Colors.white),
+                    Container(height: 14, width: double.infinity, color: cardColor),
+                    Container(height: 10, width: 80, color: cardColor),
+                    Container(height: 10, width: 100, color: cardColor),
+                    Container(height: 10, width: 90, color: cardColor),
                   ],
                 ),
               ),

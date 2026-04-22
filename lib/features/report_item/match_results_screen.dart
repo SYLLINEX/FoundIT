@@ -5,6 +5,7 @@ import '../home/main_wrapper.dart';
 import '../claims/claim_item_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 
 class MatchResultsScreen extends StatelessWidget {
   final List<ItemModel> matches;
@@ -24,7 +25,7 @@ class MatchResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'Matches Found!',
@@ -92,10 +93,7 @@ class MatchResultsScreen extends StatelessWidget {
                                       width: 80,
                                       height: 80,
                                       fit: BoxFit.cover,
-                                      placeholder: (context, url) => Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: Container(width: 80, height: 80, color: Colors.white),
+                                      placeholder: (context, url) => ThemeAwareShimmer(                                        child: Container(width: 80, height: 80, color: Colors.white),
                                       ),
                                       errorWidget:
                                           (context, url, error) =>

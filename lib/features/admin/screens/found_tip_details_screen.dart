@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../widgets/theme_aware_shimmer.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/item_model.dart';
@@ -328,10 +329,10 @@ class _CategoryBarState extends State<_CategoryBar>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(widget.label,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.adminVerificationInk,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   )),
                               Text(widget.sublabel,
                                   style: TextStyle(
@@ -477,14 +478,14 @@ class _FoundTipDetailsScreenState extends State<FoundTipDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F9),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.adminVerificationInk,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          'Found Review',
+          'Claim Review',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
@@ -509,15 +510,15 @@ class _FoundTipDetailsScreenState extends State<FoundTipDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FC),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         widget.claim.proofDesc.isEmpty
                             ? '(No description provided)'
                             : widget.claim.proofDesc,
-                        style: const TextStyle(
-                          color: AppColors.adminVerificationInk,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -661,12 +662,12 @@ class _FoundTipDetailsScreenState extends State<FoundTipDetailsScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Score Breakdown',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.adminVerificationInk,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -761,26 +762,26 @@ class _ClaimerHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.adminVerificationInk,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 22,
-            backgroundColor: Colors.white.withValues(alpha: 0.15),
-            child: const Icon(PhosphorIconsRegular.user,
-                color: Colors.white, size: 22),
+            backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+            child: Icon(PhosphorIconsRegular.user,
+                color: Theme.of(context).colorScheme.primary, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Found by',
                   style: TextStyle(
-                    color: Colors.white60,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -788,8 +789,8 @@ class _ClaimerHeaderCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
@@ -843,7 +844,7 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -873,19 +874,19 @@ class _SectionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: AppColors.adminVerificationInk,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (subtitle != null) ...[
                       const SizedBox(height: 1),
                       Text(
                         subtitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.adminVerificationMutedInk,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -925,10 +926,7 @@ class _ProofImageGrid extends StatelessWidget {
                   width: 100,
                   height: 100,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(
+                  placeholder: (_, __) => ThemeAwareShimmer(                    child: Container(
                         width: 100, height: 100, color: Colors.white),
                   ),
                   errorWidget: (_, __, ___) => Container(
@@ -1009,7 +1007,7 @@ class _ComparisonPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
       ),
@@ -1044,10 +1042,7 @@ class _ComparisonPanel extends StatelessWidget {
                         width: double.infinity,
                         height: 130,
                         fit: BoxFit.cover,
-                        placeholder: (_, __) => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(height: 130, color: Colors.white),
+                        placeholder: (_, __) => ThemeAwareShimmer(                          child: Container(height: 130, color: Colors.white),
                         ),
                         errorWidget: (_, __, ___) => _placeholder(),
                       )
@@ -1076,28 +1071,28 @@ class _ComparisonPanel extends StatelessWidget {
               children: [
                 Text(
                   item.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: AppColors.adminVerificationInk,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                _pill('Type', item.postType),
+                _pill(context, 'Type', item.postType),
                 const SizedBox(height: 4),
-                _pill('Category', item.category),
+                _pill(context, 'Category', item.category),
                 const SizedBox(height: 4),
-                _pill('Status', item.status),
+                _pill(context, 'Status', item.status),
                 const SizedBox(height: 10),
                 Text(
                   item.description,
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF4A4A5A),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -1109,19 +1104,19 @@ class _ComparisonPanel extends StatelessWidget {
     );
   }
 
-  Widget _pill(String label, String value) {
+  Widget _pill(BuildContext context, String label, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.adminVerificationPillSoft,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         '$label: $value',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.adminVerificationMutedInk,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -1147,20 +1142,20 @@ class _ComparisonPlaceholder extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        color: Colors.grey.shade50,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Icon(PhosphorIconsRegular.fileDashed,
-              size: 36, color: Colors.grey.shade400),
+              size: 36, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 8),
           Text(
             'No linked LOST report',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.grey.shade500,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 12,
               height: 1.4,
             ),
@@ -1182,11 +1177,11 @@ class _ActionBar extends StatelessWidget {
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-            top: BorderSide(color: AppColors.adminVerificationBorderSoft)),
-        boxShadow: [
+            top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000),
             blurRadius: 12,

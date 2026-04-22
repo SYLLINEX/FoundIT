@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import 'theme_aware_shimmer.dart';
 
 class ItemCard extends StatelessWidget {
   final String imageUrl;
@@ -28,11 +29,15 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardColor = Theme.of(context).cardColor;
+    final onCard = Theme.of(context).colorScheme.onSurface;
+    final subtleColor = onCard.withOpacity(0.55);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -55,13 +60,15 @@ class ItemCard extends StatelessWidget {
                   width: double.infinity,
                   height: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (context, url) => Shimmer.fromColors(
-                    baseColor: Colors.grey[300]!,
-                    highlightColor: Colors.grey[100]!,
-                    child: Container(color: Colors.white),
+                  placeholder: (context, url) => ThemeAwareShimmer(                    child: Container(color: cardColor),
                   ),
-                  errorWidget: (context, url, error) =>
-                      Container(color: AppColors.mist, child: const Icon(PhosphorIconsRegular.imageBroken)),
+                  errorWidget: (context, url, error) => Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Icon(
+                      PhosphorIconsRegular.imageBroken,
+                      color: subtleColor,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -80,10 +87,10 @@ class ItemCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: AppColors.nightfall,
+                              color: onCard,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -91,11 +98,14 @@ class ItemCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                              color: status.toUpperCase() == 'RESERVED' 
-                                  ? Colors.amber.shade700 
-                                  : (status.toUpperCase() == 'LOST' ? AppColors.statusLost : AppColors.statusFound),
+                            color: status.toUpperCase() == 'RESERVED'
+                                ? Colors.amber.shade700
+                                : (status.toUpperCase() == 'LOST'
+                                    ? AppColors.statusLost
+                                    : AppColors.statusFound),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -112,45 +122,49 @@ class ItemCard extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        const Icon(PhosphorIconsRegular.mapPin, size: 14, color: Colors.grey),
+                        Icon(PhosphorIconsRegular.mapPin,
+                            size: 14, color: subtleColor),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             location,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            style: TextStyle(color: subtleColor, fontSize: 12),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (distanceKm != null) ...
-                          [
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0x14040b14),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${distanceKm! < 1 ? '${(distanceKm! * 1000).round()} m' : '${distanceKm!.toStringAsFixed(1)} km'}',
-                                style: const TextStyle(
-                                  color: AppColors.nightfall,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        if (distanceKm != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: onCard.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              distanceKm! < 1
+                                  ? '${(distanceKm! * 1000).round()} m'
+                                  : '${distanceKm!.toStringAsFixed(1)} km',
+                              style: TextStyle(
+                                color: onCard,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
+                          ),
+                        ],
                       ],
                     ),
                     Row(
                       children: [
-                        const Icon(PhosphorIconsRegular.calendarBlank, size: 14, color: Colors.grey),
+                        Icon(PhosphorIconsRegular.calendarBlank,
+                            size: 14, color: subtleColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             timeText,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            style: TextStyle(color: subtleColor, fontSize: 12),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -159,12 +173,13 @@ class ItemCard extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        const Icon(PhosphorIconsRegular.user, size: 14, color: Colors.grey),
+                        Icon(PhosphorIconsRegular.user,
+                            size: 14, color: subtleColor),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             'Uploaded by $reporterName',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            style: TextStyle(color: subtleColor, fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

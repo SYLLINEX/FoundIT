@@ -57,11 +57,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         color: const Color(0xFF413F54),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         displacement: 60,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

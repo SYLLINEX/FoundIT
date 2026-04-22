@@ -67,7 +67,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                             color: Colors.grey,
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: Theme.of(context).cardColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
@@ -188,10 +188,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         'Missing Reports',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.adminVerificationInk,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -210,10 +210,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         'Claim Reports',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.adminVerificationInk,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -287,13 +287,16 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.adminVerificationBorderSoft),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 10,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.07),
+                blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
             ],
@@ -309,10 +312,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                       item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.adminVerificationInk,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -350,8 +353,8 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
               const SizedBox(height: 6),
               Text(
                 'Reported by $reporterName',
-                style: const TextStyle(
-                  color: AppColors.adminVerificationMutedInk,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 13,
                 ),
                 maxLines: 1,
@@ -370,14 +373,14 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.adminVerificationMutedInk,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
                         PhosphorIconsRegular.arrowRight,
                         size: 13,
-                        color: AppColors.adminVerificationMutedInk,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ],
                   ),
@@ -394,13 +397,16 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.adminVerificationBorderSoft),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.07),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -416,10 +422,10 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.adminVerificationInk,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -452,8 +458,8 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
             claim.isFoundTip
                 ? 'Found by $claimerName'
                 : 'Claimed by $claimerName',
-            style: const TextStyle(
-              color: AppColors.adminVerificationMutedInk,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 13,
             ),
             maxLines: 1,
@@ -472,14 +478,14 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.adminVerificationMutedInk,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     PhosphorIconsRegular.arrowRight,
                     size: 13,
-                    color: AppColors.adminVerificationMutedInk,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
@@ -783,7 +789,7 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
       height: 220,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.adminVerificationSurfaceSoft,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: Alignment.center,
@@ -811,19 +817,19 @@ class _AdminVerificationsTabState extends State<AdminVerificationsTab> {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: AppColors.adminVerificationMutedInk,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.adminVerificationInk,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
                 height: 1.3,
               ),
@@ -857,7 +863,7 @@ class _AdminReportMapScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reported Location'),
-        backgroundColor: AppColors.adminVerificationInk,
+        backgroundColor: Theme.of(context).colorScheme.onSurface,
         foregroundColor: Colors.white,
       ),
       body: GoogleMap(

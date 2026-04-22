@@ -372,7 +372,7 @@ class _AdminMapTabState extends State<AdminMapTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           StreamBuilder<QuerySnapshot>(

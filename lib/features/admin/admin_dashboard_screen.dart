@@ -27,8 +27,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: const Color(0xFFF5F6FA),
-      body: Stack(
+        body: Stack(
         children: [
           IndexedStack(
             index: _currentIndex,

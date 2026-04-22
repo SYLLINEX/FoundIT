@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import 'package:path/path.dart' as p;
 import '../../widgets/found_it_loading_indicator.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/app_error_handler.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -160,12 +161,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       initialValue: widget.userModel.email,
                       decoration: InputDecoration(
                         labelText: 'Email Address',
-                        fillColor: Colors.grey.shade200,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         filled: true,
-                        prefixIcon: const Icon(PhosphorIconsRegular.envelopeSimple, color: Colors.grey),
+                        prefixIcon: Icon(
+                          PhosphorIconsRegular.envelopeSimple,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                        ),
                       ),
                       readOnly: true,
-                      style: const TextStyle(color: Colors.grey),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -177,7 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             children: [
                               TextSpan(
                                 text: ' *',
-                                style: TextStyle(color: Color(0xFFEF4444)),
+                                style: TextStyle(color: AppColors.error),
                               ),
                             ],
                           ),
@@ -196,7 +202,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             children: [
                               TextSpan(
                                 text: ' *',
-                                style: TextStyle(color: Color(0xFFEF4444)),
+                                style: TextStyle(color: AppColors.error),
                               ),
                             ],
                           ),
@@ -215,7 +221,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             children: [
                               TextSpan(
                                 text: ' *',
-                                style: TextStyle(color: Color(0xFFEF4444)),
+                                style: TextStyle(color: AppColors.error),
                               ),
                             ],
                           ),

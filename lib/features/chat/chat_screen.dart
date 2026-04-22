@@ -17,6 +17,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatRoomModel room;
@@ -355,10 +356,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 180, 
                     width: double.infinity, 
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(color: Colors.white),
+                    placeholder: (context, url) => ThemeAwareShimmer(                      child: Container(color: Colors.white),
                     ),
                     errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.imageBroken, size: 50, color: Colors.grey),
                   ),
@@ -406,7 +404,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUserId = _authService.currentUser?.uid ?? '';
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 1,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AdminHeader extends StatefulWidget {
@@ -54,7 +56,7 @@ class _AdminHeaderState extends State<AdminHeader> with SingleTickerProviderStat
         height: topPadding + 64,
         padding: EdgeInsets.only(top: topPadding, left: 24, right: 16),
         decoration: const BoxDecoration(
-          color: AppColors.nightfall, // Dark theme map to user mockup
+          color: AppColors.nightfall,
           boxShadow: [
             BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
           ],
@@ -98,15 +100,47 @@ class _AdminHeaderState extends State<AdminHeader> with SingleTickerProviderStat
             // Right: Unboxed Notification icon representing the action area
             FadeTransition(
               opacity: _fadeIconAnimation,
-              child: IconButton(
-                onPressed: widget.onNotificationTap,
-                icon: const Icon(
-                  PhosphorIconsRegular.bell,
-                  color: Colors.white,
-                  size: 26,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: widget.onNotificationTap,
+                    icon: const Icon(
+                      PhosphorIconsRegular.bell,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  if (FirebaseAuth.instance.currentUser != null)
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('notifications')
+                          .where('user_id', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                          .where('is_read', isEqualTo: false)
+                          .limit(1)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                          return Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                ],
               ),
             ),
           ],

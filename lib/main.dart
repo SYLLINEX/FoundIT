@@ -3,11 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/splash_screen.dart';
 import 'services/push_notification_service.dart';
+
+// Global theme notifier — light mode by default; user can enable dark mode in Profile > Settings
+final ValueNotifier<ThemeMode> appThemeNotifier = ValueNotifier(ThemeMode.light);
 
 void _applyEdgeToEdgeSystemUi() {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -34,6 +38,11 @@ void main() async {
   // Load .env variables
   await dotenv.load(fileName: ".env");
 
+  // Load saved theme
+  final prefs = await SharedPreferences.getInstance();
+  final isDark = prefs.getBool('isDarkMode') ?? false;
+  appThemeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -58,10 +67,19 @@ class _FoundItAppState extends State<FoundItApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Listen for theme changes and save to shared preferences
+    appThemeNotifier.addListener(_saveTheme);
+  }
+
+  void _saveTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('isDarkMode', appThemeNotifier.value == ThemeMode.dark);
   }
 
   @override
   void dispose() {
+    appThemeNotifier.removeListener(_saveTheme);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -80,32 +98,39 @@ class _FoundItAppState extends State<FoundItApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FoundIT',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      builder: (context, child) {
-        final mediaQueryData = MediaQuery.of(context);
-        
-        // Find the current system scale factor and reduce it by 15% globally
-        final systemScale = mediaQueryData.textScaler.scale(1.0);
-        final reducedScale = systemScale * 0.85;
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: appThemeNotifier,
+      builder: (context, themeMode, _) {
+        return MaterialApp(
+          title: 'FoundIT',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeMode,
+          builder: (context, child) {
+            final mediaQueryData = MediaQuery.of(context);
+            
+            // Find the current system scale factor and reduce it by 15% globally
+            final systemScale = mediaQueryData.textScaler.scale(1.0);
+            final reducedScale = systemScale * 0.85;
 
-        // Clamp the final scaled result to prevent extreme layout breakage
-        final finalScaler = TextScaler.linear(reducedScale).clamp(
-          minScaleFactor: 0.7,
-          maxScaleFactor: 1.1,
-        );
+            // Clamp the final scaled result to prevent extreme layout breakage
+            final finalScaler = TextScaler.linear(reducedScale).clamp(
+              minScaleFactor: 0.7,
+              maxScaleFactor: 1.1,
+            );
 
-        return MediaQuery(
-          data: mediaQueryData.copyWith(textScaler: finalScaler),
-          child: ColoredBox(
-            color: AppColors.mist,
-            child: child ?? const SizedBox.shrink(),
-          ),
+            return MediaQuery(
+              data: mediaQueryData.copyWith(textScaler: finalScaler),
+              child: ColoredBox(
+                color: themeMode == ThemeMode.dark ? AppColors.darkBg : AppColors.mist,
+                child: child ?? const SizedBox.shrink(),
+              ),
+            );
+          },
+          home: const SplashScreen(),
         );
-      },
-      home: const SplashScreen(),
+      }
     );
   }
 }
