@@ -21,6 +21,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   String? selectedCategory;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _manualCategoryController = TextEditingController();
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -52,12 +53,14 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     super.initState();
     _titleController.addListener(() => setState(() {}));
     _descriptionController.addListener(() => setState(() {}));
+    _manualCategoryController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _manualCategoryController.dispose();
     super.dispose();
   }
 
@@ -94,18 +97,28 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         final topLabels   = results[0] as List<String>;
         final scoreVector = results[1] as List<double>;
 
-        if (topLabels.isNotEmpty) {
-          setState(() {
-            _detectedLabels = topLabels;
-            _scoreVector    = scoreVector;
-            final String primaryLabel = topLabels.first;
+        setState(() {
+          _detectedLabels = topLabels;
+          _scoreVector    = scoreVector;
 
-            // Direct match — model labels == dropdown options
+          // Find the highest confidence score
+          double maxScore = 0.0;
+          if (scoreVector.isNotEmpty) {
+            maxScore = scoreVector.reduce((curr, next) => curr > next ? curr : next);
+          }
+
+          // Auto-select "Other" if max confidence is less than 50% or no labels met the 55% TFLite threshold
+          if (maxScore < 0.5 || topLabels.isEmpty) {
+            selectedCategory = 'Other';
+          }
+          // Direct match — model labels == dropdown options
+          else {
+            final String primaryLabel = topLabels.first;
             if (_categories.contains(primaryLabel)) {
               selectedCategory = primaryLabel;
             }
-          });
-        }
+          }
+        });
       } catch (e) {
         debugPrint('TFLite Error: $e');
       } finally {
@@ -235,6 +248,16 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             _buildDropdown(),
             const SizedBox(height: 20),
 
+            if (selectedCategory == 'Other') ...[
+              _buildLabel('Specify Category'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                hint: 'e.g. Umbrella, Glasses',
+                controller: _manualCategoryController,
+              ),
+              const SizedBox(height: 20),
+            ],
+
             // Description
             _buildLabel('Description'),
             const SizedBox(height: 8),
@@ -292,6 +315,9 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                           title: _titleController.text,
                           description: _descriptionController.text,
                           category: selectedCategory!,
+                          manualCategory: selectedCategory == 'Other' 
+                              ? _manualCategoryController.text.trim() 
+                              : null,
                           date: selectedDate!,
                           imageFile: _image,
                           aiLabels: _detectedLabels,
@@ -358,12 +384,19 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
-  bool get _isFormComplete =>
-      _image != null &&
-      _titleController.text.trim().isNotEmpty &&
-      selectedCategory != null &&
-      _descriptionController.text.trim().isNotEmpty &&
-      selectedDate != null;
+  bool get _isFormComplete {
+    bool isComplete = _image != null &&
+        _titleController.text.trim().isNotEmpty &&
+        selectedCategory != null &&
+        _descriptionController.text.trim().isNotEmpty &&
+        selectedDate != null;
+
+    if (selectedCategory == 'Other') {
+      isComplete = isComplete && _manualCategoryController.text.trim().isNotEmpty;
+    }
+
+    return isComplete;
+  }
 
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
@@ -386,18 +419,6 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         ),
       ),
       items: _categories.map((e) {
-        if (e == 'Other') {
-          return DropdownMenuItem(
-            value: e,
-            child: Row(
-              children: [
-                const Icon(PhosphorIconsRegular.dotsThree, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(e, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          );
-        }
         return DropdownMenuItem(value: e, child: Text(e));
       }).toList(),
       onChanged: (val) {

@@ -20,6 +20,7 @@ class TagLocationScreen extends StatefulWidget {
   final String title;
   final String description;
   final String category;
+  final String? manualCategory;
   final DateTime date;
   final File? imageFile;
   final List<String> aiLabels;
@@ -31,6 +32,7 @@ class TagLocationScreen extends StatefulWidget {
     required this.title,
     required this.description,
     required this.category,
+    this.manualCategory,
     required this.date,
     this.imageFile,
     this.aiLabels = const [],
@@ -132,6 +134,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       aiScoreVector: widget.aiScoreVector,
       timestamp: DateTime.now(), // Ignored in comparison
       eventDate: widget.date, // Add user's selected date here
+      manualCategory: widget.manualCategory,
     );
 
     List<Map<String, dynamic>> finalMatches = [];
@@ -229,6 +232,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         aiScoreVector: widget.aiScoreVector,
         timestamp: DateTime.now(), // Server handles this via toMap()
         eventDate: widget.date, // Actual date provided by the UI
+        manualCategory: widget.manualCategory,
       );
 
       final createdItemId = await _databaseService.addItem(item);

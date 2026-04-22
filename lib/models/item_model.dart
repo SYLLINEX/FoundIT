@@ -17,6 +17,7 @@ class ItemModel {
   final DateTime? eventDate; // Actual date lost or found
   final String? specificLocation;
   final String? reporterName;
+  final String? manualCategory;
 
   ItemModel({
     required this.itemId,
@@ -35,6 +36,7 @@ class ItemModel {
     this.eventDate,
     this.specificLocation,
     this.reporterName,
+    this.manualCategory,
   });
 
   factory ItemModel.fromMap(String id, Map<String, dynamic> data) {
@@ -62,6 +64,7 @@ class ItemModel {
       eventDate: data['event_date'] != null ? (data['event_date'] as Timestamp).toDate() : null,
       specificLocation: data['specific_location'],
       reporterName: data['reporter_name'],
+      manualCategory: data['manual_category'],
     );
   }
 
@@ -85,6 +88,7 @@ class ItemModel {
       eventDate: eventDate,
       specificLocation: specificLocation,
       reporterName: reporterName,
+      manualCategory: manualCategory,
     );
   }
 
@@ -105,8 +109,7 @@ class ItemModel {
       if (eventDate != null) 'event_date': Timestamp.fromDate(eventDate!),
       if (specificLocation != null) 'specific_location': specificLocation,
       if (reporterName != null) 'reporter_name': reporterName,
-      'specific_location': specificLocation,
-      'reporter_name': reporterName,
+      if (manualCategory != null) 'manual_category': manualCategory,
     };
   }
 }
