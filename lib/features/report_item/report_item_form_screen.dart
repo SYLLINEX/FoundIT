@@ -21,7 +21,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   String? selectedCategory;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _manualCategoryController = TextEditingController();
+  final TextEditingController _manualCategoryController =
+      TextEditingController();
 
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -78,7 +79,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     if (source == null) return;
     final pickedFile = await _picker.pickImage(
       source: source,
-      imageQuality: 80, // Forces JPEG conversion on iOS, fixing TFLite decoder errors with HEIC
+      imageQuality:
+          80, // Forces JPEG conversion on iOS, fixing TFLite decoder errors with HEIC
     );
 
     if (pickedFile != null) {
@@ -94,17 +96,19 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           _tfliteService.getScoreVector(_image!),
         ]);
 
-        final topLabels   = results[0] as List<String>;
+        final topLabels = results[0] as List<String>;
         final scoreVector = results[1] as List<double>;
 
         setState(() {
           _detectedLabels = topLabels;
-          _scoreVector    = scoreVector;
+          _scoreVector = scoreVector;
 
           // Find the highest confidence score
           double maxScore = 0.0;
           if (scoreVector.isNotEmpty) {
-            maxScore = scoreVector.reduce((curr, next) => curr > next ? curr : next);
+            maxScore = scoreVector.reduce(
+              (curr, next) => curr > next ? curr : next,
+            );
           }
 
           // Auto-select "Other" if max confidence is less than 50% or no labels met the 55% TFLite threshold
@@ -246,7 +250,34 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             _buildLabel('Category'),
             const SizedBox(height: 8),
             _buildDropdown(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
+
+            if (_image != null && !_isAnalyzing) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    PhosphorIconsRegular.info,
+                    size: 16,
+                    color: Color(0xFF6B7280),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tip: Please verify the category. You can change it manually if the AI suggestion is incorrect.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              const SizedBox(height: 12),
+            ],
 
             if (selectedCategory == 'Other') ...[
               _buildLabel('Specify Category'),
@@ -315,8 +346,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                           title: _titleController.text,
                           description: _descriptionController.text,
                           category: selectedCategory!,
-                          manualCategory: selectedCategory == 'Other' 
-                              ? _manualCategoryController.text.trim() 
+                          manualCategory: selectedCategory == 'Other'
+                              ? _manualCategoryController.text.trim()
                               : null,
                           date: selectedDate!,
                           imageFile: _image,
@@ -385,14 +416,16 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
   }
 
   bool get _isFormComplete {
-    bool isComplete = _image != null &&
+    bool isComplete =
+        _image != null &&
         _titleController.text.trim().isNotEmpty &&
         selectedCategory != null &&
         _descriptionController.text.trim().isNotEmpty &&
         selectedDate != null;
 
     if (selectedCategory == 'Other') {
-      isComplete = isComplete && _manualCategoryController.text.trim().isNotEmpty;
+      isComplete =
+          isComplete && _manualCategoryController.text.trim().isNotEmpty;
     }
 
     return isComplete;
@@ -452,7 +485,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate != null 
+              selectedDate != null
                   ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
                   : 'Select Date',
               style: TextStyle(
@@ -460,7 +493,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                 fontSize: 16,
               ),
             ),
-            const Icon(PhosphorIconsRegular.calendarBlank, color: Colors.grey, size: 20),
+            const Icon(
+              PhosphorIconsRegular.calendarBlank,
+              color: Colors.grey,
+              size: 20,
+            ),
           ],
         ),
       ),
