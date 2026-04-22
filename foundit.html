@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FoundIT – Reconnecting what matters, intelligently</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --deep-lavender: #413F55;
+    --nightfall: #3E3D52;
+    --obsidian: #262532;
+    --dusk: #4E4C66;
+    --mist: #EEECF2;
+    --silver: #DDDCE5;
+    --accent: #7C7A9E;
+    --glow: #6C6A9A;
+    --found: #10B981;
+    --lost: #EF4444;
+    --pending: #D97706;
+    --bg-dark: #12111C;
+    --bg-darker: #0D0C17;
+    --brand-gradient: linear-gradient(135deg, #413F55 0%, #6C6A9A 50%, #9B99C8 100%);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg-darker);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+    
+  }
+
+  /* ── GLOBAL CANVAS ─────────────────────────────────── */
+  #canvas-bg {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── SCENE CONTAINER ───────────────────────────────── */
+  .scene {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.7s ease;
+  }
+  .scene.active { opacity: 1; pointer-events: auto; }
+
+  /* ── SCENE 1: HERO ─────────────────────────────────── */
+  #scene-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-logo-wrap {
+    position: relative;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .hero-logo-wrap.reveal { opacity: 1; transform: scale(1); }
+
+  .logo-ring {
+    width: 120px; height: 120px;
+    border-radius: 32px;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    margin: 0 auto 20px;
+    animation: pulse-glow-white 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow-white {
+    0%,100% { box-shadow: 0 0 40px rgba(255,255,255,0.4), 0 0 80px rgba(255,255,255,0.2); }
+    50% { box-shadow: 0 0 60px rgba(255,255,255,0.6), 0 0 100px rgba(255,255,255,0.3); }
+  }
+
+  .hero-tag {
+    font-size: 13px; font-weight: 600; letter-spacing: 4px;
+    color: var(--accent); text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.8s ease 0.3s;
+  }
+  .hero-tag.reveal { opacity: 1; transform: translateY(0); }
+
+  .hero-title {
+    font-size: 80px; font-weight: 750; line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, #C4C2E8 40%, #9B99C8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s;
+    letter-spacing: -2px;
+  }
+  .hero-title.reveal { opacity: 1; transform: translateY(0); }
+
+  .hero-sub {
+    font-size: 22px; font-weight: 300; color: rgba(255,255,255,0.6);
+    margin-top: 16px; letter-spacing: 1px;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.8s ease 0.9s;
+  }
+  .hero-sub.reveal { opacity: 1; transform: translateY(0); }
+
+  .hero-cta {
+    margin-top: 48px;
+    display: flex; gap: 16px; justify-content: center;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.8s ease 1.3s;
+  }
+  .hero-cta.reveal { opacity: 1; transform: translateY(0); }
+
+  .btn-primary {
+    padding: 16px 40px; border-radius: 50px;
+    background: var(--brand-gradient);
+    color: #fff; font-weight: 700; font-size: 16px;
+    border: none; cursor: pointer;
+    box-shadow: 0 8px 32px rgba(108,106,154,0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(108,106,154,0.7); }
+
+  .btn-ghost {
+    padding: 16px 40px; border-radius: 50px;
+    background: transparent; color: rgba(255,255,255,0.7);
+    font-weight: 600; font-size: 16px;
+    border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+  /* ── FLOATING ITEMS ────────────────────────────────── */
+  .floating-items {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  }
+  .float-item {
+    position: absolute;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: rgba(255,255,255,0.5);
+    backdrop-filter: blur(10px);
+    animation: float-drift 8s ease-in-out infinite;
+  }
+  .float-item .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  @keyframes float-drift {
+    0%,100% { transform: translateY(0px) rotate(-1deg); }
+    50% { transform: translateY(-12px) rotate(1deg); }
+  }
+
+  /* ── SCENE 2: PROBLEM ──────────────────────────────── */
+  #scene-problem {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 40px;
+  }
+
+  .section-eyebrow {
+    font-size: 12px; font-weight: 700; letter-spacing: 5px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 16px;
+    opacity: 0; transform: translateY(16px);
+    transition: all 0.6s ease;
+  }
+  .section-eyebrow.reveal { opacity: 1; transform: translateY(0); }
+
+  .section-title {
+    font-size: 54px; font-weight: 800; line-height: 1.1;
+    color: #fff; max-width: 720px; margin: 0 auto 24px;
+    opacity: 0; transform: translateY(24px);
+    transition: all 0.7s ease 0.2s;
+  }
+  .section-title.reveal { opacity: 1; transform: translateY(0); }
+  .section-title em { font-style: normal; color: #9B99C8; }
+
+  .section-body {
+    font-size: 18px; font-weight: 300; color: rgba(255,255,255,0.55);
+    max-width: 580px; margin: 0 auto 48px; line-height: 1.7;
+    opacity: 0; transform: translateY(16px);
+    transition: all 0.7s ease 0.4s;
+  }
+  .section-body.reveal { opacity: 1; transform: translateY(0); }
+
+  .stat-row {
+    display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.8s ease 0.6s;
+  }
+  .stat-row.reveal { opacity: 1; transform: translateY(0); }
+
+  .stat-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 28px 40px;
+    text-align: center; backdrop-filter: blur(16px);
+  }
+  .stat-num {
+    font-size: 48px; font-weight: 900;
+    background: var(--brand-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 8px; font-weight: 500;
+  }
+
+  /* ── SCENE 3: FEATURES ─────────────────────────────── */
+  #scene-features {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 40px;
+  }
+
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(3, 280px);
+    gap: 20px; margin-top: 40px; justify-content: center;
+  }
+
+  .feature-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px; padding: 32px 28px;
+    text-align: left; cursor: default;
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.6s ease, border-color 0.3s, background 0.3s;
+    backdrop-filter: blur(12px);
+    position: relative; overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(108,106,154,0.6), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feature-card:hover { background: rgba(108,106,154,0.1); border-color: rgba(108,106,154,0.3); }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-card.reveal { opacity: 1; transform: translateY(0); }
+
+  .feature-icon {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 20px;
+  }
+  .feature-card-title {
+    font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px;
+  }
+  .feature-card-body {
+    font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.7; font-weight: 400;
+  }
+
+  /* ── SCENE 4: FLOW ─────────────────────────────────── */
+  #scene-flow {
+    flex-direction: column; text-align: center; padding: 0 40px;
+  }
+
+  .flow-steps {
+    display: flex; align-items: flex-start; gap: 0; margin-top: 48px;
+    opacity: 0; transition: opacity 0.6s ease 0.4s;
+  }
+  .flow-steps.reveal { opacity: 1; }
+
+  .flow-step {
+    display: flex; flex-direction: column; align-items: center;
+    width: 180px;
+    opacity: 0; transform: translateX(-20px);
+    transition: all 0.5s ease;
+  }
+  .flow-step.reveal { opacity: 1; transform: translateX(0); }
+
+  .flow-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(108,106,154,0.15);
+    border: 2px solid rgba(108,106,154,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin-bottom: 16px;
+    position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+  .flow-circle.active-step {
+    background: rgb(255, 255, 255);
+    border-color: #9B99C8;
+    box-shadow: 0 0 30px rgba(108,106,154,0.5);
+  }
+
+  .flow-connector {
+    flex: 1; height: 2px; margin-top: 39px;
+    background: linear-gradient(90deg, rgba(108,106,154,0.5), rgba(155,153,200,0.5));
+    position: relative;
+    opacity: 0; transition: opacity 0.4s ease;
+  }
+  .flow-connector.reveal { opacity: 1; }
+  .flow-connector::after {
+    content: ''; position: absolute; right: -1px; top: -4px;
+    border-left: 8px solid rgba(155,153,200,0.5);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+  }
+
+  .flow-label {
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8);
+    margin-bottom: 6px;
+  }
+  .flow-desc {
+    font-size: 11px; color: rgba(255,255,255,0.35); line-height: 1.5; text-align: center;
+    max-width: 140px;
+  }
+
+  /* ── SCENE 5: AI ───────────────────────────────────── */
+  #scene-ai {
+    flex-direction: column; text-align: center; padding: 0 60px;
+  }
+
+  .ai-demo {
+    display: flex; gap: 32px; margin-top: 40px; align-items: center;
+    justify-content: center;
+    opacity: 0; transform: translateY(30px);
+    transition: all 0.8s ease 0.5s;
+  }
+  .ai-demo.reveal { opacity: 1; transform: translateY(0); }
+
+  .ai-phone {
+    width: 200px; border-radius: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 20px 16px; backdrop-filter: blur(12px);
+  }
+  .ai-phone-screen {
+    background: var(--deep-lavender); border-radius: 20px; padding: 16px;
+    min-height: 300px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .ai-item-card {
+    background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ai-item-thumb {
+    width: 44px; height: 44px; border-radius: 8px; font-size: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .ai-item-info { flex: 1; }
+  .ai-item-title { font-size: 11px; font-weight: 600; color: #fff; }
+  .ai-item-cat { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .ai-match-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 100px; background: rgba(16,185,129,0.2); color: #10B981;
+  }
+
+  .ai-connector {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: rgba(255,255,255,0.3); font-size: 12px;
+  }
+  .ai-bolt {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(108,106,154,0.2); border: 2px solid rgba(108,106,154,0.5);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    animation: ai-pulse 2s ease-in-out infinite;
+  }
+  @keyframes ai-pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 rgba(108,106,154,0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(108,106,154,0.4); }
+  }
+
+  .ai-score-pill {
+    padding: 6px 14px; border-radius: 100px;
+    background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3);
+    font-size: 12px; color: #10B981; font-weight: 700;
+  }
+
+  /* ── SCENE 6: MAP ──────────────────────────────────── */
+  #scene-map {
+    flex-direction: column; text-align: center; padding: 0 40px;
+  }
+
+  .map-mockup {
+    width: 600px; height: 300px; border-radius: 24px;
+    background: linear-gradient(135deg, #1a2035, #1e2642);
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative; overflow: hidden; margin-top: 40px;
+    backdrop-filter: blur(12px);
+    opacity: 0; transform: scale(0.9);
+    transition: all 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.4s;
+  }
+  .map-mockup.reveal { opacity: 1; transform: scale(1); }
+
+  .map-grid-h, .map-grid-v {
+    position: absolute; background: rgba(255,255,255,0.04);
+  }
+  .map-grid-h { width: 100%; height: 1px; }
+  .map-grid-v { height: 100%; width: 1px; }
+
+  .map-pin {
+    position: absolute; text-align: center;
+    animation: pin-bounce 2s ease-in-out infinite;
+    cursor: pointer;
+  }
+  @keyframes pin-bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .pin-icon {
+    width: 36px; height: 36px; border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg); display: flex; align-items: center;
+    justify-content: center; margin: 0 auto;
+  }
+  .pin-icon span { transform: rotate(45deg); font-size: 16px; }
+  .pin-label {
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7);
+    margin-top: 4px; white-space: nowrap;
+  }
+
+  .map-radius {
+    position: absolute; border-radius: 50%;
+    border: 2px dashed rgba(108,106,154,0.4);
+    background: rgba(108,106,154,0.05);
+    animation: radius-pulse 3s ease-in-out infinite;
+  }
+  @keyframes radius-pulse {
+    0%,100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .map-user-pin {
+    position: absolute; text-align: center;
+  }
+  .user-dot {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #7C7AFF; border: 3px solid rgba(255,255,255,0.8);
+    margin: 0 auto;
+    box-shadow: 0 0 0 6px rgba(124,122,255,0.2);
+    animation: user-ping 2s ease-in-out infinite;
+  }
+  @keyframes user-ping {
+    0%,100% { box-shadow: 0 0 0 6px rgba(124,122,255,0.2); }
+    50% { box-shadow: 0 0 0 12px rgba(124,122,255,0.1); }
+  }
+
+  .map-feature-pills {
+    display: flex; gap: 12px; justify-content: center; margin-top: 24px;
+    opacity: 0; transform: translateY(16px);
+    transition: all 0.6s ease 0.8s;
+  }
+  .map-feature-pills.reveal { opacity: 1; transform: translateY(0); }
+
+  .pill {
+    padding: 8px 20px; border-radius: 100px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* ── SCENE 7: CTA ──────────────────────────────────── */
+  #scene-cta {
+    flex-direction: column; text-align: center; padding: 0 40px;
+  }
+
+  .cta-title {
+    font-size: 72px; font-weight: 900; line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, #C4C2E8 50%, #9B99C8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0; transform: translateY(30px);
+    transition: all 1s cubic-bezier(0.34,1.56,0.64,1);
+    letter-spacing: -2px;
+  }
+  .cta-title.reveal { opacity: 1; transform: translateY(0); }
+
+  .cta-sub {
+    font-size: 20px; color: rgba(255,255,255,0.5); margin-top: 20px; font-weight: 300;
+    opacity: 0; transform: translateY(16px);
+    transition: all 0.7s ease 0.4s;
+  }
+  .cta-sub.reveal { opacity: 1; transform: translateY(0); }
+
+  .cta-badges {
+    display: flex; gap: 16px; justify-content: center; margin-top: 48px;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.7s ease 0.6s;
+    flex-wrap: wrap;
+  }
+  .cta-badges.reveal { opacity: 1; transform: translateY(0); }
+
+  .store-badge {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 14px 24px;
+    color: #fff; transition: all 0.3s;
+  }
+  .store-badge:hover { background: rgba(255,255,255,0.14); transform: translateY(-2px); }
+  .store-icon { font-size: 28px; }
+  .store-text-top { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+  .store-text-bottom { font-size: 16px; font-weight: 700; }
+
+  .final-tagline {
+    margin-top: 48px; font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.25); font-weight: 500;
+    opacity: 0; transition: opacity 0.7s ease 1s;
+  }
+  .final-tagline.reveal { opacity: 1; }
+
+  /* ── PROGRESS BAR ──────────────────────────────────── */
+  #progress-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 3px;
+    background: rgba(255,255,255,0.08); z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; background: var(--brand-gradient);
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  /* ── SCENE INDICATOR ───────────────────────────────── */
+  #scene-dots {
+    position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+    z-index: 100; display: flex; flex-direction: column; gap: 10px;
+  }
+  .scene-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer; transition: all 0.3s;
+  }
+  .scene-dot.active { background: #9B99C8; transform: scale(1.4); }
+
+  /* ── SKIP BUTTON ───────────────────────────────────── */
+  #skip-btn {
+    position: fixed; top: 24px; right: 24px; z-index: 200;
+    padding: 10px 24px; border-radius: 100px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'Poppins', sans-serif;
+    transition: all 0.2s;
+  }
+  #skip-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+  /* ── LOGO WATERMARK ────────────────────────────────── */
+  #watermark {
+    position: fixed; top: 24px; left: 28px; z-index: 200;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0.6;
+  }
+  #watermark .wm-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    overflow: hidden;
+  }
+  #watermark .wm-name {
+    font-size: 18px; font-weight: 800;
+    background: linear-gradient(135deg, #fff, #9B99C8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── PARTICLES ─────────────────────────────────────── */
+  @keyframes particle-rise {
+    0% { opacity: 0; transform: translateY(0) scale(1); }
+    20% { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+  }
+
+  /* ── NAV ARROWS ────────────────────────────────────── */
+  .nav-arrow {
+    position: fixed; bottom: 32px; z-index: 200;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer; color: rgba(255,255,255,0.6);
+    transition: all 0.2s; font-family: sans-serif;
+  }
+  .nav-arrow:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  #nav-prev { left: calc(50% - 56px); }
+  #nav-next { left: calc(50% + 8px); }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<div id="watermark">
+  <div class="wm-icon">
+    <img src="assets/images/foundit_logo.png" alt="FoundIT Logo" style="width: 100%; height: 100%; object-fit: cover;">
+  </div>
+  <div class="wm-name">FoundIT</div>
+</div>
+
+<button id="skip-btn">Skip →</button>
+
+<div id="progress-bar"><div id="progress-fill"></div></div>
+
+<div id="scene-dots">
+  <div class="scene-dot active" data-scene="0"></div>
+  <div class="scene-dot" data-scene="1"></div>
+  <div class="scene-dot" data-scene="2"></div>
+  <div class="scene-dot" data-scene="3"></div>
+  <div class="scene-dot" data-scene="4"></div>
+  <div class="scene-dot" data-scene="5"></div>
+  <div class="scene-dot" data-scene="6"></div>
+</div>
+
+<!-- Floating background items -->
+<div class="floating-items">
+  <div class="float-item" style="top:12%; left:5%; animation-delay:0s; animation-duration:7s;">
+    <div class="dot" style="background:#EF4444"></div> Lost: iPhone 15 Pro
+  </div>
+  <div class="float-item" style="top:20%; right:6%; animation-delay:1.2s; animation-duration:8s;">
+    <div class="dot" style="background:#10B981"></div> Found: Blue Wallet
+  </div>
+  <div class="float-item" style="bottom:22%; left:4%; animation-delay:2.5s; animation-duration:9s;">
+    <div class="dot" style="background:#D97706"></div> Pending: Car Keys
+  </div>
+  <div class="float-item" style="bottom:16%; right:5%; animation-delay:0.8s; animation-duration:7.5s;">
+    <div class="dot" style="background:#10B981"></div> Resolved: Backpack
+  </div>
+  <div class="float-item" style="top:50%; left:3%; animation-delay:3s; animation-duration:8.5s;">
+    <div class="dot" style="background:#EF4444"></div> Lost: Gold Ring
+  </div>
+  <div>
+    <div class="float-item" style="top:60%; right:4%; animation-delay:1.5s; animation-duration:7.8s;">
+      <div class="dot" style="background:#EF4444"></div> Lost: Her
+    </div>
+  </div>
+  <div>
+    <div class="float-item" style="top:35%; left:6%; animation-delay:2s; animation-duration:8.2s;">
+      <div class="dot" style="background:#10B981"></div> Found: Yourself
+</div>
+
+<!-- ── SCENE 0: HERO ─── -->
+<div class="scene active" id="scene-hero">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div class="hero-logo-wrap" id="hero-logo">
+      <div class="logo-ring" style="background: transparent; overflow: hidden;">
+        <img src="assets/images/foundit_logo.png" alt="FoundIT Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 32px;">
+      </div>
+    </div>
+    <p class="hero-tag" id="hero-tag">AI-Powered Lost and Found Item Management System</p>
+    <h1 class="hero-title" id="hero-title">FoundIT</h1>
+    <p class="hero-sub" id="hero-sub">Reuniting people with what matters most.</p>
+    <div class="hero-cta" id="hero-cta">
+      <button class="btn-primary" onclick="nextScene()">See How It Works →</button>
+      
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 1: PROBLEM ─── -->
+<div class="scene" id="scene-problem">
+  <div>
+    <p class="section-eyebrow" id="prob-eyebrow">The Problem</p>
+    <h2 class="section-title" id="prob-title">Losing something is <em>stressful</em>. Finding it shouldn't be.</h2>
+    <p class="section-body" id="prob-body">
+      Every day, thousands of items are lost — keys, wallets, IDs, phones. Traditional lost-and-found systems are slow, inefficient, and often go unnoticed. FoundIT changes that.
+    </p>
+    <div class="stat-row" id="prob-stats">
+      <div class="stat-card">
+        <div class="stat-num">62%</div>
+        <div class="stat-label">of lost items are<br/>never recovered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">4.3B</div>
+        <div class="stat-label">items lost globally<br/>each year</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">8 min</div>
+        <div class="stat-label">average time to<br/>report on FoundIT</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 2: FEATURES ─── -->
+<div class="scene" id="scene-features">
+  <div>
+    <p class="section-eyebrow" id="feat-eyebrow">Features</p>
+    <h2 class="section-title" id="feat-title">Everything you need to <em>find & recover</em></h2>
+    <div class="feature-grid">
+      <div class="feature-card" id="fc0">
+        <div class="feature-icon" style="color:var(--brand-gradient); background:rgba(108,106,154,0.2);"><i class="ph ph-cpu"></i></div>
+        <div class="feature-card-title">AI Image Matching</div>
+        <div class="feature-card-body">Smart visual similarity scoring automatically matches your lost items with found reports using advanced AI.</div>
+      </div>
+      <div class="feature-card" id="fc1">
+        <div class="feature-icon" style="color:#10B981; background:rgba(16,185,129,0.15);"><i class="ph ph-map-trifold"></i></div>
+        <div class="feature-card-title">Location-Based Discovery</div>
+        <div class="feature-card-body">Browse items on an interactive map filtered by a 10km radius around your current location.</div>
+      </div>
+      <div class="feature-card" id="fc2">
+        <div class="feature-icon" style="color:#EF4444; background:rgba(239,68,68,0.15);"><i class="ph ph-chat-circle-dots"></i></div>
+        <div class="feature-card-title">Secure In-App Chat</div>
+        <div class="feature-card-body">Communicate directly with finders or owners through a private, end-to-end secured chat system.</div>
+      </div>
+      <div class="feature-card" id="fc3">
+        <div class="feature-icon" style="color:#D97706; background:rgba(217,119,6,0.15);"><i class="ph ph-bell-ringing"></i></div>
+        <div class="feature-card-title">Real-Time Notifications</div>
+        <div class="feature-card-body">Instant alerts when someone reports a match, submits a claim, or your item status changes.</div>
+      </div>
+      <div class="feature-card" id="fc4">
+        <div class="feature-icon" style="color:#3B82F6; background:rgba(37,99,235,0.15);"><i class="ph ph-shield-check"></i></div>
+        <div class="feature-card-title">Admin Verification</div>
+        <div class="feature-card-body">Trained admins review all claims and reports, ensuring safe and legitimate item recoveries.</div>
+      </div>
+      <div class="feature-card" id="fc5">
+        <div class="feature-icon" style="color:#7C7AFF; background:rgba(124,122,255,0.15);"><i class="ph ph-device-mobile"></i></div>
+        <div class="feature-card-title">Cross-Platform</div>
+        <div class="feature-card-body">Available on both iOS and Android, built with Flutter for a buttery-smooth native experience.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 3: FLOW ─── -->
+<div class="scene" id="scene-flow">
+  <div>
+    <p class="section-eyebrow" id="flow-eyebrow">How It Works</p>
+    <h2 class="section-title" id="flow-title">Simple steps to <em>recover</em> what's yours</h2>
+    <div class="flow-steps" id="flow-row">
+      <div class="flow-step" id="fs0">
+        <div class="flow-circle" id="fc-icon0"><i class="ph ph-camera"></i></div>
+        <div class="flow-label">Report</div>
+        <div class="flow-desc">Upload a photo and describe your lost or found item</div>
+      </div>
+      <div class="flow-connector" id="fcon0"></div>
+      <div class="flow-step" id="fs1">
+        <div class="flow-circle" id="fc-icon1"><i class="ph ph-robot"></i></div>
+        <div class="flow-label">Match</div>
+        <div class="flow-desc">AI scans and matches your report with similar items</div>
+      </div>
+      <div class="flow-connector" id="fcon1"></div>
+      <div class="flow-step" id="fs2">
+        <div class="flow-circle" id="fc-icon2"><i class="ph ph-chat-circle-dots"></i></div>
+        <div class="flow-label">Connect</div>
+        <div class="flow-desc">Chat securely with the finder or owner</div>
+      </div>
+      <div class="flow-connector" id="fcon2"></div>
+      <div class="flow-step" id="fs3">
+        <div class="flow-circle" id="fc-icon3"><i class="ph ph-check-circle"></i></div>
+        <div class="flow-label">Claim</div>
+        <div class="flow-desc">Submit a claim and get admin-verified approval</div>
+      </div>
+      <div class="flow-connector" id="fcon3"></div>
+      <div class="flow-step" id="fs4">
+        <div class="flow-circle" id="fc-icon4"><i class="ph ph-confetti"></i></div>
+        <div class="flow-label">Reunited!</div>
+        <div class="flow-desc">Pick up your item and mark it resolved</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 4: AI SPOTLIGHT ─── -->
+<div class="scene" id="scene-ai">
+  <div>
+    <p class="section-eyebrow" id="ai-eyebrow">AI-Powered</p>
+    <h2 class="section-title" id="ai-title">Visual intelligence that <em>finds your match</em></h2>
+    <p class="section-body" id="ai-body">
+      Our AI analyses item photos to calculate a similarity score. No more manual scrolling — let the machine find what you lost.
+    </p>
+    <div class="ai-demo" id="ai-demo">
+      <!-- Lost item phone -->
+      <div class="ai-phone">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:10px;text-align:center;letter-spacing:1px;text-transform:uppercase;">Lost Item</div>
+        <div class="ai-phone-screen">
+          <div class="ai-item-card" style="border:1px solid rgba(239,68,68,0.3);">
+            <div class="ai-item-thumb" style="color:var(--accent);"><i class="ph ph-tote"></i></div>
+            <div class="ai-item-info">
+              <div class="ai-item-title">Black Handbag</div>
+              <div class="ai-item-cat">Bags & Luggage</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);text-align:center;padding:4px;">Reported yesterday at UNIMAS</div>
+          <div style="padding:8px;background:rgba(239,68,68,0.08);border-radius:10px;border:1px solid rgba(239,68,68,0.15);">
+            <div style="font-size:10px;color:rgba(239,68,68,0.8);font-weight:600;">● LOST</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">Looking for matches…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector -->
+      <div class="ai-connector">
+        <div class="ai-bolt" style="color:var(--brand-gradient);"><i class="ph ph-robot"></i></div>
+        <div style="font-size:11px;text-align:center;max-width:80px;">Analysing visual similarity</div>
+        <div class="ai-score-pill">92% Match</div>
+        <div style="width:2px;height:30px;background:linear-gradient(to bottom,rgba(108,106,154,0.5),transparent);"></div>
+      </div>
+
+      <!-- Found item phone -->
+      <div class="ai-phone">
+        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:10px;text-align:center;letter-spacing:1px;text-transform:uppercase;">Found Item</div>
+        <div class="ai-phone-screen">
+          <div class="ai-item-card" style="border:1px solid rgba(16,185,129,0.3);">
+            <div class="ai-item-thumb" style="color:var(--accent);"><i class="ph ph-tote"></i></div>
+            <div class="ai-item-info">
+              <div class="ai-item-title">Dark Leather Bag</div>
+              <div class="ai-item-cat">Bags & Luggage</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);text-align:center;padding:4px;">Found this morning near DK2</div>
+          <div style="padding:8px;background:rgba(16,185,129,0.08);border-radius:10px;border:1px solid rgba(16,185,129,0.2);">
+            <div style="font-size:10px;color:rgba(16,185,129,0.9);font-weight:600;">● FOUND</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">Match confidence: Very High</div>
+          </div>
+          <div class="ai-match-badge" style="text-align:center;"><i class="ph ph-target"></i> AI Match Detected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 5: MAP ─── -->
+<div class="scene" id="scene-map">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <p class="section-eyebrow" id="map-eyebrow">Location Intelligence</p>
+    <h2 class="section-title" id="map-title">See what's lost and found <em>near you</em></h2>
+    <div class="map-mockup" id="map-mock">
+      <!-- Grid lines -->
+      <div class="map-grid-h" style="top:25%"></div>
+      <div class="map-grid-h" style="top:50%"></div>
+      <div class="map-grid-h" style="top:75%"></div>
+      <div class="map-grid-v" style="left:25%"></div>
+      <div class="map-grid-v" style="left:50%"></div>
+      <div class="map-grid-v" style="left:75%"></div>
+
+      <!-- Radius circle -->
+      <div class="map-radius" style="width:200px;height:200px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+      <div class="map-radius" style="width:130px;height:130px;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.5;"></div>
+
+      <!-- User pin -->
+      <div class="map-user-pin" style="top:calc(50% - 16px);left:calc(50% - 8px);">
+        <div class="user-dot"></div>
+      </div>
+
+      <!-- Lost pins (red) -->
+      <div class="map-pin" style="top:22%;left:28%;animation-delay:0s;">
+        <div class="pin-icon" style="background:rgba(239,68,68,0.8);"><span><i class="ph ph-key"></i></span></div>
+        <div class="pin-label">Lost Keys</div>
+      </div>
+      <div class="map-pin" style="top:55%;left:18%;animation-delay:0.7s;">
+        <div class="pin-icon" style="background:rgba(239,68,68,0.8);"><span><i class="ph ph-device-mobile"></i></span></div>
+        <div class="pin-label">Lost Phone</div>
+      </div>
+
+      <!-- Found pins (green) -->
+      <div class="map-pin" style="top:30%;right:22%;animation-delay:0.4s;">
+        <div class="pin-icon" style="background:rgba(16,185,129,0.85);"><span><i class="ph ph-tote"></i></span></div>
+        <div class="pin-label">Found Bag</div>
+      </div>
+      <div class="map-pin" style="bottom:22%;right:28%;animation-delay:1.1s;">
+        <div class="pin-icon" style="background:rgba(16,185,129,0.85);"><span><i class="ph ph-credit-card"></i></span></div>
+        <div class="pin-label">Found Wallet</div>
+      </div>
+
+      <!-- Labels -->
+      <div style="position:absolute;bottom:12px;right:14px;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:1px;">10 km radius</div>
+    </div>
+
+    <div class="map-feature-pills" id="map-pills">
+      <div class="pill"><div class="dot" style="background:#EF4444;"></div> Lost Reports</div>
+      <div class="pill"><div class="dot" style="background:#10B981;"></div> Found Items</div>
+      <div class="pill"><div class="dot" style="background:#7C7AFF;"></div> Your Location</div>
+      <div class="pill"><i class="ph ph-map-pin"></i> 10 km Filter</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENE 6: CTA ─── -->
+<div class="scene" id="scene-cta">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <div style="width:100px;height:100px;margin-bottom:24px;animation:pulse-glow-white 3s infinite; border-radius:28px; background:transparent; overflow:hidden; display:flex; justify-content:center; align-items:center;">
+      <img src="assets/images/foundit_logo.png" alt="FoundIT" style="width: 100%; height: 100%; object-fit: cover;">
+    </div>
+    <h2 class="cta-title" id="cta-title">Stop Searching.<br/>Start Finding.</h2>
+    <p class="cta-sub" id="cta-sub">Join your campus community today.<br>Reconnecting what matters, intelligently.</p>
+    <div class="cta-badges" id="cta-badges">
+      
+      
+    </div>
+    <div class="final-tagline" id="final-tag">FoundIT · Lost. Found. Matched · © 2026</div>
+  </div>
+</div>
+
+<script>
+// ── PARTICLE CANVAS ──────────────────────────────────
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.r = Math.random() * 1.5 + 0.3;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.alpha = Math.random() * 0.4 + 0.05;
+    this.color = Math.random() > 0.5 ? '108,106,154' : '155,153,200';
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 120; i++) particles.push(new Particle());
+
+// Connection lines
+function drawConnections() {
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i+1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      if (d < 100) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(108,106,154,${0.08*(1-d/100)})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animateCanvas() {
+  ctx.clearRect(0,0,W,H);
+
+  // Gradient bg
+  const grad = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H));
+  grad.addColorStop(0,'#12101E');
+  grad.addColorStop(1,'#080712');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  drawConnections();
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateCanvas);
+}
+animateCanvas();
+
+// ── SCENE MANAGEMENT ─────────────────────────────────
+let currentScene = 0;
+const totalScenes = 7;
+let autoTimer = null;
+const AUTO_DELAY = 8500; // ms per scene
+
+const scenes = [
+  'scene-hero','scene-problem','scene-features',
+  'scene-flow','scene-ai','scene-map','scene-cta'
+];
+
+function showScene(index) {
+  // Deactivate old
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.scene-dot').forEach((d,i) => {
+    d.classList.toggle('active', i===index);
+  });
+
+  // Activate new
+  const sceneEl = document.getElementById(scenes[index]);
+  sceneEl.classList.add('active');
+
+  // Update progress
+  document.getElementById('progress-fill').style.width = `${((index+1)/totalScenes)*100}%`;
+
+  // Trigger animations
+  setTimeout(() => initSceneAnims(index), 50);
+
+  // Auto-advance loop
+  clearTimeout(autoTimer);
+  if (index > 0) { // Wait on the first page, auto play for the rest
+    autoTimer = setTimeout(() => {
+      if (currentScene < totalScenes - 1) {
+        currentScene++;
+      } else {
+        currentScene = 0; // Return to the first page
+      }
+      showScene(currentScene);
+    }, AUTO_DELAY);
+  }
+}
+
+function nextScene() {
+  if (currentScene < totalScenes - 1) { 
+    currentScene++; 
+    showScene(currentScene); 
+  } else {
+    currentScene = 0;
+    showScene(currentScene);
+  }
+}
+function prevScene() {
+  if (currentScene > 0) { 
+    currentScene--; 
+    showScene(currentScene); 
+  } else {
+    currentScene = totalScenes - 1;
+    showScene(currentScene);
+  }
+}
+function goToScene(n) { currentScene = n; showScene(n); }
+
+// Dot nav
+document.querySelectorAll('.scene-dot').forEach(d => {
+  d.addEventListener('click', () => goToScene(parseInt(d.dataset.scene)));
+});
+
+// Skip
+document.getElementById('skip-btn').addEventListener('click', () => goToScene(6));
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') nextScene();
+  if (e.key === 'ArrowLeft') prevScene();
+});
+
+// ── SCENE ANIMATIONS ─────────────────────────────────
+function reveal(...ids) {
+  ids.forEach((id, i) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('reveal');
+    }, i * 140);
+  });
+}
+
+function initSceneAnims(index) {
+  // Reset all animatable elements
+  document.querySelectorAll('.hero-logo-wrap,.hero-tag,.hero-title,.hero-sub,.hero-cta,.section-eyebrow,.section-title,.section-body,.stat-row,.feature-card,.flow-step,.flow-connector,.ai-demo,.map-mockup,.map-feature-pills,.cta-title,.cta-sub,.cta-badges,.final-tagline').forEach(el => {
+    el.classList.remove('reveal');
+  });
+
+  if (index === 0) {
+    // Hero
+    setTimeout(() => document.getElementById('hero-logo').classList.add('reveal'), 100);
+    reveal('hero-tag','hero-title','hero-sub','hero-cta');
+  }
+
+  else if (index === 1) {
+    // Problem
+    document.getElementById('prob-eyebrow').classList.add('section-eyebrow');
+    reveal('prob-eyebrow','prob-title','prob-body','prob-stats');
+  }
+
+  else if (index === 2) {
+    // Features
+    reveal('feat-eyebrow','feat-title');
+    [0,1,2,3,4,5].forEach(i => {
+      setTimeout(() => {
+        const el = document.getElementById(`fc${i}`);
+        if (el) el.classList.add('reveal');
+      }, 300 + i * 120);
+    });
+  }
+
+  else if (index === 3) {
+    // Flow
+    reveal('flow-eyebrow','flow-title');
+    document.getElementById('flow-row').classList.add('reveal');
+    [0,1,2,3,4].forEach(i => {
+      setTimeout(() => {
+        const el = document.getElementById(`fs${i}`);
+        if (el) el.classList.add('reveal');
+        const icon = document.getElementById(`fc-icon${i}`);
+        if (icon) icon.classList.add('active-step');
+        const con = document.getElementById(`fcon${i}`);
+        if (con) con.classList.add('reveal');
+      }, 400 + i * 250);
+    });
+  }
+
+  else if (index === 4) {
+    // AI
+    reveal('ai-eyebrow','ai-title','ai-body');
+    setTimeout(() => document.getElementById('ai-demo').classList.add('reveal'), 500);
+  }
+
+  else if (index === 5) {
+    // Map
+    reveal('map-eyebrow','map-title');
+    setTimeout(() => document.getElementById('map-mock').classList.add('reveal'), 300);
+    setTimeout(() => document.getElementById('map-pills').classList.add('reveal'), 700);
+  }
+
+  else if (index === 6) {
+    // CTA
+    reveal('cta-title','cta-sub','cta-badges','final-tag');
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────
+showScene(0);
+</script>
+</body>
+</html>
+

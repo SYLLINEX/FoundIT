@@ -20,6 +20,8 @@ import '../../core/utils/app_error_handler.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/ai_service.dart';
 
+import '../../utils/image_helper.dart';
+
 class FoundThisItemScreen extends StatefulWidget {
   final ItemModel lostItem;
 
@@ -348,7 +350,8 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       imageQuality: 70,
     );
     if (picked.isNotEmpty) {
-      setState(() => _photos.addAll(picked));
+      final normalizedFiles = await Future.wait(picked.map((f) => ImageHelper.normalizeImage(f)));
+      setState(() => _photos.addAll(normalizedFiles));
     }
   }
 

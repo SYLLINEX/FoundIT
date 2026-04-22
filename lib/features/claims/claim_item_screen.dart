@@ -21,6 +21,8 @@ import '../../core/utils/app_error_handler.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../utils/image_helper.dart';
+
 class ClaimItemScreen extends StatefulWidget {
   final ItemModel item;
   final String? initialLostReportId;
@@ -165,14 +167,18 @@ class _ClaimItemScreenState extends State<ClaimItemScreen> {
 
   Future<void> _pickProofImages() async {
     final pickedFiles = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 1024, maxHeight: 1024);
-    if (pickedFiles.isNotEmpty) setState(() => _proofImages.addAll(pickedFiles));
+    if (pickedFiles.isNotEmpty) {
+      final normalizedFiles = await Future.wait(pickedFiles.map((f) => ImageHelper.normalizeImage(f)));
+      setState(() => _proofImages.addAll(normalizedFiles));
+    }
   }
 
   Future<void> _pickItemImages() async {
     final pickedFiles = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 1024, maxHeight: 1024);
     if (pickedFiles.isNotEmpty) {
+      final normalizedFiles = await Future.wait(pickedFiles.map((f) => ImageHelper.normalizeImage(f)));
       setState(() {
-        _itemImages.addAll(pickedFiles);
+        _itemImages.addAll(normalizedFiles);
         _isAnalyzingPhotos = true;
       });
       await _analyzeItemImages();
