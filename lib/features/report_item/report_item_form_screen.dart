@@ -46,8 +46,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     'Other',
   ];
 
-  final _primaryDark = const Color(0xFF3B394D);
-  final _bgColor = const Color(0xFFF3F4F6);
+
 
   @override
   void initState() {
@@ -138,7 +137,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: _primaryDark,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         leading: Padding(
@@ -147,21 +146,21 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             onTap: () => Navigator.pop(context),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 PhosphorIconsRegular.caretLeft,
                 size: 16,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
         ),
         title: Text(
           'Report ${widget.reportType} Item',
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -212,12 +211,12 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Tap to Upload',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
-                              color: Color(0xFF1F2937),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -325,8 +324,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         child: SafeArea(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryDark,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.onSurface,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               disabledForegroundColor: Colors.grey[500],
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -371,10 +370,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     return Text.rich(
       TextSpan(
         text: text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF4B5563),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
         ),
         children: const [
           TextSpan(
@@ -488,7 +487,7 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                   ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
                   : 'Select Date',
               style: TextStyle(
-                color: selectedDate != null ? Colors.black87 : Colors.grey[400],
+                color: selectedDate != null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                 fontSize: 16,
               ),
             ),

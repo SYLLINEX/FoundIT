@@ -433,7 +433,43 @@ class _ClaimReviewScreenState extends State<ClaimReviewScreen> {
 
   Future<void> _fetchLinkedReport() async {
     final id = widget.claim.linkedLostReportId;
-    if (id == null || id.isEmpty) return;
+    if (id == null || id.isEmpty) {
+      if (widget.claim.claimantAiScoreVector != null) {
+        final dummyLinked = ItemModel(
+          itemId: 'dummy',
+          userId: widget.claim.claimantId,
+          postType: widget.claim.isFoundTip ? 'Lost' : 'Found',
+          category: widget.targetItem.category, 
+          title: 'Claimant Proof',
+          description: widget.claim.proofDesc,
+          imageUrl: (widget.claim.proofImageUrls?.isNotEmpty == true) ? widget.claim.proofImageUrls!.first : '',
+          locationName: 'Not Provided',
+          status: 'Pending',
+          aiLabels: widget.claim.claimantAiLabels ?? [],
+          aiScoreVector: widget.claim.claimantAiScoreVector ?? [],
+          timestamp: widget.claim.timestamp,
+          eventDate: widget.claim.timestamp,
+        );
+
+        final breakdown = widget.claim.isFoundTip
+            ? _aiService.getSimilarityBreakdown(
+                linkedLostReport: widget.targetItem,
+                claimTargetItem: dummyLinked,
+                claimDescription: widget.claim.proofDesc,
+              )
+            : _aiService.getSimilarityBreakdown(
+                linkedLostReport: dummyLinked,
+                claimTargetItem: widget.targetItem,
+                claimDescription: widget.claim.proofDesc,
+              );
+
+        setState(() {
+          _linkedReport = dummyLinked;
+          _breakdown = breakdown;
+        });
+      }
+      return;
+    }
 
     setState(() => _loadingLinked = true);
     try {
@@ -572,7 +608,9 @@ class _ClaimReviewScreenState extends State<ClaimReviewScreen> {
                               Expanded(
                                 child: _linkedReport != null
                                     ? _ComparisonPanel(
-                                        heading: widget.claim.isFoundTip ? 'Finder\'s Proof / FOUND Item' : 'LOST Report',
+                                        heading: _linkedReport!.itemId == 'dummy'
+                                            ? 'Claimant Proof Image'
+                                            : (widget.claim.isFoundTip ? 'Finder\'s Proof / FOUND Item' : 'LOST Report'),
                                         item: _linkedReport!,
                                         accent: const Color(0xFFDC2626),
                                         onImageTap: _openFullScreen,

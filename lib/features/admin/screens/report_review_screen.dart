@@ -221,8 +221,8 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(isLost ? 'Review Lost Report' : 'Review Found Report'),
-        backgroundColor: Theme.of(context).colorScheme.onSurface,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
       ),
@@ -240,7 +240,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -339,7 +339,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -407,7 +407,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
               MediaQuery.of(context).padding.bottom + 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               border: Border(
                 top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),

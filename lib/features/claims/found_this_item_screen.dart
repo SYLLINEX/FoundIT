@@ -77,9 +77,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -194,13 +194,13 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.indigo.shade50
-                                  : Colors.white,
+                                  ? Colors.indigo.shade50.withOpacity(0.2)
+                                  : Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? Colors.indigo.shade200
-                                    : Colors.grey.shade200,
+                                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                                 width: isSelected ? 1.5 : 1,
                               ),
                               boxShadow: [
@@ -504,12 +504,12 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Report Submitted!',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.nightfall,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),

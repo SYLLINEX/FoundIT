@@ -329,11 +329,11 @@ class _ChatScreenState extends State<ChatScreen> {
         'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
       });
 
-      // Relist the item to feed
+      // Mark item as Resolved since deal was cancelled
       await FirebaseFirestore.instance
           .collection('items')
           .doc(widget.room.itemId)
-          .update({'status': 'Active'});
+          .update({'status': 'Resolved'});
 
       // Change claim status to Cancelled if it exists
       final claimId = snap.data()?['claim_id'] as String?;
@@ -344,7 +344,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Deal cancelled! Item relisted. Chat will auto-delete in 3 days.'),
+            content: Text('Deal cancelled! Item marked as Resolved. Chat will auto-delete in 3 days.'),
           ),
         );
         Navigator.pop(context);
@@ -594,62 +594,134 @@ void _showItemDetailsBottomSheet() {
       body: Column(
         children: [
           // Waiting for approval indicator
-          ValueListenableBuilder<bool>(
-            valueListenable: _isClosed,
-            builder: (context, closed, _) {
-              if (closed) return const SizedBox.shrink();
-              final uid = _authService.currentUser?.uid ?? '';
-              final resolvedByMap = _resolvedBy.value;
-              final cancelRequestedByMap = _cancelRequestedBy.value;
-              final iHaveResolved = resolvedByMap[uid] == true;
-              final iHaveCancelled = cancelRequestedByMap[uid] == true;
-              
-              if (!iHaveResolved && !iHaveCancelled) return const SizedBox.shrink();
-              
-              final isWaitingForResolution = iHaveResolved;
-              final statusText = isWaitingForResolution 
-                  ? 'Waiting for ${widget.otherUserName} to confirm resolution...'
-                  : 'Waiting for ${widget.otherUserName} to confirm cancellation...';
-              
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  border: Border(bottom: BorderSide(color: Colors.amber.shade200, width: 1)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: SpinKitRing(
-                        color: Colors.amber.shade700,
-                        lineWidth: 2,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        statusText,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.amber.shade700,
+          ValueListenableBuilder<Map<String, dynamic>>(
+            valueListenable: _resolvedBy,
+            builder: (context, resolvedByMap, _) {
+              return ValueListenableBuilder<Map<String, dynamic>>(
+                valueListenable: _cancelRequestedBy,
+                builder: (context, cancelRequestedByMap, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: _isClosed,
+                    builder: (context, closed, _) {
+                      if (closed) return const SizedBox.shrink();
+                      final uid = _authService.currentUser?.uid ?? '';
+                      final iHaveResolved = resolvedByMap[uid] == true;
+                      final iHaveCancelled = cancelRequestedByMap[uid] == true;
+                      
+                      if (!iHaveResolved && !iHaveCancelled) return const SizedBox.shrink();
+                      
+                      final isWaitingForResolution = iHaveResolved;
+                      final statusText = isWaitingForResolution 
+                          ? 'Waiting for ${widget.otherUserName} to confirm resolution...'
+                          : 'Waiting for ${widget.otherUserName} to confirm cancellation...';
+                      
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          border: Border(bottom: BorderSide(color: Colors.amber.shade200, width: 1)),
                         ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: SpinKitRing(
+                                color: Colors.amber.shade700,
+                                lineWidth: 2,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                statusText,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade700,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
               );
             },
-          ),
-          // Resolved/Cancelled confirmation banner
-          ValueListenableBuilder<bool>(
+           ),
+           // Other user waiting for approval indicator
+           ValueListenableBuilder<Map<String, dynamic>>(
+             valueListenable: _resolvedBy,
+             builder: (context, resolvedByMap, _) {
+               return ValueListenableBuilder<Map<String, dynamic>>(
+                 valueListenable: _cancelRequestedBy,
+                 builder: (context, cancelRequestedByMap, _) {
+                   return ValueListenableBuilder<bool>(
+                     valueListenable: _isClosed,
+                     builder: (context, closed, _) {
+                       if (closed) return const SizedBox.shrink();
+                       final uid = _authService.currentUser?.uid ?? '';
+                       final iHaveResolved = resolvedByMap[uid] == true;
+                       final iHaveCancelled = cancelRequestedByMap[uid] == true;
+                       final otherHasResolved = resolvedByMap[widget.otherUserId] == true;
+                       final otherHasCancelled = cancelRequestedByMap[widget.otherUserId] == true;
+                       
+                       // Show this only if OTHER user has taken action but I haven't
+                       if (iHaveResolved || iHaveCancelled) return const SizedBox.shrink();
+                       if (!otherHasResolved && !otherHasCancelled) return const SizedBox.shrink();
+                       
+                       final isOtherWaitingForResolution = otherHasResolved;
+                       final statusText = isOtherWaitingForResolution
+                           ? '${widget.otherUserName} marked as resolved. Confirm to finalize.'
+                           : '${widget.otherUserName} requested to cancel. Confirm to cancel deal.';
+                       
+                       return Container(
+                         width: double.infinity,
+                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                         decoration: BoxDecoration(
+                           color: Colors.blue.shade50,
+                           border: Border(bottom: BorderSide(color: Colors.blue.shade200, width: 1)),
+                         ),
+                         child: Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             Icon(
+                               PhosphorIconsRegular.info,
+                               color: Colors.blue.shade700,
+                               size: 16,
+                             ),
+                             const SizedBox(width: 8),
+                             Expanded(
+                               child: Text(
+                                 statusText,
+                                 style: TextStyle(
+                                   fontSize: 13,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.blue.shade700,
+                                 ),
+                                 textAlign: TextAlign.center,
+                                 maxLines: 2,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                           ],
+                         ),
+                       );
+                     },
+                   );
+                 },
+               );
+             },
+           ),
+           // Resolved/Cancelled confirmation banner
+           ValueListenableBuilder<bool>(
             valueListenable: _isClosed,
             builder: (context, closed, _) {
               if (!closed) return const SizedBox.shrink();
@@ -669,10 +741,10 @@ void _showItemDetailsBottomSheet() {
                   children: [
                     Icon(PhosphorIconsRegular.checkCircle, color: Colors.green.shade700, size: 16),
                     const SizedBox(width: 8),
-                    Text(
-                      isCancelled
-                          ? 'Deal Cancelled — Item was relisted.'
-                          : 'Case Resolved — This chat will auto-delete in 3 days.',
+                     Text(
+                       isCancelled
+                           ? 'Deal Cancelled — Item marked as Resolved.'
+                           : 'Case Resolved — This chat will auto-delete in 3 days.',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
