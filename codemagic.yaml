@@ -40,10 +40,23 @@ workflows:
           grep -v "platform :ios" Podfile >> podfile_temp
           mv podfile_temp Podfile
 
+          # 4b. Patch generated tflite_flutter podspec to avoid unavailable CoreML 2.12.0 pods
+          # and align native runtime with newer model operator versions.
+          TFLITE_PODSPEC=".symlinks/plugins/tflite_flutter/ios/tflite_flutter.podspec"
+          if [ -f "$TFLITE_PODSPEC" ]; then
+            sed -i '' "s/tflite_version = '2.12.0'/tflite_version = '2.17.0'/g" "$TFLITE_PODSPEC"
+            sed -i '' "/TensorFlowLiteSwift\/CoreML/d" "$TFLITE_PODSPEC"
+            echo "✅ Patched tflite_flutter iOS podspec to TensorFlow Lite 2.17.0 (without CoreML subspec)."
+          else
+            echo "❌ ERROR: $TFLITE_PODSPEC not found after flutter pub get"
+            exit 1
+          fi
+
           # 5. Delete any existing lockfile to ensure fresh CocoaPods resolution
           rm -f Podfile.lock
 
           pod install --repo-update
+          grep -n "TensorFlowLite" Podfile.lock || true
       - name: Build iOS (No Codesign)
         script: |
           # 6. Inject a dummy Development Team to bypass Flutter's strict team validation
