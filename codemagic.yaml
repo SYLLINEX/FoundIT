@@ -31,8 +31,8 @@ workflows:
           # 2. Fix Xcode project so 'flutter build' detects iOS 15.0 for Podfile generation
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' ios/Runner.xcodeproj/project.pbxproj || true
 
-          # 3. Generate the Podfile in case it was not committed from Windows. 
-          flutter build ios --config-only --no-codesign || true
+          # 3. Validate iOS pod setup and generate build configs.
+          flutter build ios --config-only --no-codesign
 
           cd ios
           # 4. Very forcefully rewrite Podfile platform definition for iOS 15.0
