@@ -15,6 +15,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import 'help_support_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'about_app_screen.dart';
+import '../admin/whats_new_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -273,7 +274,12 @@ class ProfileScreen extends StatelessWidget {
                         title: 'What\'s New',
                         subtitle: 'Latest App Updates',
                         onTap: () {
-                          _showWhatsNewDialog(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WhatsNewScreen(),
+                            ),
+                          );
                         },
                       ),
                     ], context),
@@ -472,96 +478,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showWhatsNewDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Theme.of(context).cardColor,
-          title: Text(
-            'Latest Updates',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildUpdateItem(
-                context,
-                Icons.dark_mode_rounded,
-                'Dark Mode',
-                'Enjoy the new Dark Mode theme across the app.',
-              ),
-              const SizedBox(height: 12),
-              _buildUpdateItem(
-                context,
-                PhosphorIconsFill.bell,
-                'Dynamic Alerts',
-                'Get notifications instantly when lost items are found nearby.',
-              ),
-              const SizedBox(height: 12),
-              _buildUpdateItem(
-                context,
-                PhosphorIconsFill.qrCode,
-                'Smart QR Tags',
-                'Coming soon: Tag your items with a QR code.',
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Awesome!',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildUpdateItem(
-    BuildContext context,
-    IconData icon,
-    String title,
-    String desc,
-  ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: const Color(0xFF10B981), size: 24),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                desc,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildDarkModeItem(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(

@@ -27,9 +27,13 @@ class FeatureTourOverlay extends StatefulWidget {
 }
 
 class _FeatureTourOverlayState extends State<FeatureTourOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+    with TickerProviderStateMixin {
+  // Fade-in controller — plays once on entry
+  late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
+
+  // Pulse controller — loops independently so the FadeTransition is static
+  late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
   Rect _targetRect = Rect.zero;
@@ -37,29 +41,32 @@ class _FeatureTourOverlayState extends State<FeatureTourOverlay>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 400));
 
-    _fadeAnim = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
     _pulseAnim = Tween<double>(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     _resolveTargetRect();
-    _controller.forward();
 
-    // Gentle pulse loop after entrance
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        _controller.repeat(reverse: true);
-      }
+    // Fade in, then start the looping pulse — completely decoupled
+    _fadeController.forward().then((_) {
+      if (mounted) _pulseController.repeat(reverse: true);
     });
   }
 
   void _resolveTargetRect() {
     final key = widget.step.targetKey;
-    final renderBox =
-        key.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox = key.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null && renderBox.hasSize) {
       final offset = renderBox.localToGlobal(Offset.zero);
       _targetRect = offset & renderBox.size;
@@ -68,23 +75,27 @@ class _FeatureTourOverlayState extends State<FeatureTourOverlay>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _fadeController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final padding = 12.0;
+    const padding = 12.0;
     final spotlightRect = _targetRect.inflate(padding);
 
+    // FadeTransition only listens to _fadeAnim (plays once — no flicker)
     return FadeTransition(
       opacity: _fadeAnim,
       child: Material(
         type: MaterialType.transparency,
         child: Stack(
           children: [
-            // ── Dimmed backdrop with spotlight cutout ──────────────────────
+            // ── Dimmed backdrop with pulsing spotlight cutout ──────────────
+            // AnimatedBuilder is scoped to _pulseAnim only, so only the
+            // CustomPaint repaints on each pulse tick — not the whole tree.
             AnimatedBuilder(
               animation: _pulseAnim,
               builder: (context, _) {
@@ -110,7 +121,7 @@ class _FeatureTourOverlayState extends State<FeatureTourOverlay>
               behavior: HitTestBehavior.translucent,
             ),
 
-            // ── Tooltip card ──────────────────────────────────────────────
+            // ── Tooltip card (static — no animation dependency) ───────────
             Positioned(
               top: _tooltipTop(size, spotlightRect),
               left: 20,
@@ -325,5 +336,6 @@ class _SpotlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SpotlightPainter old) =>
-      old.spotlightRect != spotlightRect;
+      old.spotlightRect != spotlightRect ||
+      old.overlayColor != overlayColor;
 }

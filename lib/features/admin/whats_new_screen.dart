@@ -4,12 +4,10 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 /// A model for a single release entry in the What's New screen.
 class _Release {
   final String version;
-  final String date;
   final List<_Feature> features;
 
   const _Release({
     required this.version,
-    required this.date,
     required this.features,
   });
 }
@@ -35,7 +33,6 @@ class WhatsNewScreen extends StatelessWidget {
   static const List<_Release> _releases = [
     _Release(
       version: 'v1.6 – Latest',
-      date: 'May 2026',
       features: [
         _Feature(
           icon: PhosphorIconsFill.images,
@@ -62,7 +59,6 @@ class WhatsNewScreen extends StatelessWidget {
     ),
     _Release(
       version: 'v1.5',
-      date: 'April 2026',
       features: [
         _Feature(
           icon: PhosphorIconsFill.moon,
@@ -89,7 +85,6 @@ class WhatsNewScreen extends StatelessWidget {
     ),
     _Release(
       version: 'v1.4',
-      date: 'March 2026',
       features: [
         _Feature(
           icon: PhosphorIconsFill.mapPin,
@@ -116,7 +111,6 @@ class WhatsNewScreen extends StatelessWidget {
     ),
     _Release(
       version: 'v1.3',
-      date: 'February 2026',
       features: [
         _Feature(
           icon: PhosphorIconsFill.brain,
@@ -143,7 +137,6 @@ class WhatsNewScreen extends StatelessWidget {
     ),
     _Release(
       version: 'v1.2',
-      date: 'January 2026',
       features: [
         _Feature(
           icon: PhosphorIconsFill.question,
@@ -163,7 +156,6 @@ class WhatsNewScreen extends StatelessWidget {
     ),
     _Release(
       version: 'v1.0 – Initial Release',
-      date: 'December 2025',
       features: [
         _Feature(
           icon: PhosphorIconsFill.rocket,
@@ -261,24 +253,6 @@ class WhatsNewScreen extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
                       color: isLatest ? Colors.white : cs.onSurface,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isLatest
-                        ? Colors.white.withOpacity(0.2)
-                        : cs.surface,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    release.date,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isLatest ? Colors.white : cs.onSurfaceVariant,
                     ),
                   ),
                 ),
