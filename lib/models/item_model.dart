@@ -7,7 +7,8 @@ class ItemModel {
   final String category;
   final String title;
   final String description;
-  final String imageUrl;
+  /// All image URLs for this item. First element is the primary photo.
+  final List<String> imageUrls;
   final GeoPoint? location;
   final String locationName;
   final String status;
@@ -19,6 +20,10 @@ class ItemModel {
   final String? reporterName;
   final String? manualCategory;
 
+  /// Convenience getter — returns the first image URL (primary photo).
+  /// Falls back to empty string so existing code that reads `item.imageUrl` continues to work.
+  String get imageUrl => imageUrls.isNotEmpty ? imageUrls.first : '';
+
   ItemModel({
     required this.itemId,
     required this.userId,
@@ -26,7 +31,8 @@ class ItemModel {
     required this.category,
     required this.title,
     required this.description,
-    required this.imageUrl,
+    List<String>? imageUrls,
+    String? imageUrl, // legacy single-URL param kept for backward compat
     this.location,
     required this.locationName,
     required this.status,
@@ -37,13 +43,20 @@ class ItemModel {
     this.specificLocation,
     this.reporterName,
     this.manualCategory,
-  });
+  }) : imageUrls = imageUrls ?? (imageUrl != null && imageUrl.isNotEmpty ? [imageUrl] : const []);
 
   factory ItemModel.fromMap(String id, Map<String, dynamic> data) {
     GeoPoint? parsedLocation = data['location'] as GeoPoint?;
     if (parsedLocation == null && data['geo'] != null && data['geo']['geopoint'] != null) {
       parsedLocation = data['geo']['geopoint'] as GeoPoint?;
     }
+
+    // Read new multi-image list; fall back to wrapping legacy single URL
+    final rawUrls = List<String>.from(data['image_urls'] ?? []);
+    final legacyUrl = data['image_url'] as String? ?? '';
+    final resolvedUrls = rawUrls.isNotEmpty
+        ? rawUrls
+        : (legacyUrl.isNotEmpty ? [legacyUrl] : <String>[]);
 
     return ItemModel(
       itemId: id,
@@ -52,7 +65,7 @@ class ItemModel {
       category: data['category'] ?? '',
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      imageUrl: data['image_url'] ?? '',
+      imageUrls: resolvedUrls,
       location: parsedLocation,
       locationName: data['location_name'] ?? '',
       status: data['status'] ?? 'Active',
@@ -78,7 +91,7 @@ class ItemModel {
       category: category,
       title: title,
       description: description,
-      imageUrl: imageUrl,
+      imageUrls: imageUrls,
       location: location,
       locationName: locationName,
       status: status,
@@ -99,7 +112,10 @@ class ItemModel {
       'category': category,
       'title': title,
       'description': description,
+      // Write primary URL in legacy field so old app versions / ItemCard still work
       'image_url': imageUrl,
+      // Write full list for multi-image support
+      'image_urls': imageUrls,
       'location': location,
       'location_name': locationName,
       'status': status,

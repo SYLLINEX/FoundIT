@@ -13,6 +13,7 @@ import '../../widgets/found_it_loading_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../widgets/theme_aware_shimmer.dart';
+import '../../widgets/image_carousel.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final ItemModel item;
@@ -96,21 +97,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Image
+          // Background: carousel (swipeable if multiple images, single otherwise)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.45,
-            child: CachedNetworkImage(
-              imageUrl: item.imageUrl,
+            child: ImageCarousel(
+              imageUrls: item.imageUrls,
               fit: BoxFit.cover,
-              placeholder: (context, url) => ThemeAwareShimmer(                child: Container(color: Colors.white),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AppColors.mist,
-                child: const Icon(PhosphorIconsRegular.imageBroken, size: 50),
-              ),
             ),
           ),
 
