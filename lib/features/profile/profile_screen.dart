@@ -15,7 +15,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import 'help_support_screen.dart';
 import 'terms_of_service_screen.dart';
 import 'about_app_screen.dart';
-import '../admin/whats_new_screen.dart';
+import 'whats_new_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

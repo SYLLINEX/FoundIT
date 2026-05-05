@@ -15,7 +15,7 @@ import '../../chat/chat_list_screen.dart';
 import '../../profile/help_support_screen.dart';
 import '../../profile/terms_of_service_screen.dart';
 import '../../profile/about_app_screen.dart';
-import '../whats_new_screen.dart';
+import '../../profile/whats_new_screen.dart';
 
 class AdminProfileTab extends StatelessWidget {
   const AdminProfileTab({super.key});

@@ -5,11 +5,21 @@ import '../../../core/theme/app_colors.dart';
 class AdminBottomNavBar extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemTapped;
+  final GlobalKey? dashboardTabKey;
+  final GlobalKey? verificationsTabKey;
+  final GlobalKey? mapTabKey;
+  final GlobalKey? analyticsTabKey;
+  final GlobalKey? profileTabKey;
 
   const AdminBottomNavBar({
     super.key,
     required this.selectedIndex,
     required this.onItemTapped,
+    this.dashboardTabKey,
+    this.verificationsTabKey,
+    this.mapTabKey,
+    this.analyticsTabKey,
+    this.profileTabKey,
   });
 
   @override
@@ -47,21 +57,22 @@ class _AdminBottomNavBarState extends State<AdminBottomNavBar> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNavItem(PhosphorIconsRegular.squaresFour, 0),
-            _buildNavItem(PhosphorIconsRegular.sealCheck, 1),
-            _buildNavItem(PhosphorIconsRegular.mapTrifold, 2),
-            _buildNavItem(PhosphorIconsRegular.chartBar, 3),
-            _buildNavItem(PhosphorIconsRegular.user, 4),
+            _buildNavItem(PhosphorIconsRegular.squaresFour, 0, key: widget.dashboardTabKey),
+            _buildNavItem(PhosphorIconsRegular.sealCheck, 1, key: widget.verificationsTabKey),
+            _buildNavItem(PhosphorIconsRegular.mapTrifold, 2, key: widget.mapTabKey),
+            _buildNavItem(PhosphorIconsRegular.chartBar, 3, key: widget.analyticsTabKey),
+            _buildNavItem(PhosphorIconsRegular.user, 4, key: widget.profileTabKey),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index) {
+  Widget _buildNavItem(IconData icon, int index, {GlobalKey? key}) {
     bool isSelected = widget.selectedIndex == index;
 
     return GestureDetector(
+      key: key,
       onTap: () => widget.onItemTapped(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(

@@ -13,14 +13,10 @@ class _Release {
 }
 
 class _Feature {
-  final IconData icon;
-  final Color? iconColor;
   final String title;
   final String description;
 
   const _Feature({
-    required this.icon,
-    this.iconColor,
     required this.title,
     required this.description,
   });
@@ -35,22 +31,16 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.6 – Latest',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.images,
-          iconColor: Color(0xFF6366F1),
           title: 'Multi-Image Upload',
           description:
               'Report an item with up to 5 photos. Images are auto-compressed for fast uploads and stored securely in Firebase Storage.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.path,
-          iconColor: Color(0xFF10B981),
           title: 'Feature Tour',
           description:
               'New users are greeted with an interactive overlay tour that highlights key app features, making onboarding effortless.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.robot,
-          iconColor: Color(0xFFF59E0B),
           title: 'Enhanced AI Matching',
           description:
               'Multi-image reports now generate averaged visual fingerprints via MobileNetV3, improving match accuracy while staying compatible with legacy single-image reports.',
@@ -61,22 +51,16 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.5',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.moon,
-          iconColor: Color(0xFF8B5CF6),
           title: 'Dark Mode',
           description:
               'Full dark-theme support with theme-adaptive shimmer loading and consistent colours across every screen, including admin panels.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.shieldWarning,
-          iconColor: Color(0xFFEF4444),
           title: 'Cancellation & Relisting',
           description:
               'Reports that fail return can now be cancelled and automatically relisted, with proper Firestore rule enforcement.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.bellRinging,
-          iconColor: Color(0xFF06B6D4),
           title: 'Dynamic Alerts',
           description:
               'Real-time push notifications via FCM with a resend cooldown system and improved token lifecycle management on sign-out.',
@@ -87,22 +71,16 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.4',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.mapPin,
-          iconColor: Color(0xFF10B981),
           title: 'Map Overhaul',
           description:
               'All map controls consolidated into a single FAB with 10 km proximity filtering for both the map and the main dashboard.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.chatCircleText,
-          iconColor: Color(0xFF3B82F6),
           title: 'Swipe-to-Reply Chat',
           description:
               'In-app chat supports swipe-to-reply, message un-reaction, and smooth send-loading animations.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.userCircleCheck,
-          iconColor: Color(0xFF6366F1),
           title: 'Admin Claim Review',
           description:
               'Admins can now review claim disputes with an AI similarity comparison panel for fair and accurate decisions.',
@@ -113,22 +91,16 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.3',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.brain,
-          iconColor: Color(0xFFF59E0B),
           title: 'AI Item Classification',
           description:
               'Fine-tuned MobileNetV3 model automatically classifies uploaded items and suggests the correct category, with manual override support.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.fingerprint,
-          iconColor: Color(0xFF8B5CF6),
           title: 'Onboarding Flow',
           description:
               'A polished onboarding screen guides first-time users through the app\'s core concept before they reach the home screen.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.circleNotch,
-          iconColor: Color(0xFF64748B),
           title: 'Skeleton Loading',
           description:
               'Dashboard and reports screens now display shimmer skeleton placeholders while data is fetched, eliminating blank flashes.',
@@ -139,15 +111,11 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.2',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.question,
-          iconColor: Color(0xFF06B6D4),
           title: 'Help & Support',
           description:
               'Dedicated Help & Support, Terms of Service, and About sections added to both user and admin profile screens.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.lock,
-          iconColor: Color(0xFFEF4444),
           title: 'Forgot Password',
           description:
               'Password reset flow with email verification and an improved splash screen with dynamic loading messages.',
@@ -158,15 +126,11 @@ class WhatsNewScreen extends StatelessWidget {
       version: 'v1.0 – Initial Release',
       features: [
         _Feature(
-          icon: PhosphorIconsFill.rocket,
-          iconColor: Color(0xFF10B981),
           title: 'Core Platform Launch',
           description:
               'FoundIT launched with lost & found reporting, AI-powered item matching, real-time chat, push notifications, and an admin dashboard.',
         ),
         _Feature(
-          icon: PhosphorIconsFill.googleLogo,
-          iconColor: Color(0xFF3B82F6),
           title: 'Google Sign-In',
           description:
               'Secure authentication via Firebase Auth with Google Sign-In support for UNIMAS students and staff.',
@@ -291,44 +255,24 @@ class WhatsNewScreen extends StatelessWidget {
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (feature.iconColor ?? cs.primary).withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              feature.icon,
-              color: feature.iconColor ?? cs.primary,
-              size: 20,
+          Text(
+            feature.title,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+              color: cs.onSurface,
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  feature.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: cs.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  feature.description,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: cs.onSurfaceVariant,
-                    height: 1.45,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 3),
+          Text(
+            feature.description,
+            style: TextStyle(
+              fontSize: 13,
+              color: cs.onSurfaceVariant,
+              height: 1.45,
             ),
           ),
         ],
