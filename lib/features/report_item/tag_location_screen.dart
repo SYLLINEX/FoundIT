@@ -20,8 +20,9 @@ class TagLocationScreen extends StatefulWidget {
   final String title;
   final String description;
   final String category;
+  final String? manualCategory;
   final DateTime date;
-  final File? imageFile;
+  final List<File> imageFiles;
   final List<String> aiLabels;
   final List<double> aiScoreVector;
 
@@ -31,8 +32,9 @@ class TagLocationScreen extends StatefulWidget {
     required this.title,
     required this.description,
     required this.category,
+    this.manualCategory,
     required this.date,
-    this.imageFile,
+    this.imageFiles = const [],
     this.aiLabels = const [],
     this.aiScoreVector = const [],
   });
@@ -132,6 +134,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
       aiScoreVector: widget.aiScoreVector,
       timestamp: DateTime.now(), // Ignored in comparison
       eventDate: widget.date, // Add user's selected date here
+      manualCategory: widget.manualCategory,
     );
 
     List<Map<String, dynamic>> finalMatches = [];
@@ -201,12 +204,14 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         }
       } catch (_) {}
 
-      String imageUrl = '';
-      if (widget.imageFile != null) {
-        imageUrl = await _storageService.uploadItemImage(
-          widget.imageFile!,
+      String primaryImageUrl = '';
+      List<String> allImageUrls = [];
+      if (widget.imageFiles.isNotEmpty) {
+        allImageUrls = await _storageService.uploadItemImages(
+          widget.imageFiles,
           user.uid,
         );
+        primaryImageUrl = allImageUrls.first;
       }
 
       final item = ItemModel(
@@ -216,7 +221,7 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         category: widget.category,
         title: widget.title,
         description: widget.description,
-        imageUrl: imageUrl,
+        imageUrls: allImageUrls,
         locationName: 'Tagged Location',
         specificLocation: _specificLocationController.text.trim(),
         reporterName: reporterName,
@@ -227,8 +232,9 @@ class _TagLocationScreenState extends State<TagLocationScreen> {
         status: 'Pending for Approval',
         aiLabels: widget.aiLabels,
         aiScoreVector: widget.aiScoreVector,
-        timestamp: DateTime.now(), // Server handles this via toMap()
-        eventDate: widget.date, // Actual date provided by the UI
+        timestamp: DateTime.now(),
+        eventDate: widget.date,
+        manualCategory: widget.manualCategory,
       );
 
       final createdItemId = await _databaseService.addItem(item);

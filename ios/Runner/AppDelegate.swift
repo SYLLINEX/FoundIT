@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import GoogleMaps
+import UserNotifications
 
 /// Reads a key from the bundled flutter_assets/.env file.
 /// Used as a fallback for local development when the xcconfig
@@ -53,6 +54,15 @@ private func parseEnv(contents: String, key: String) -> String {
     
     if !mapsApiKey.isEmpty {
         GMSServices.provideAPIKey(mapsApiKey)
+    }
+
+    // --- iOS Push Notifications ---
+    // Setting the UNUserNotificationCenter delegate to `self` (FlutterAppDelegate)
+    // is REQUIRED for push notifications to appear as banners while the app is
+    // in the foreground. Without this, FCM foreground messages are silently dropped
+    // by iOS even if flutter_local_notifications is configured correctly.
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     }
     
     GeneratedPluginRegistrant.register(with: self)

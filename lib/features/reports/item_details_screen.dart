@@ -12,6 +12,8 @@ import '../claims/found_this_item_screen.dart';
 import '../../widgets/found_it_loading_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
+import '../../widgets/image_carousel.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final ItemModel item;
@@ -92,27 +94,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
   Widget build(BuildContext context) {
     final item = widget.item;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background Image
+          // Background: carousel (swipeable if multiple images, single otherwise)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.45,
-            child: CachedNetworkImage(
-              imageUrl: item.imageUrl,
+            child: ImageCarousel(
+              imageUrls: item.imageUrls,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(color: Colors.white),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AppColors.mist,
-                child: const Icon(PhosphorIconsRegular.imageBroken, size: 50),
-              ),
             ),
           ),
 
@@ -145,21 +138,54 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
             bottom: 0,
             child: Container(
               padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF2F2F6),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
               ),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.nightfall,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        if (item.location != null) ...
+                          [
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ItemMapScreen(item: item),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  PhosphorIconsRegular.mapTrifold,
+                                  size: 22,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -177,8 +203,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                         const SizedBox(width: 8),
                         Text(
                           'Reported as ${item.postType.toLowerCase()}',
-                          style: const TextStyle(
-                            color: AppColors.nightfall,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -217,19 +243,19 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
 
                     // Description
                     Row(
-                      children: const [
+                      children: [
                         Icon(
                           PhosphorIconsRegular.info,
                           size: 20,
-                          color: AppColors.nightfall,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Description',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.nightfall,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -239,13 +265,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         item.description,
-                        style: const TextStyle(
-                          color: Color(0xFF6B6A7C),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                           height: 1.5,
                         ),
                       ),
@@ -291,17 +317,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
-                                  style: const TextStyle(
-                                    color: AppColors.dusk,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                     fontSize: 14,
                                   ),
                                   children: [
                                     const TextSpan(text: 'Reported By: '),
                                     TextSpan(
                                       text: username,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.nightfall,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ],
@@ -314,41 +340,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                     ),
 
                     const SizedBox(height: 24),
-
-                    if (item.location != null)
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ItemMapScreen(item: item),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            PhosphorIconsRegular.mapTrifold,
-                            color: AppColors.deepLavender,
-                          ),
-                          label: const Text(
-                            'Show on the map',
-                            style: TextStyle(
-                              color: AppColors.deepLavender,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: const BorderSide(
-                              color: AppColors.deepLavender,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
 
                     const SizedBox(height: 120), // Bottom padding for button
                   ],
@@ -404,7 +395,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
         if (isAdmin) return const SizedBox();
 
         return Container(
-          color: const Color(0xFFF2F2F6),
+        color: Theme.of(context).scaffoldBackgroundColor,
           padding: const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 16),
           child: ElevatedButton(
             onPressed: _canClaim(item.status)
@@ -475,18 +466,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF2F2F6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.deepLavender, size: 20),
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -495,13 +486,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: AppColors.nightfall,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -513,13 +507,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppColors.nightfall.withOpacity(0.08),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         _formatDistanceKm(distanceKm),
-                        style: const TextStyle(
-                          color: AppColors.nightfall,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),

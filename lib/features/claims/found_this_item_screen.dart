@@ -18,7 +18,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/utils/app_error_handler.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 import '../../services/ai_service.dart';
+
+import '../../utils/image_helper.dart';
 
 class FoundThisItemScreen extends StatefulWidget {
   final ItemModel lostItem;
@@ -74,9 +77,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             children: [
@@ -191,13 +194,13 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.indigo.shade50
-                                  : Colors.white,
+                                  ? Colors.indigo.shade50.withOpacity(0.2)
+                                  : Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? Colors.indigo.shade200
-                                    : Colors.grey.shade200,
+                                    : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                                 width: isSelected ? 1.5 : 1,
                               ),
                               boxShadow: [
@@ -225,10 +228,7 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                                           child: CachedNetworkImage(
                                             imageUrl: report.imageUrl,
                                             fit: BoxFit.cover,
-                                            placeholder: (context, url) => Shimmer.fromColors(
-                                              baseColor: Colors.grey[300]!,
-                                              highlightColor: Colors.grey[100]!,
-                                              child: Container(color: Colors.white),
+                                            placeholder: (context, url) => ThemeAwareShimmer(                                              child: Container(color: Colors.white),
                                             ),
                                             errorWidget: (context, url, error) => const Icon(
                                               PhosphorIconsRegular.imageBroken,
@@ -348,7 +348,8 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       imageQuality: 70,
     );
     if (picked.isNotEmpty) {
-      setState(() => _photos.addAll(picked));
+      final normalizedFiles = await Future.wait(picked.map((f) => ImageHelper.normalizeImage(f)));
+      setState(() => _photos.addAll(normalizedFiles));
     }
   }
 
@@ -482,9 +483,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
       isDismissible: false,
       backgroundColor: Colors.transparent,
       builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -503,12 +504,12 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Report Submitted!',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.nightfall,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -557,19 +558,19 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
     final item = widget.lostItem;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(PhosphorIconsRegular.caretLeft,
-              color: AppColors.nightfall),
+          icon: Icon(PhosphorIconsRegular.caretLeft,
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'I Found This Item',
           style: TextStyle(
-            color: AppColors.nightfall,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -585,7 +586,7 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.statusFound.withOpacity(0.4)),
                 ),
@@ -681,14 +682,14 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
 
               // ── Where did you find it? ───────────────────────────────────
               Text.rich(
-                const TextSpan(
+                TextSpan(
                   text: 'Where did you find it?',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: AppColors.nightfall,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(
                       text: ' *',
                       style: TextStyle(color: Color(0xFFEF4444)),
@@ -701,9 +702,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                 controller: _locationController,
                 decoration: InputDecoration(
                   hintText: 'e.g. Near UNIMAS library main entrance',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -718,14 +719,14 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
 
               // ── Additional details ───────────────────────────────────────
               Text.rich(
-                const TextSpan(
+                TextSpan(
                   text: 'Additional details',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: AppColors.nightfall,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  children: [
+                  children: const [
                     TextSpan(
                       text: ' *',
                       style: TextStyle(color: Color(0xFFEF4444)),
@@ -740,9 +741,9 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                 decoration: InputDecoration(
                   hintText:
                       'Describe the item condition, any identifying marks, when you found it...',
-                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -757,12 +758,12 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               const SizedBox(height: 20),
 
               // ── Photo (required) ─────────────────────────────────────────
-              const Text(
+              Text(
                 'Photo proof (required)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: AppColors.nightfall,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
@@ -782,10 +783,10 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                         onTap: _pickPhotos,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).cardColor,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: Colors.grey.shade300,
+                                color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
                                 style: BorderStyle.solid),
                           ),
                           child: Icon(PhosphorIconsRegular.plus,
@@ -854,18 +855,18 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               const SizedBox(height: 28),
 
               // ── Linked Report Section ────────────────────────────────────
-              const Text(
+              Text(
                 'Link to your FOUND report (optional)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: AppColors.nightfall,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Attach your existing report for AI comparison.',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.55), fontSize: 13),
               ),
               const SizedBox(height: 8),
               if (_selectedFoundReport == null)
@@ -875,17 +876,23 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.4),
+                        style: BorderStyle.solid,
+                      ),
                     ),
                     child: Column(
                       children: [
-                        Icon(PhosphorIconsRegular.link, color: Colors.grey.shade400, size: 32),
+                        Icon(PhosphorIconsRegular.link,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35), size: 32),
                         const SizedBox(height: 8),
                         Text(
                           'Tap to link a FOUND report',
-                          style: TextStyle(color: Colors.grey.shade400),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                          ),
                         ),
                       ],
                     ),
@@ -894,9 +901,11 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
               else
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    ),
                   ),
                   child: Column(
                     children: [
@@ -910,10 +919,10 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                                 children: [
                                   Text(
                                     _selectedFoundReport!.title,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
-                                      color: AppColors.nightfall,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -997,24 +1006,30 @@ class _FoundThisItemScreenState extends State<FoundThisItemScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _isConfirmed ? Colors.blue.shade50 : Colors.white,
+                    color: _isConfirmed
+                        ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2)
+                        : Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _isConfirmed ? Colors.blue.shade200 : Colors.grey.shade200,
+                      color: _isConfirmed
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.3),
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _isConfirmed ? PhosphorIconsRegular.checkCircle : PhosphorIconsRegular.circle,
-                        color: _isConfirmed ? Colors.blue : Colors.grey.shade400,
+                        color: _isConfirmed
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'I confirm that I found this item and the details are accurate.',
                           style: TextStyle(
-                            color: AppColors.nightfall,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 13,
                             height: 1.4,
                           ),

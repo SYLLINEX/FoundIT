@@ -37,7 +37,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Messages'),
       ),
@@ -138,9 +138,18 @@ class ChatListRoomTile extends StatelessWidget {
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
@@ -156,7 +165,11 @@ class ChatListRoomTile extends StatelessWidget {
                     Expanded(
                       child: Text(
                         itemTitle,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.obsidian),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

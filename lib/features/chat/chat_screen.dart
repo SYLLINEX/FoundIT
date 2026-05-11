@@ -17,6 +17,7 @@ import '../../widgets/app_confirmation_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../widgets/theme_aware_shimmer.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatRoomModel room;
@@ -51,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Tracks the full resolved_by map from Firestore (userId -> true/false)
   final ValueNotifier<Map<String, dynamic>> _resolvedBy = ValueNotifier({});
+  final ValueNotifier<Map<String, dynamic>> _cancelRequestedBy = ValueNotifier({});
   final ValueNotifier<bool> _isClosed = ValueNotifier(false);
   final ValueNotifier<bool> _isOtherTyping = ValueNotifier(false);
   
@@ -86,6 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
         final typingMap = data['typing_status'] as Map<String, dynamic>? ?? {};
         _isOtherTyping.value = typingMap[widget.otherUserId] == true;
         _resolvedBy.value = Map<String, dynamic>.from(data['resolved_by'] ?? {});
+        _cancelRequestedBy.value = Map<String, dynamic>.from(data['cancel_requested_by'] ?? {});
       }
     });
   }
@@ -234,39 +237,58 @@ class _ChatScreenState extends State<ChatScreen> {
 
     if (bothResolved) {
       // Both parties confirmed — close the room and start the 3-day countdown
-      await roomRef.update({
-        'status': 'closed',
-        'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
-      });
+      try {
+        await roomRef.update({
+          'status': 'closed',
+          'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
+        });
 
-      await FirebaseFirestore.instance
-          .collection('items')
-          .doc(widget.room.itemId)
-          .update({'status': 'Resolved'});
+        // Update main item
+        final itemRef = FirebaseFirestore.instance.collection('items').doc(widget.room.itemId);
+        await itemRef.update({'status': 'Resolved'});
 
-      // If this was a claim with a linked lost report, update that original item as resolved too.
-      final claimId = snap.data()?['claim_id'] as String?;
-      if (claimId != null) {
-        final claimDoc = await FirebaseFirestore.instance.collection('claims').doc(claimId).get();
-        if (claimDoc.exists) {
-          final claimData = claimDoc.data()!;
-          final linkedLostReportId = claimData['linked_lost_report_id'] as String? ?? claimData['resolved_lost_report_id'] as String?;
-          if (linkedLostReportId != null) {
-             await FirebaseFirestore.instance
-                 .collection('items')
-                 .doc(linkedLostReportId)
-                 .update({'status': 'Resolved'});
+        // Verify update
+        final updatedItem = await itemRef.get();
+        final newStatus = updatedItem.data()?['status'];
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Item status is now: $newStatus')),
+          );
+        }
+
+        // If this was a claim with a linked lost report, update that original item as resolved too.
+        final claimId = snap.data()?['claim_id'] as String?;
+        if (claimId != null) {
+          final claimDoc = await FirebaseFirestore.instance.collection('claims').doc(claimId).get();
+          if (claimDoc.exists) {
+            final claimData = claimDoc.data()!;
+            final linkedLostReportId = claimData['linked_lost_report_id'] as String? ?? claimData['resolved_lost_report_id'] as String?;
+            if (linkedLostReportId != null) {
+               await FirebaseFirestore.instance
+                   .collection('items')
+                   .doc(linkedLostReportId)
+                   .update({'status': 'Resolved'});
+            }
           }
         }
-      }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Both parties confirmed! Item resolved. Chat will auto-delete in 3 days.'),
-          ),
-        );
-        Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Both parties confirmed! Item resolved. Chat will auto-delete in 3 days.'),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating item: $e'),
+            ),
+          );
+        }
       }
     } else {
       // Waiting for the other party
@@ -274,6 +296,64 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Marked as resolved. Waiting for the other party to confirm.'),
+          ),
+        );
+      }
+    }
+  }
+
+  void _cancelDeal() async {
+    final uid = _authService.currentUser?.uid;
+    if (uid == null) return;
+
+    final roomRef = FirebaseFirestore.instance.collection('chat_rooms').doc(widget.room.id);
+
+    // Mark this user as canceling the deal
+    await roomRef.update({
+      'cancel_requested_by.$uid': true,
+    });
+
+    // Check if both participants have now cancelled
+    final snap = await roomRef.get();
+    final cancelledByMap = Map<String, dynamic>.from(
+      (snap.data()?['cancel_requested_by'] as Map<String, dynamic>?) ?? {},
+    );
+
+    final bothCancelled = widget.room.participants
+        .every((pid) => cancelledByMap[pid] == true);
+
+    if (bothCancelled) {
+      // Both parties confirmed cancellation
+      await roomRef.update({
+        'status': 'closed',
+        'expires_at': Timestamp.fromDate(DateTime.now().add(const Duration(days: 3))),
+      });
+
+      // Mark item as Resolved since deal was cancelled
+      await FirebaseFirestore.instance
+          .collection('items')
+          .doc(widget.room.itemId)
+          .update({'status': 'Resolved'});
+
+      // Change claim status to Cancelled if it exists
+      final claimId = snap.data()?['claim_id'] as String?;
+      if (claimId != null) {
+        await FirebaseFirestore.instance.collection('claims').doc(claimId).update({'status': 'Cancelled'});
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Deal cancelled! Item marked as Resolved. Chat will auto-delete in 3 days.'),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cancellation requested. Waiting for the other party to confirm.'),
           ),
         );
       }
@@ -314,7 +394,7 @@ class _ChatScreenState extends State<ChatScreen> {
           backgroundColor: Colors.transparent,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
+            decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(30)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: ["👍", "❤️", "😂", "😮", "😢", "🙏"].map((emoji) => 
@@ -333,7 +413,8 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showItemDetailsBottomSheet() {
+void _showItemDetailsBottomSheet() {
+    final uid = _authService.currentUser?.uid ?? '';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -355,10 +436,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     height: 180, 
                     width: double.infinity, 
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(color: Colors.white),
+                    placeholder: (context, url) => ThemeAwareShimmer(                      child: Container(color: Colors.white),
                     ),
                     errorWidget: (context, url, error) => const Icon(PhosphorIconsRegular.imageBroken, size: 50, color: Colors.grey),
                   ),
@@ -370,7 +448,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: const Icon(PhosphorIconsRegular.imageBroken, size: 50, color: Colors.grey),
                 ),
               const SizedBox(height: 16),
-              Text(widget.itemTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.obsidian)),
+              Text(widget.itemTitle, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -393,25 +471,100 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 24),
+              ValueListenableBuilder<bool>(
+                valueListenable: _isClosed,
+                builder: (context, closed, _) {
+                  return ValueListenableBuilder<Map<String, dynamic>>(
+                    valueListenable: _resolvedBy,
+                    builder: (context, resolvedByMap, _) {
+                      return ValueListenableBuilder<Map<String, dynamic>>(
+                        valueListenable: _cancelRequestedBy,
+                        builder: (context, cancelRequestedByMap, _) {
+                          final iHaveResolved = resolvedByMap[uid] == true;
+                          final iHaveCancelled = cancelRequestedByMap[uid] == true;
+                          final canAct = !closed && !iHaveResolved && !iHaveCancelled;
+                          if (!canAct) return const SizedBox.shrink();
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    showAppConfirmationDialog<bool>(
+                                      context: context,
+                                      title: 'Mark as Resolved?',
+                                      message: 'Once both parties confirm, the item will be marked Resolved and this chat will auto-delete in 3 days.',
+                                      confirmText: 'Confirm',
+                                      cancelText: 'Cancel',
+                                      confirmColor: Colors.green,
+                                    ).then((confirmed) {
+                                      if (confirmed == true) _markAsResolved();
+                                    });
+                                  },
+                                  icon: const Icon(PhosphorIconsRegular.checkCircle, size: 18),
+                                  label: const Text('Mark as Resolved'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFF22C55E),
+                                    foregroundColor: Colors.white,
+                                    textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    showAppConfirmationDialog<bool>(
+                                      context: context,
+                                      title: 'Cancel Deal?',
+                                      message: 'If both parties cancel, the deal is terminated, the claim is cancelled, and the item will be relisted.',
+                                      confirmText: 'Cancel Deal',
+                                      cancelText: 'Go Back',
+                                      confirmColor: Colors.red.shade700,
+                                    ).then((confirmed) {
+                                      if (confirmed == true) _cancelDeal();
+                                    });
+                                  },
+                                  icon: Icon(PhosphorIconsRegular.xCircle, size: 18, color: Colors.red.shade700),
+                                  label: Text('Cancel', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: Colors.red.shade300),
+                                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 40),
             ],
           ),
         );
-      }
+      },
     );
-  }
+}
 
   @override
   Widget build(BuildContext context) {
     final currentUserId = _authService.currentUser?.uid ?? '';
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 1,
         titleSpacing: 0,
-        iconTheme: const IconThemeData(color: AppColors.obsidian),
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         title: GestureDetector(
           onTap: _showItemDetailsBottomSheet,
           child: Row(
@@ -419,7 +572,7 @@ class _ChatScreenState extends State<ChatScreen> {
               CircleAvatar(
                 radius: 20,
                 backgroundImage: widget.otherProfilePicUrl.isNotEmpty ? NetworkImage(widget.otherProfilePicUrl) : null,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: widget.otherProfilePicUrl.isEmpty ? const Icon(PhosphorIconsRegular.user, color: Colors.grey, size: 20) : null,
               ),
               const SizedBox(width: 10),
@@ -428,7 +581,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(widget.itemTitle, style: const TextStyle(color: AppColors.obsidian, fontSize: 15, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(widget.itemTitle, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                     Text('Tap for details \u2022 with ${widget.otherUserName}', style: const TextStyle(color: Colors.grey, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
@@ -436,121 +589,173 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: _isClosed,
-            builder: (context, closed, _) {
-              if (closed) return const SizedBox.shrink();
+        actions: const [],
+      ),
+      body: Column(
+        children: [
+          // Waiting for approval indicator
+          ValueListenableBuilder<Map<String, dynamic>>(
+            valueListenable: _resolvedBy,
+            builder: (context, resolvedByMap, _) {
               return ValueListenableBuilder<Map<String, dynamic>>(
-                valueListenable: _resolvedBy,
-                builder: (context, resolvedByMap, _) {
-                  final uid = _authService.currentUser?.uid ?? '';
-                  // Hide button once this user has already resolved
-                  if (resolvedByMap[uid] == true) return const SizedBox.shrink();
-                  return TextButton.icon(
-                    onPressed: () {
-                      showAppConfirmationDialog<bool>(
-                        context: context,
-                        title: 'Mark as Resolved?',
-                        message: 'Once both parties confirm, the item will be marked Resolved and this chat will auto-delete in 3 days.',
-                        confirmText: 'Confirm',
-                        cancelText: 'Cancel',
-                        confirmColor: Colors.green,
-                      ).then((confirmed) {
-                        if (confirmed == true) _markAsResolved();
-                      });
+                valueListenable: _cancelRequestedBy,
+                builder: (context, cancelRequestedByMap, _) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: _isClosed,
+                    builder: (context, closed, _) {
+                      if (closed) return const SizedBox.shrink();
+                      final uid = _authService.currentUser?.uid ?? '';
+                      final iHaveResolved = resolvedByMap[uid] == true;
+                      final iHaveCancelled = cancelRequestedByMap[uid] == true;
+                      
+                      if (!iHaveResolved && !iHaveCancelled) return const SizedBox.shrink();
+                      
+                      final isWaitingForResolution = iHaveResolved;
+                      final statusText = isWaitingForResolution 
+                          ? 'Waiting for ${widget.otherUserName} to confirm resolution...'
+                          : 'Waiting for ${widget.otherUserName} to confirm cancellation...';
+                      
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          border: Border(bottom: BorderSide(color: Colors.amber.shade200, width: 1)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: SpinKitRing(
+                                color: Colors.amber.shade700,
+                                lineWidth: 2,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                statusText,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.amber.shade700,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
                     },
-                    icon: const Icon(PhosphorIconsRegular.checkCircle, color: Colors.green),
-                    label: const Text('Resolve', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                   );
                 },
               );
             },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Status banner — shows resolve state dynamically
-          ValueListenableBuilder<bool>(
+           ),
+           // Other user waiting for approval indicator
+           ValueListenableBuilder<Map<String, dynamic>>(
+             valueListenable: _resolvedBy,
+             builder: (context, resolvedByMap, _) {
+               return ValueListenableBuilder<Map<String, dynamic>>(
+                 valueListenable: _cancelRequestedBy,
+                 builder: (context, cancelRequestedByMap, _) {
+                   return ValueListenableBuilder<bool>(
+                     valueListenable: _isClosed,
+                     builder: (context, closed, _) {
+                       if (closed) return const SizedBox.shrink();
+                       final uid = _authService.currentUser?.uid ?? '';
+                       final iHaveResolved = resolvedByMap[uid] == true;
+                       final iHaveCancelled = cancelRequestedByMap[uid] == true;
+                       final otherHasResolved = resolvedByMap[widget.otherUserId] == true;
+                       final otherHasCancelled = cancelRequestedByMap[widget.otherUserId] == true;
+                       
+                       // Show this only if OTHER user has taken action but I haven't
+                       if (iHaveResolved || iHaveCancelled) return const SizedBox.shrink();
+                       if (!otherHasResolved && !otherHasCancelled) return const SizedBox.shrink();
+                       
+                       final isOtherWaitingForResolution = otherHasResolved;
+                       final statusText = isOtherWaitingForResolution
+                           ? '${widget.otherUserName} marked as resolved. Confirm to finalize.'
+                           : '${widget.otherUserName} requested to cancel. Confirm to cancel deal.';
+                       
+                       return Container(
+                         width: double.infinity,
+                         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                         decoration: BoxDecoration(
+                           color: Colors.blue.shade50,
+                           border: Border(bottom: BorderSide(color: Colors.blue.shade200, width: 1)),
+                         ),
+                         child: Row(
+                           mainAxisAlignment: MainAxisAlignment.center,
+                           children: [
+                             Icon(
+                               PhosphorIconsRegular.info,
+                               color: Colors.blue.shade700,
+                               size: 16,
+                             ),
+                             const SizedBox(width: 8),
+                             Expanded(
+                               child: Text(
+                                 statusText,
+                                 style: TextStyle(
+                                   fontSize: 13,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.blue.shade700,
+                                 ),
+                                 textAlign: TextAlign.center,
+                                 maxLines: 2,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                           ],
+                         ),
+                       );
+                     },
+                   );
+                 },
+               );
+             },
+           ),
+           // Resolved/Cancelled confirmation banner
+           ValueListenableBuilder<bool>(
             valueListenable: _isClosed,
             builder: (context, closed, _) {
-              return ValueListenableBuilder<Map<String, dynamic>>(
-                valueListenable: _resolvedBy,
-                builder: (context, resolvedByMap, _) {
-                  final uid = _authService.currentUser?.uid ?? '';
-                  final iHaveResolved = resolvedByMap[uid] == true;
-                  final otherHasResolved = resolvedByMap[widget.otherUserId] == true;
-
-                  if (closed) {
-                    // Both confirmed — fully resolved
-                    return Container(
-                      width: double.infinity,
-                      color: Colors.green.shade50,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      child: const Row(
-                        children: [
-                          Icon(PhosphorIconsRegular.checkCircle, color: Colors.green, size: 20),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Case Resolved. This chat will auto-delete in 3 days.',
-                              style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                          ),
-                        ],
+              if (!closed) return const SizedBox.shrink();
+              final uid = _authService.currentUser?.uid ?? '';
+              final cancelRequestedByMap = _cancelRequestedBy.value;
+              final iHaveCancelled = cancelRequestedByMap[uid] == true;
+              final isCancelled = iHaveCancelled;
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  border: Border(bottom: BorderSide(color: Colors.green.shade200, width: 1)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(PhosphorIconsRegular.checkCircle, color: Colors.green.shade700, size: 16),
+                    const SizedBox(width: 8),
+                     Text(
+                       isCancelled
+                           ? 'Deal Cancelled — Item marked as Resolved.'
+                           : 'Case Resolved — This chat will auto-delete in 3 days.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green.shade700,
                       ),
-                    );
-                  }
-
-                  if (iHaveResolved && !otherHasResolved) {
-                    // I've resolved — waiting for the other party
-                    return Container(
-                      width: double.infinity,
-                      color: Colors.orange.shade50,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      child: Row(
-                        children: [
-                          Icon(PhosphorIconsRegular.clock, color: Colors.orange.shade700, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "You've marked this as resolved. Waiting for ${widget.otherUserName} to confirm.",
-                              style: TextStyle(color: Colors.orange.shade800, fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  if (!iHaveResolved && otherHasResolved) {
-                    // Other party has resolved — nudge me
-                    return Container(
-                      width: double.infinity,
-                      color: Colors.blue.shade50,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      child: Row(
-                        children: [
-                          Icon(PhosphorIconsRegular.info, color: Colors.blue.shade700, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${widget.otherUserName} has marked this as resolved. Press Resolve to confirm.',
-                              style: TextStyle(color: Colors.blue.shade800, fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return const SizedBox.shrink();
-                },
+                    ),
+                  ],
+                ),
               );
             },
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _messagesStream,
@@ -597,7 +802,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         margin: const EdgeInsets.only(top: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4, offset: const Offset(0, 2))],
                         ),
@@ -696,7 +901,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 margin: EdgeInsets.only(bottom: 12, left: isMe ? 40 : 0, right: isMe ? 0 : 40),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: isMe ? Colors.indigo : Colors.white,
+                                  color: isMe ? Colors.indigo : Theme.of(context).cardColor,
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(20),
                                     topRight: const Radius.circular(20),
@@ -721,10 +926,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                           decryptedReplyText,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(color: isMe ? Colors.white70 : AppColors.obsidian, fontSize: 13, fontStyle: FontStyle.italic),
+                                          style: TextStyle(color: isMe ? Colors.white70 : Theme.of(context).colorScheme.onSurface, fontSize: 13, fontStyle: FontStyle.italic),
                                         ),
                                       ),
-                                    Text(decryptedText, style: TextStyle(color: isMe ? Colors.white : AppColors.obsidian, fontSize: 15)),
+                                    Text(decryptedText, style: TextStyle(color: isMe ? Colors.white : Theme.of(context).colorScheme.onSurface, fontSize: 15)),
                                     const SizedBox(height: 6),
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -767,7 +972,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   margin: const EdgeInsets.only(left: 16, bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
                   ),
@@ -789,16 +994,16 @@ class _ChatScreenState extends State<ChatScreen> {
             builder: (context, closed, child) {
               if (closed) return const SizedBox.shrink();
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))]
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))]
                 ),
                 child: SafeArea(
                   child: Column(
                     children: [
                       if (_replyingToMessage != null)
                         Container(
-                          color: Colors.grey.shade50,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 8),
                           child: Row(
                             children: [
@@ -848,7 +1053,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     borderSide: BorderSide.none,
                                   ),
                                   filled: true,
-                                  fillColor: const Color(0xFFF3F4F6),
+                                  fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                 ),
                                 textInputAction: TextInputAction.send,

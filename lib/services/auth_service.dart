@@ -2,7 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../main.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -201,6 +202,9 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
+    // Reset app theme to light mode (default mode for auth screens)
+    appThemeNotifier.value = ThemeMode.light;
+
     // Remove the FCM token from the user's document BEFORE signing out of Firebase.
     // Otherwise, Firestore will block the request because the user is no longer authenticated.
     try {

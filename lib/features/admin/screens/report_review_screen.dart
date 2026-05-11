@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../../widgets/theme_aware_shimmer.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/item_model.dart';
@@ -76,7 +77,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
         builder: (_) => Scaffold(
           appBar: AppBar(
             title: const Text('Reported Location'),
-            backgroundColor: AppColors.adminVerificationInk,
+            backgroundColor: Theme.of(context).colorScheme.onSurface,
             foregroundColor: Colors.white,
           ),
           body: GoogleMap(
@@ -102,7 +103,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
       height: 240,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.adminVerificationSurfaceSoft,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       alignment: Alignment.center,
@@ -134,19 +135,19 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
-                color: AppColors.adminVerificationMutedInk,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.adminVerificationInk,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
                 height: 1.3,
               ),
@@ -217,11 +218,11 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
     final isLost = item.postType.toLowerCase() == 'lost';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(isLost ? 'Review Lost Report' : 'Review Found Report'),
-        backgroundColor: AppColors.adminVerificationInk,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         centerTitle: true,
         elevation: 0,
       ),
@@ -239,7 +240,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -259,10 +260,10 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                             Expanded(
                               child: Text(
                                 item.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.adminVerificationInk,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   height: 1.2,
                                 ),
                               ),
@@ -293,8 +294,8 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _formatTime(item.timestamp),
-                          style: const TextStyle(
-                            color: AppColors.adminVerificationMutedInk,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -323,10 +324,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                           height: 240,
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: Container(color: Colors.white),
+                          placeholder: (context, url) => ThemeAwareShimmer(                            child: Container(color: Colors.white),
                           ),
                           errorWidget: (_, __, ___) => _buildImagePlaceholder(),
                         ),
@@ -341,7 +339,7 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -354,12 +352,12 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Report Information',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.adminVerificationInk,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -372,24 +370,24 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                               : item.locationName,
                         ),
                         const SizedBox(height: 12),
-                        const Divider(
-                            color: AppColors.adminVerificationBorderSoft),
+                        Divider(
+                            color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Description',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: AppColors.adminVerificationMutedInk,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           item.description,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             height: 1.6,
-                            color: AppColors.adminVerificationInk,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -409,9 +407,9 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
               MediaQuery.of(context).padding.bottom + 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: const Border(
-                top: BorderSide(color: AppColors.adminVerificationBorderSoft),
+              color: Theme.of(context).cardColor,
+              border: Border(
+                top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               boxShadow: [
                 BoxShadow(
@@ -427,11 +425,11 @@ class _ReportReviewScreenState extends State<ReportReviewScreen> {
                   OutlinedButton(
                     onPressed: () => _openReportMap(item),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.adminVerificationInk,
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
-                      side: const BorderSide(
-                        color: AppColors.adminVerificationBorderSoft,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.outlineVariant,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

@@ -115,24 +115,28 @@ class AdminAnalyticsTab extends StatelessWidget {
                     childAspectRatio: 1.24,
                     children: [
                       _buildStatCard(
+                        context,
                         'Pending Verifications',
                         '$pendingItems',
                         PhosphorIconsRegular.shieldCheck,
                         Colors.orange,
                       ),
                       _buildStatCard(
+                        context,
                         'Unresolved Lost',
                         '$unresolvedLost',
                         PhosphorIconsRegular.warningCircle,
                         Colors.red,
                       ),
                       _buildStatCard(
+                        context,
                         'Found Items',
                         '$foundItems',
                         PhosphorIconsRegular.package,
                         Colors.green,
                       ),
                       _buildStatCard(
+                        context,
                         'Reserved',
                         '$reservedItems',
                         PhosphorIconsRegular.bookmarkSimple,
@@ -143,7 +147,7 @@ class AdminAnalyticsTab extends StatelessWidget {
                   const SizedBox(height: 18),
                   _buildTrendCard(trendCounts, successRate),
                   const SizedBox(height: 14),
-                  _buildCategoryCard(categoryCounts),
+                  _buildCategoryCard(context, categoryCounts),
                 ],
               );
             },
@@ -153,7 +157,7 @@ class AdminAnalyticsTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Action Required',
+                'Recent Success Stories',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               TextButton(
@@ -172,15 +176,19 @@ class AdminAnalyticsTab extends StatelessWidget {
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('claims')
-                .where('status', isEqualTo: 'Pending')
+                .where('status', isEqualTo: 'Approved')
+                .orderBy('created_at', descending: true)
                 .limit(5)
                 .snapshots(),
             builder: (context, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const Center(child: FoundItLoadingIndicator());
               }
+              if (snap.hasError) {
+                return const Text('Error loading success stories.');
+              }
               if (!snap.hasData || snap.data!.docs.isEmpty) {
-                return const Text('No pending actions required.');
+                return const Text('No recent success stories found yet. Keep up the good work!');
               }
               return Column(
                 children: snap.data!.docs.map((doc) {
@@ -215,36 +223,23 @@ class AdminAnalyticsTab extends StatelessWidget {
                           }
 
                           return Card(
-                            elevation: 0,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(color: Color(0xFFE9EAF0)),
                             ),
+                            elevation: 0,
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
+                              leading: const CircleAvatar(
+                                backgroundColor: Color(0xFFE8F5E9),
+                                child: Icon(PhosphorIconsFill.checkCircle, color: Colors.green),
                               ),
                               title: Text(
-                                itemName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                '$itemName returned!',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
-                              subtitle: Text(
-                                'Claimed by $userName • ${_formatTime(claim.timestamp)}',
-                              ),
-                              trailing: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  PhosphorIconsRegular.caretRight,
-                                  size: 20,
-                                ),
-                              ),
+                              subtitle: Text('Claimed by $userName\nAI Match Score: ${claim.similarityScore?.toStringAsFixed(1) ?? 'N/A'}%'),
+                              trailing: const Icon(PhosphorIconsRegular.caretRight, size: 16),
                             ),
                           );
                         },
@@ -330,7 +325,7 @@ class AdminAnalyticsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryCard(Map<String, int> categoryCounts) {
+  Widget _buildCategoryCard(BuildContext context, Map<String, int> categoryCounts) {
     final sorted = categoryCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final top = sorted.take(4).toList();
@@ -340,7 +335,7 @@ class AdminAnalyticsTab extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -398,6 +393,7 @@ class AdminAnalyticsTab extends StatelessWidget {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String title,
     String value,
     IconData icon,
@@ -406,7 +402,7 @@ class AdminAnalyticsTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

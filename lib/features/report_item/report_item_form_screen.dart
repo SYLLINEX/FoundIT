@@ -17,12 +17,17 @@ class ReportItemFormScreen extends StatefulWidget {
 }
 
 class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
+  static const int _maxImages = 5;
+
   DateTime? selectedDate;
   String? selectedCategory;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _manualCategoryController =
+      TextEditingController();
 
-  File? _image;
+  // Multi-image support
+  final List<File> _images = [];
   final ImagePicker _picker = ImagePicker();
   final TFLiteService _tfliteService = TFLiteService();
   bool _isAnalyzing = false;
@@ -44,24 +49,33 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     'Other',
   ];
 
-  final _primaryDark = const Color(0xFF3B394D);
-  final _bgColor = const Color(0xFFF3F4F6);
-
   @override
   void initState() {
     super.initState();
     _titleController.addListener(() => setState(() {}));
     _descriptionController.addListener(() => setState(() {}));
+    _manualCategoryController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _manualCategoryController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
+    if (_images.length >= _maxImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Maximum $_maxImages images allowed.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final source = await showAppConfirmationDialog<ImageSource>(
       context: context,
       title: 'Add Photo',
@@ -75,53 +89,115 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     if (source == null) return;
     final pickedFile = await _picker.pickImage(
       source: source,
-      imageQuality: 80, // Forces JPEG conversion on iOS, fixing TFLite decoder errors with HEIC
+      imageQuality: 90,
     );
 
     if (pickedFile != null) {
+      final newFile = File(pickedFile.path);
       setState(() {
-        _image = File(pickedFile.path);
+        _images.add(newFile);
         _isAnalyzing = true;
       });
 
-      try {
-        // Run both in parallel — top labels + score vector
-        final results = await Future.wait([
-          _tfliteService.getTopLabels(_image!, count: 5),
-          _tfliteService.getScoreVector(_image!),
-        ]);
+      await _runAiOnAllImages();
+    }
+  }
 
-        final topLabels   = results[0] as List<String>;
-        final scoreVector = results[1] as List<double>;
+  /// Runs TFLite on ALL images in parallel and:
+  ///   • averages all score vectors → stored as aiScoreVector (richer fingerprint)
+  ///   • merges labels from all images → stored as aiLabels
+  ///   • auto-selects category from the FIRST image (primary/intentional shot)
+  Future<void> _runAiOnAllImages() async {
+    try {
+      // Run all images in parallel
+      final allVectorsFutures =
+          _images.map((f) => _tfliteService.getScoreVector(f));
+      final allLabelsFutures =
+          _images.map((f) => _tfliteService.getTopLabels(f, count: 5));
 
-        if (topLabels.isNotEmpty) {
-          setState(() {
-            _detectedLabels = topLabels;
-            _scoreVector    = scoreVector;
-            final String primaryLabel = topLabels.first;
+      final results = await Future.wait([
+        Future.wait(allVectorsFutures),
+        Future.wait(allLabelsFutures),
+      ]);
 
-            // Direct match — model labels == dropdown options
-            if (_categories.contains(primaryLabel)) {
-              selectedCategory = primaryLabel;
-            }
-          });
+      final allVectors = results[0] as List<List<double>>;
+      final allLabels = results[1] as List<List<String>>;
+
+      // Element-wise average of all score vectors
+      final averaged = _averageVectors(allVectors);
+
+      // Merge & de-duplicate labels from all images
+      final merged =
+          allLabels.expand((l) => l).toSet().toList();
+
+      setState(() {
+        _scoreVector = averaged;
+        _detectedLabels = merged;
+
+        // Category auto-select is based on the PRIMARY (first) image vector
+        final primaryVector = allVectors.isNotEmpty ? allVectors[0] : <double>[];
+        final primaryLabels = allLabels.isNotEmpty ? allLabels[0] : <String>[];
+
+        double maxScore = primaryVector.isNotEmpty
+            ? primaryVector.reduce((a, b) => a > b ? a : b)
+            : 0.0;
+
+        if (maxScore < 0.5 || primaryLabels.isEmpty) {
+          selectedCategory = 'Other';
+        } else {
+          final primaryLabel = primaryLabels.first;
+          if (_categories.contains(primaryLabel)) {
+            selectedCategory = primaryLabel;
+          }
         }
-      } catch (e) {
-        debugPrint('TFLite Error: $e');
-      } finally {
-        if (mounted) {
-          setState(() => _isAnalyzing = false);
-        }
+      });
+    } catch (e) {
+      debugPrint('TFLite Error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isAnalyzing = false);
       }
+    }
+  }
+
+  /// Element-wise average of a list of equal-length vectors.
+  List<double> _averageVectors(List<List<double>> vectors) {
+    if (vectors.isEmpty) return [];
+    final nonEmpty = vectors.where((v) => v.isNotEmpty).toList();
+    if (nonEmpty.isEmpty) return [];
+    final length = nonEmpty.first.length;
+    final sum = List<double>.filled(length, 0.0);
+    for (final v in nonEmpty) {
+      for (int i = 0; i < length; i++) {
+        sum[i] += (i < v.length ? v[i] : 0.0);
+      }
+    }
+    return sum.map((s) => s / nonEmpty.length).toList();
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
+    if (_images.isNotEmpty) {
+      setState(() => _isAnalyzing = true);
+      _runAiOnAllImages();
+    } else {
+      setState(() {
+        _scoreVector = [];
+        _detectedLabels = [];
+        selectedCategory = null;
+        _isAnalyzing = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: _primaryDark,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         leading: Padding(
@@ -130,21 +206,21 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             onTap: () => Navigator.pop(context),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 PhosphorIconsRegular.caretLeft,
                 size: 16,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
         ),
         title: Text(
           'Report ${widget.reportType} Item',
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -160,65 +236,45 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image Upload Section
-            _buildLabel('Item Image'),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _pickImage,
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[300]!, width: 2),
-                  image: _image != null
-                      ? DecorationImage(
-                          image: FileImage(_image!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: _image == null
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: _bgColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              PhosphorIconsRegular.uploadSimple,
-                              size: 24,
-                              color: Color(0xFF4B5563),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Tap to Upload',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Color(0xFF1F2937),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'JPG, PNG up to 5MB',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      )
-                    : _isAnalyzing
-                    ? const Center(child: FoundItLoadingIndicator())
-                    : const SizedBox(),
-              ),
+            // ── Multi-Image Upload Section ─────────────────────────────────
+            _buildLabel('Item Photos'),
+            const SizedBox(height: 4),
+            Text(
+              'Add up to $_maxImages photos. AI uses all photos for better matching.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            _buildImageRow(),
+            const SizedBox(height: 8),
+
+            // AI tip shown after at least one image
+            if (_images.isNotEmpty && !_isAnalyzing) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    PhosphorIconsRegular.info,
+                    size: 16,
+                    color: Color(0xFF6B7280),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI analysed ${_images.length} photo${_images.length > 1 ? 's' : ''} to suggest a category. '
+                      'You can change it manually if needed.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ] else ...[
+              const SizedBox(height: 12),
+            ],
 
             // Item Title
             _buildLabel('Item Title'),
@@ -233,7 +289,17 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
             _buildLabel('Category'),
             const SizedBox(height: 8),
             _buildDropdown(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+
+            if (selectedCategory == 'Other') ...[
+              _buildLabel('Specify Category'),
+              const SizedBox(height: 8),
+              _buildTextField(
+                hint: 'e.g. Umbrella, Glasses',
+                controller: _manualCategoryController,
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Description
             _buildLabel('Description'),
@@ -254,13 +320,13 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       ),
       bottomSheet: Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 10,
@@ -271,9 +337,8 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         child: SafeArea(
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryDark,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey[300],
+              backgroundColor: Theme.of(context).colorScheme.onSurface,
+              foregroundColor: Theme.of(context).colorScheme.surface,
               disabledForegroundColor: Colors.grey[500],
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -292,8 +357,11 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
                           title: _titleController.text,
                           description: _descriptionController.text,
                           category: selectedCategory!,
+                          manualCategory: selectedCategory == 'Other'
+                              ? _manualCategoryController.text.trim()
+                              : null,
                           date: selectedDate!,
-                          imageFile: _image,
+                          imageFiles: _images,
                           aiLabels: _detectedLabels,
                           aiScoreVector: _scoreVector,
                         ),
@@ -311,14 +379,159 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
+  // ── Multi-Image Row ─────────────────────────────────────────────────────────
+  Widget _buildImageRow() {
+    return SizedBox(
+      height: 120,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          // Existing image tiles
+          ..._images.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final file = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.file(
+                      file,
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  // Primary badge
+                  if (idx == 0)
+                    Positioned(
+                      bottom: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF413F55).withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Primary',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Remove button
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(idx),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          PhosphorIconsRegular.x,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Analyzing overlay on latest image
+                  if (_isAnalyzing && idx == _images.length - 1)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          color: Colors.black38,
+                          child: const Center(
+                            child: FoundItLoadingIndicator(size: 24),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+
+          // "Add Photo" tile (hidden when at max)
+          if (_images.length < _maxImages)
+            GestureDetector(
+              onTap: _pickImage,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withOpacity(0.4),
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignInside,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      PhosphorIconsRegular.cameraPlus,
+                      size: 28,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.5),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _images.isEmpty ? 'Add Photo' : 'Add More',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6),
+                      ),
+                    ),
+                    Text(
+                      '${_images.length}/$_maxImages',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
   Widget _buildLabel(String text) {
     return Text.rich(
       TextSpan(
         text: text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF4B5563),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
         ),
         children: const [
           TextSpan(
@@ -343,9 +556,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       maxLines: maxLines,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         filled: true,
-        fillColor: const Color(0xFFE2E4EA),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -358,12 +572,20 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
     );
   }
 
-  bool get _isFormComplete =>
-      _image != null &&
-      _titleController.text.trim().isNotEmpty &&
-      selectedCategory != null &&
-      _descriptionController.text.trim().isNotEmpty &&
-      selectedDate != null;
+  bool get _isFormComplete {
+    bool isComplete = _images.isNotEmpty &&
+        _titleController.text.trim().isNotEmpty &&
+        selectedCategory != null &&
+        _descriptionController.text.trim().isNotEmpty &&
+        selectedDate != null;
+
+    if (selectedCategory == 'Other') {
+      isComplete =
+          isComplete && _manualCategoryController.text.trim().isNotEmpty;
+    }
+
+    return isComplete;
+  }
 
   Widget _buildDropdown() {
     return DropdownButtonFormField<String>(
@@ -373,9 +595,10 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       icon: const Icon(PhosphorIconsRegular.caretDown, color: Colors.grey),
       decoration: InputDecoration(
         hintText: 'Select a category',
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
         filled: true,
-        fillColor: const Color(0xFFE2E4EA),
+        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -386,18 +609,6 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
         ),
       ),
       items: _categories.map((e) {
-        if (e == 'Other') {
-          return DropdownMenuItem(
-            value: e,
-            child: Row(
-              children: [
-                const Icon(PhosphorIconsRegular.dotsThree, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                Text(e, style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          );
-        }
         return DropdownMenuItem(value: e, child: Text(e));
       }).toList(),
       onChanged: (val) {
@@ -424,22 +635,31 @@ class _ReportItemFormScreenState extends State<ReportItemFormScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFFE2E4EA),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate != null 
+              selectedDate != null
                   ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
                   : 'Select Date',
               style: TextStyle(
-                color: selectedDate != null ? Colors.black87 : Colors.grey[400],
+                color: selectedDate != null
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.4),
                 fontSize: 16,
               ),
             ),
-            const Icon(PhosphorIconsRegular.calendarBlank, color: Colors.grey, size: 20),
+            const Icon(
+              PhosphorIconsRegular.calendarBlank,
+              color: Colors.grey,
+              size: 20,
+            ),
           ],
         ),
       ),

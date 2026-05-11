@@ -91,24 +91,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  Color _colorForType(String type) {
+  Color _colorForType(String type, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (type) {
       case 'report_approved':
-        return Colors.green;
+        return isDark ? Colors.green.shade300 : Colors.green.shade600;
       case 'nearby_report':
-        return Colors.blue;
+        return isDark ? Colors.blue.shade300 : Colors.blue.shade600;
       case 'report_found':
-        return Colors.orange;
+        return isDark ? Colors.orange.shade300 : Colors.orange.shade600;
       case 'report_reserved':
-        return Colors.purple;
+        return isDark ? Colors.purple.shade300 : Colors.purple.shade600;
       case 'lost_report_resolved':
-        return Colors.teal;
+        return isDark ? Colors.teal.shade300 : Colors.teal.shade600;
       case 'post_deleted':
-        return Colors.red;
+        return isDark ? Colors.red.shade300 : Colors.red.shade600;
       case 'new_message':
-        return Colors.blue;
+        return isDark ? Colors.blue.shade300 : Colors.blue.shade600;
       default:
-        return AppColors.deepLavender;
+        return isDark ? Colors.deepPurple.shade300 : AppColors.deepLavender;
     }
   }
 
@@ -116,7 +117,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     BuildContext context,
     AppNotificationModel notification,
   ) {
-    final color = _colorForType(notification.type);
+    final color = _colorForType(notification.type, context);
     final isSelected = _selectedIds.contains(notification.id);
 
     return Padding(
@@ -147,15 +148,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
-                color: notification.isRead ? Colors.white : const Color(0xFFF4F7FF),
+                color: notification.isRead
+                    ? Theme.of(context).cardColor
+                    : Theme.of(context).colorScheme.primaryContainer.withOpacity(0.18),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected 
-                      ? Colors.blue
-                      : (notification.isRead
-                          ? const Color(0xFFEDEDF3)
-                          : const Color(0xFFD9E5FF)),
-                ),
+                border: isSelected
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      )
+                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.06),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: ListTile(
                 onLongPress: () {
@@ -200,8 +209,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         margin: const EdgeInsets.only(top: 6),
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -220,12 +229,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: _isSelectionMode
             ? Text('${_selectedIds.length} Selected')
             : const Text('Notifications'),
-        backgroundColor: AppColors.nightfall,
+        backgroundColor: AppColors.deepLavender,
         foregroundColor: Colors.white,
         leading: _isSelectionMode
             ? IconButton(

@@ -19,13 +19,13 @@ class EmptyStateView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey.shade400),
+          Icon(icon, size: 64, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
           const SizedBox(height: 16),
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.obsidian)),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 8),
           Text(message, 
             textAlign: TextAlign.center, 
-            style: const TextStyle(color: Colors.grey, height: 1.4)
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), height: 1.4)
           ),
         ],
       ),

@@ -19,9 +19,11 @@ service cloud.firestore {
       // Authenticated users can create items
       allow create: if request.auth != null;
       // Users can update their own reported items OR Admins can update any item
+      // OR any authenticated user can update status to Resolved (for chat resolution)
       allow update: if request.auth != null && 
         (request.auth.uid == resource.data.user_id || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         (request.resource.data.status == 'Resolved' && resource.data.status == 'Reserved'));
       // Only Admins can delete items OR the user who created it
       allow delete: if request.auth != null && 
         (request.auth.uid == resource.data.user_id || 

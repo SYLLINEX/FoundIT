@@ -7,11 +7,23 @@ class CustomBottomNavBar extends StatefulWidget {
   final Function(int) onItemTapped;
   final VoidCallback onAddTapped;
 
+  // Optional GlobalKeys used by the feature tour to locate spotlight targets
+  final GlobalKey? homeTabKey;
+  final GlobalKey? mapTabKey;
+  final GlobalKey? fabKey;
+  final GlobalKey? reportsTabKey;
+  final GlobalKey? profileTabKey;
+
   const CustomBottomNavBar({
     super.key,
     required this.selectedIndex,
     required this.onItemTapped,
     required this.onAddTapped,
+    this.homeTabKey,
+    this.mapTabKey,
+    this.fabKey,
+    this.reportsTabKey,
+    this.profileTabKey,
   });
 
   @override
@@ -53,6 +65,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     icon: PhosphorIconsRegular.house,
                     activeIcon: PhosphorIconsRegular.house,
                     index: 0,
+                    itemKey: widget.homeTabKey,
                   ),
                 ),
                 Expanded(
@@ -60,14 +73,16 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     icon: PhosphorIconsRegular.mapTrifold,
                     activeIcon: PhosphorIconsRegular.mapTrifold,
                     index: 1,
+                    itemKey: widget.mapTabKey,
                   ),
                 ),
-                const Spacer(), // Replaced hardcoded SizedBox width with flexible Spacer
+                const Spacer(),
                 Expanded(
                   child: _buildNavItem(
                     icon: PhosphorIconsRegular.clipboardText,
                     activeIcon: PhosphorIconsRegular.clipboardText,
                     index: 2,
+                    itemKey: widget.reportsTabKey,
                   ),
                 ),
                 Expanded(
@@ -75,17 +90,19 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     icon: PhosphorIconsRegular.user,
                     activeIcon: PhosphorIconsRegular.user,
                     index: 3,
+                    itemKey: widget.profileTabKey,
                   ),
                 ),
               ],
             ),
           ),
           Positioned(
-            top: -16, // Adjusted slightly for smaller FAB
+            top: -16,
             child: GestureDetector(
               onTap: widget.onAddTapped,
               child: Container(
-                height: 48, // Reduced from 54
+                key: widget.fabKey,
+                height: 48,
                 width: 48,
                 decoration: BoxDecoration(
                   color: AppColors.deepLavender,
@@ -115,10 +132,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     required IconData icon,
     required IconData activeIcon,
     required int index,
+    GlobalKey? itemKey,
   }) {
     final bool isSelected = widget.selectedIndex == index;
 
     return GestureDetector(
+      key: itemKey,
       onTap: () => widget.onItemTapped(index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(

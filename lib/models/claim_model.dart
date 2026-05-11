@@ -14,6 +14,8 @@ class ClaimModel {
   /// 'claim'     — user claims ownership of a FOUND item (existing flow)
   /// 'found_tip' — user reports finding a LOST item (new flow)
   final String claimType;
+  List<double>? claimantAiScoreVector;
+  List<String>? claimantAiLabels;
 
   ClaimModel({
     required this.claimId,
@@ -27,6 +29,8 @@ class ClaimModel {
     this.linkedLostReportId,
     this.similarityScore,
     this.claimType = 'claim',
+    this.claimantAiScoreVector,
+    this.claimantAiLabels,
   });
 
   bool get isFoundTip => claimType == 'found_tip';
@@ -44,6 +48,12 @@ class ClaimModel {
       linkedLostReportId: data['linked_lost_report_id'],
       similarityScore: (data['similarity_score'] as num?)?.toDouble(),
       claimType: data['claim_type'] ?? 'claim',
+      claimantAiScoreVector: (data['claimant_ai_score_vector'] as List<dynamic>?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
+      claimantAiLabels: (data['claimant_ai_labels'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
     );
   }
 
@@ -59,6 +69,8 @@ class ClaimModel {
       'linked_lost_report_id': linkedLostReportId,
       'similarity_score': similarityScore,
       'claim_type': claimType,
+      'claimant_ai_score_vector': claimantAiScoreVector,
+      'claimant_ai_labels': claimantAiLabels,
     };
   }
 }
