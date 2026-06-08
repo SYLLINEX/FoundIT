@@ -170,7 +170,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             top: 8,
                             right: 8,
                             child: GestureDetector(
-                              onTap: () => _showDeleteConfirmation(context, item),
+                              onTap: () => _showDeleteConfirmation(item),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.grey[800],
@@ -220,7 +220,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     return 'just now';
   }
 
-  void _showDeleteConfirmation(BuildContext context, ItemModel item) {
+  void _showDeleteConfirmation(ItemModel item) {
     showAppInputDialog(
       context: context,
       title: 'Delete Item',
