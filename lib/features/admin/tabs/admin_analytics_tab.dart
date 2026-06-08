@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/claim_model.dart';
 import '../../../models/item_model.dart';

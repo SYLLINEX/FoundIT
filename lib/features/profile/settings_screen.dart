@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/app_confirmation_dialog.dart';
 import '../../core/utils/app_error_handler.dart';

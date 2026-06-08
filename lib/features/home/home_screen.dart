@@ -9,7 +9,7 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../../widgets/expandable_filter_fab.dart';
 import '../../widgets/empty_state_view.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../widgets/theme_aware_shimmer.dart';

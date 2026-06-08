@@ -73,4 +73,4 @@ class ClaimModel {
       'claimant_ai_labels': claimantAiLabels,
     };
   }
-}
+}
